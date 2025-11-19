@@ -7,3 +7,8 @@ __pycache__
 .vscode
 venv
 env
+backend/
+requirements.txt
+Dockerfile
+render.yaml
+api/
