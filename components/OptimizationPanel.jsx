@@ -130,34 +130,44 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
             // Transform backend data to frontend format
             const results = {
                 metrics: {
-                    expectedReturn: data.backtest.metrics.annualized_return * 100,
-                    volatility: data.backtest.metrics.annualized_volatility * 100,
-                    sharpeRatio: data.backtest.metrics.sharpe_ratio,
-                    sortinoRatio: data.backtest.metrics.sortino_ratio,
-                    maxDrawdown: data.backtest.metrics.max_drawdown * 100,
-                    alpha: data.backtest.metrics.alpha * 100,
-                    beta: data.backtest.metrics.beta,
-                    bestYear: data.backtest.metrics.best_year * 100,
-                    worstYear: data.backtest.metrics.worst_year * 100,
+                    expectedReturn: (data.backtest.metrics.annualized_return || 0) * 100,
+                    volatility: (data.backtest.metrics.annualized_volatility || 0) * 100,
+                    sharpeRatio: data.backtest.metrics.sharpe_ratio || 0,
+                    sortinoRatio: data.backtest.metrics.sortino_ratio || 0,
+                    maxDrawdown: (data.backtest.metrics.max_drawdown || 0) * 100,
+                    alpha: (data.backtest.metrics.alpha || 0) * 100,
+                    beta: data.backtest.metrics.beta || 0,
+                    bestYear: (data.backtest.metrics.best_year || 0) * 100,
+                    worstYear: (data.backtest.metrics.worst_year || 0) * 100,
                     startBalance: parseFloat(startingValue),
-                    endBalance: parseFloat(startingValue) * (1 + data.backtest.metrics.total_return),
-                    ...data.backtest.metrics  // Include all other metrics
+                    endBalance: parseFloat(startingValue) * (1 + (data.backtest.metrics.total_return || 0)),
+
+                    // Comprehensive Metrics (Convert to %)
+                    arithmetic_mean_monthly: (data.backtest.metrics.arithmetic_mean_monthly || 0) * 100,
+                    arithmetic_mean_annualized: (data.backtest.metrics.arithmetic_mean_annualized || 0) * 100,
+                    geometric_mean_monthly: (data.backtest.metrics.geometric_mean_monthly || 0) * 100,
+                    geometric_mean_annualized: (data.backtest.metrics.geometric_mean_annualized || 0) * 100,
+                    std_dev_monthly: (data.backtest.metrics.std_dev_monthly || 0) * 100,
+                    std_dev_annualized: (data.backtest.metrics.std_dev_annualized || 0) * 100,
+                    downside_dev_monthly: (data.backtest.metrics.downside_dev_monthly || 0) * 100,
+                    benchmark_correlation: data.backtest.metrics.benchmark_correlation || 0,
+                    treynor_ratio: data.backtest.metrics.treynor_ratio || 0
                 },
-                weights: Object.entries(data.optimization.weights).map(([asset, weight]) => ({
+                weights: Object.entries(data.optimization.weights || {}).map(([asset, weight]) => ({
                     asset,
                     weight: weight * 100,
                     color: `hsl(${Math.random() * 360}, 70%, 50%)`
                 })),
-                chartData: data.backtest.chart_data,
-                performance: data.backtest.chart_data.map(d => ({
+                chartData: data.backtest.chart_data || [],
+                performance: (data.backtest.chart_data || []).map(d => ({
                     date: d.date,
                     value: d.value
                 })),
-                drawdown: data.backtest.chart_data.map(d => ({
+                drawdown: (data.backtest.chart_data || []).map(d => ({
                     date: d.date,
                     drawdown: d.drawdown
                 })),
-                assets: Object.keys(data.optimization.weights),
+                assets: Object.keys(data.optimization.weights || {}),
                 trailingReturns: data.backtest?.trailing_returns || {},
                 monthlyReturns: data.backtest?.monthly_returns || {},
                 drawdowns: data.backtest?.drawdowns || [],
