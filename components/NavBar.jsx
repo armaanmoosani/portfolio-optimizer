@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, BarChart3, Search, Settings } from "lucide-react";
 
 const tabs = [
     { id: "home", label: "Dashboard", icon: LayoutGrid, href: "/" },
     { id: "stocks", label: "Stock Viewer", icon: Search, href: "/stocks" },
     { id: "portfolio", label: "Portfolio", icon: BarChart3, href: "/portfolio" },
-    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: "about", label: "About", icon: BarChart3, href: "/about" },
 ];
 
 export default function NavBar() {
-    const [activeTab, setActiveTab] = useState("home");
+    const pathname = usePathname();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (pathname !== "/") {
+            router.push("/");
+        }
+    }, []);
+
+    const activeTab = tabs.find((tab) => tab.href === pathname)?.id || "home";
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4">
@@ -22,7 +32,6 @@ export default function NavBar() {
                     <Link
                         key={tab.id}
                         href={tab.href}
-                        onClick={() => setActiveTab(tab.id)}
                         className="relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 ease-in-out group"
                     >
                         {activeTab === tab.id && (

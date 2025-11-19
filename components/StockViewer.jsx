@@ -1,26 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
-
-interface StockData {
-    price: number;
-    changePercent: number;
-    name: string;
-    description: string;
-}
-
-interface NewsItem {
-    headline: string;
-    url: string;
-    summary: string;
-}
 
 export default function StockViewer() {
     const [ticker, setTicker] = useState("");
     const [loading, setLoading] = useState(false);
-    const [stockData, setStockData] = useState<StockData | null>(null);
-    const [news, setNews] = useState<NewsItem[]>([]);
+    const [stockData, setStockData] = useState(null);
+    const [news, setNews] = useState([]);
     const [aiSummary, setAiSummary] = useState("");
     const [error, setError] = useState("");
 
@@ -58,7 +45,7 @@ export default function StockViewer() {
 
             // Generate AI Summary
             if (newsArr.length > 0) {
-                const aggregatedNews = newsArr.map((a: any) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
+                const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
                 const prompt = `
           Based on the recent headlines for ${meta.name || ticker}, generate a summary with these rules:
           - Exactly 3 concise bullet points explaining the main drivers of the stock's movement
