@@ -51,7 +51,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function PortfolioResults({ data }) {
-    const [activeTab, setActiveTab] = useState('summary');
+    const [activeTab, setActiveTab] = useState('assets');
 
     if (!data) return null;
 
@@ -400,15 +400,16 @@ export default function PortfolioResults({ data }) {
                             transition={{ duration: 0.3 }}
                             className="space-y-6"
                         >
-                            {/* Asset Allocation - Pie Chart (First) */}
-                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
-                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
-                                    <h3 className="font-semibold text-white">Asset Allocation</h3>
-                                </div>
-                                <div className="p-6">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            {/* Grid for Asset Allocation and Correlation Matrix */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Asset Allocation - Pie Chart */}
+                                <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                    <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                        <h3 className="font-semibold text-white">Asset Allocation</h3>
+                                    </div>
+                                    <div className="p-6">
                                         {/* Pie Chart */}
-                                        <div className="h-[350px] flex items-center justify-center">
+                                        <div className="h-[300px] flex items-center justify-center mb-4">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <PieChart>
                                                     <defs>
@@ -428,8 +429,8 @@ export default function PortfolioResults({ data }) {
                                                             strokeWidth: 1
                                                         }}
                                                         label={({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
-                                                        outerRadius={120}
-                                                        innerRadius={60}
+                                                        outerRadius={100}
+                                                        innerRadius={50}
                                                         paddingAngle={2}
                                                         dataKey="weight"
                                                         animationBegin={0}
@@ -499,10 +500,6 @@ export default function PortfolioResults({ data }) {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Grid for Correlation Matrix and Asset Stats */}
-                            <div className="grid grid-cols-1 gap-6">
 
                                 {/* Correlation Matrix */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">

@@ -33,22 +33,27 @@ export default function NavBar() {
                 return;
             }
 
+            // Prevent navigation if the target is a button (likely a tab button)
+            if (e.target.closest('button')) {
+                return;
+            }
+
             if (e.key === 'ArrowLeft') {
+                e.preventDefault();
                 const currentIndex = tabs.findIndex(tab => pathname === tab.path);
-                if (currentIndex > 0) {
-                    router.push(tabs[currentIndex - 1].path);
-                }
+                const newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                router.push(tabs[newIndex].path);
             } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
                 const currentIndex = tabs.findIndex(tab => pathname === tab.path);
-                if (currentIndex < tabs.length - 1) {
-                    router.push(tabs[currentIndex + 1].path);
-                }
+                const newIndex = (currentIndex + 1) % tabs.length;
+                router.push(tabs[newIndex].path);
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [activeIndex, router, pathname]);
+    }, [pathname, router, tabs]);
 
     // Close mobile menu on route change
     useEffect(() => {
@@ -62,7 +67,7 @@ export default function NavBar() {
                     <div className="flex items-center justify-center">
                         {/* Desktop Navigation */}
                         <div className="hidden md:block relative">
-                            <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
+                            <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-xs border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab, index) => (
                                     <Link
                                         key={tab.path}
