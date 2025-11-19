@@ -38,13 +38,16 @@ const CustomTooltip = ({ active, payload, label }) => {
         return (
             <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl z-50">
                 <p className="text-slate-300 text-sm mb-1 font-medium">{label}</p>
-                {payload.map((entry, index) => (
-                    <p key={index} className="text-xs flex items-center gap-2" style={{ color: entry.color }}>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                        {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
-                        {entry.name.toLowerCase().includes('return') || entry.name.toLowerCase().includes('drawdown') ? '%' : ''}
-                    </p>
-                ))}
+                {payload.map((entry, index) => {
+                    if (!entry || typeof entry.value === 'undefined') return null;
+                    return (
+                        <p key={index} className="text-xs flex items-center gap-2" style={{ color: entry.color }}>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            {entry.name || 'Value'}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+                            {entry.name && (entry.name.toLowerCase().includes('return') || entry.name.toLowerCase().includes('drawdown')) ? '%' : ''}
+                        </p>
+                    );
+                })}
             </div>
         );
     }
@@ -62,9 +65,11 @@ export default function PortfolioResults({ data }) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-white">Portfolio Analysis</h2>
-                    <p className="text-slate-400 text-sm mt-1">
-                        {data.performance[0]?.date} - {data.performance[data.performance.length - 1]?.date}
-                    </p>
+                    {data.performance && data.performance.length > 0 && (
+                        <p className="text-slate-400 text-sm mt-1">
+                            {data.performance[0]?.date} - {data.performance[data.performance.length - 1]?.date}
+                        </p>
+                    )}
                 </div>
                 <div className="flex gap-2">
                     <button className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Export PDF">

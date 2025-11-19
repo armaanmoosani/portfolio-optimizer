@@ -48,8 +48,12 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                 // Add from selected suggestion
                 handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             } else if (ticker.trim()) {
-                // Add ticker directly if valid text is entered
-                handleAdd(ticker.trim(), ticker.trim());
+                // Add ticker directly if valid text is entered (uppercase for consistency)
+                const tickerSymbol = ticker.trim().toUpperCase();
+                // Try to find a matching suggestion for the company name
+                const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
+                const description = matchingSuggestion ? matchingSuggestion.description : tickerSymbol;
+                handleAdd(tickerSymbol, description);
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -66,7 +70,11 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
     const handleAddClick = () => {
         if (ticker.trim()) {
-            handleAdd(ticker.trim(), ticker.trim());
+            const tickerSymbol = ticker.trim().toUpperCase();
+            // Try to find a matching suggestion for the company name
+            const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
+            const description = matchingSuggestion ? matchingSuggestion.description : tickerSymbol;
+            handleAdd(tickerSymbol, description);
         }
     };
 
