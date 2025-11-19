@@ -23,10 +23,12 @@ export default function NavBar() {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === "ArrowLeft" && activeIndex > 0) {
-                router.push(tabs[activeIndex - 1].path);
-            } else if (e.key === "ArrowRight" && activeIndex < tabs.length - 1) {
-                router.push(tabs[activeIndex + 1].path);
+            if (e.key === "ArrowLeft") {
+                const newIndex = (activeIndex - 1 + tabs.length) % tabs.length;
+                router.push(tabs[newIndex].path);
+            } else if (e.key === "ArrowRight") {
+                const newIndex = (activeIndex + 1) % tabs.length;
+                router.push(tabs[newIndex].path);
             }
         };
 
@@ -41,12 +43,12 @@ export default function NavBar() {
 
     return (
         <>
-            <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
-                <div className="container mx-auto px-4">
-                    <div className="flex items-center justify-center h-16">
+            <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50">
+                <div className="container mx-auto px-4 pt-6">
+                    <div className="flex items-center justify-center">
                         {/* Desktop Navigation */}
                         <div className="hidden md:block relative">
-                            <div className="flex space-x-1 p-1 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm">
+                            <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab, index) => (
                                     <Link
                                         key={tab.path}
