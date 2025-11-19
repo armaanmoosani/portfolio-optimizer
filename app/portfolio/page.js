@@ -20,7 +20,6 @@ export default function PortfolioPage() {
                 transition={{ duration: 0.4, delay: 0.1 }}
             >
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">Portfolio Optimizer</h1>
                     <p className="text-slate-400">Build your portfolio, configure optimization parameters, and analyze results</p>
                 </div>
 
