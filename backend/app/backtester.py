@@ -72,6 +72,87 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             alpha = annualized_return - (risk_free_rate + beta * (bench_ann_ret - risk_free_rate))
 
     # Prepare chart data
+    # --- Advanced Analytics ---
+
+    # 1. Annual Returns & Best/Worst Year
+    annual_returns = portfolio_returns.resample('Y').apply(lambda x: (1 + x).prod() - 1)
+    best_year = float(annual_returns.max()) if not annual_returns.empty else 0.0
+    worst_year = float(annual_returns.min()) if not annual_returns.empty else 0.0
+
+    # 2. Trailing Returns
+    def get_trailing_return(days):
+        if len(portfolio_returns) >= days:
+            return float((1 + portfolio_returns.iloc[-days:]).prod() - 1)
+        return None
+
+    trailing_returns = {
+        "3M": get_trailing_return(63),  # Approx 3 months
+        "1Y": get_trailing_return(252),
+        "3Y": get_trailing_return(252 * 3),
+        "5Y": get_trailing_return(252 * 5),
+        "YTD": float((1 + portfolio_returns[portfolio_returns.index.year == portfolio_returns.index[-1].year]).prod() - 1) if not portfolio_returns.empty else 0.0
+    }
+
+    # 3. Monthly Returns Matrix
+    monthly_returns = portfolio_returns.resample('M').apply(lambda x: (1 + x).prod() - 1)
+    monthly_matrix = {}
+    for date, value in monthly_returns.items():
+        year = date.year
+        month = date.month
+        if year not in monthly_matrix:
+            monthly_matrix[year] = {}
+        monthly_matrix[year][month] = float(value)
+
+    # 4. Top Drawdowns
+    # Calculate drawdown series
+    drawdown_series = drawdown
+    drawdown_periods = []
+    is_drawdown = False
+    start_date = None
+    trough_date = None
+    max_dd_in_period = 0
+
+    for date, dd in drawdown_series.items():
+        if dd < 0:
+            if not is_drawdown:
+                is_drawdown = True
+                start_date = date
+                max_dd_in_period = dd
+                trough_date = date
+            else:
+                if dd < max_dd_in_period:
+                    max_dd_in_period = dd
+                    trough_date = date
+        elif is_drawdown:
+            is_drawdown = False
+            end_date = date
+            drawdown_periods.append({
+                "start": start_date.strftime("%Y-%m-%d"),
+                "end": end_date.strftime("%Y-%m-%d"),
+                "trough": trough_date.strftime("%Y-%m-%d"),
+                "depth": float(max_dd_in_period),
+                "recovery_days": (end_date - start_date).days
+            })
+    
+    # Sort by depth (ascending because they are negative) and take top 5
+    top_drawdowns = sorted(drawdown_periods, key=lambda x: x['depth'])[:5]
+
+    # 5. Asset Correlations
+    correlation_matrix = asset_returns.corr().to_dict()
+    # Clean up for JSON (convert keys to strings if needed, though tickers are strings)
+    
+    # 6. Individual Asset Metrics
+    asset_metrics = {}
+    for ticker in tickers:
+        ret = asset_returns[ticker]
+        ann_ret = (1 + ret.mean()) ** annualization_factor - 1
+        ann_vol = ret.std() * np.sqrt(annualization_factor)
+        asset_metrics[ticker] = {
+            "annualized_return": float(ann_ret),
+            "annualized_volatility": float(ann_vol),
+            "max_drawdown": float(((1 + ret).cumprod() / (1 + ret).cumprod().cummax() - 1).min())
+        }
+
     # Prepare chart data
     chart_data = []
     for date, value in portfolio_value.items():
@@ -90,7 +171,14 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             "sortino_ratio": float(sortino_ratio),
             "max_drawdown": float(max_drawdown),
             "beta": float(beta),
-            "alpha": float(alpha)
+            "alpha": float(alpha),
+            "best_year": best_year,
+            "worst_year": worst_year,
         },
+        "trailing_returns": trailing_returns,
+        "monthly_returns": monthly_matrix,
+        "drawdowns": top_drawdowns,
+        "correlations": correlation_matrix,
+        "asset_metrics": asset_metrics,
         "chart_data": chart_data
     }

@@ -110,7 +110,11 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                     sortinoRatio: data.backtest.metrics.sortino_ratio,
                     maxDrawdown: data.backtest.metrics.max_drawdown * 100,
                     alpha: data.backtest.metrics.alpha * 100,
-                    beta: data.backtest.metrics.beta
+                    beta: data.backtest.metrics.beta,
+                    bestYear: data.backtest.metrics.best_year * 100,
+                    worstYear: data.backtest.metrics.worst_year * 100,
+                    startBalance: parseFloat(startingValue),
+                    endBalance: parseFloat(startingValue) * (1 + data.backtest.metrics.total_return)
                 },
                 weights: Object.entries(data.optimization.weights).map(([symbol, weight], index) => ({
                     asset: symbol,
@@ -125,9 +129,11 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                     date: d.date,
                     drawdown: d.drawdown
                 })),
-                rollingMetrics: [], // Can be implemented later if backend provides it
-                efficientFrontier: [], // Can be implemented later
-                correlation: [], // Can be implemented later
+                trailingReturns: data.backtest.trailing_returns,
+                monthlyReturns: data.backtest.monthly_returns,
+                drawdowns: data.backtest.drawdowns,
+                correlations: data.backtest.correlations,
+                assetMetrics: data.backtest.asset_metrics,
                 assets: assets.map(a => a.symbol)
             };
 

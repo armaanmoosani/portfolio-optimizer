@@ -1,83 +1,47 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Shield, Target, AlertTriangle, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Shield, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Mock data for demonstration
-const mockData = {
-    weights: [
-        { asset: 'AAPL', weight: 28.5, color: '#3b82f6' },
-        { asset: 'GOOGL', weight: 22.3, color: '#8b5cf6' },
-        { asset: 'MSFT', weight: 19.7, color: '#06b6d4' },
-        { asset: 'AMZN', weight: 15.8, color: '#10b981' },
-        { asset: 'NVDA', weight: 13.7, color: '#f59e0b' }
-    ],
-    metrics: {
-        expectedReturn: 14.2,
-        volatility: 18.5,
-        sharpeRatio: 0.87,
-        sortinoRatio: 1.12,
-        beta: 1.05,
-        alpha: 2.3,
-        maxDrawdown: -15.7
-    },
-    performance: Array.from({ length: 252 }, (_, i) => ({
-        date: `Day ${i + 1}`,
-        value: 10000 * Math.exp((0.12 / 252) * i + (Math.random() - 0.5) * 0.02)
-    })),
-    drawdown: Array.from({ length: 252 }, (_, i) => ({
-        date: `Day ${i + 1}`,
-        drawdown: -Math.abs(Math.sin(i / 30) * 15 + (Math.random() - 0.5) * 5)
-    })),
-    rollingMetrics: Array.from({ length: 222 }, (_, i) => ({
-        date: `Day ${i + 30}`,
-        volatility: 0.15 + Math.sin(i / 20) * 0.05,
-        sharpe: 0.8 + Math.cos(i / 25) * 0.3
-    })),
-    efficientFrontier: Array.from({ length: 50 }, (_, i) => ({
-        risk: 0.05 + i * 0.005,
-        return: 0.03 + Math.sqrt(i * 0.005) * 0.3 - (i * 0.00001)
-    })),
-    correlation: [
-        [1.00, 0.75, 0.68, 0.42, 0.55],
-        [0.75, 1.00, 0.82, 0.51, 0.63],
-        [0.68, 0.82, 1.00, 0.47, 0.71],
-        [0.42, 0.51, 0.47, 1.00, 0.38],
-        [0.55, 0.63, 0.71, 0.38, 1.00]
-    ],
-    assets: ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'NVDA']
+// Helper to format currency
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+    }).format(value);
 };
 
-const MetricCard = ({ icon: Icon, label, value, isPositive, suffix = '%', trend }) => (
-    <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-        <div className="flex items-start justify-between mb-3">
-            <div className={`p-2.5 rounded-lg ${isPositive ? 'bg-emerald-500/10' : 'bg-blue-500/10'}`}>
-                <Icon className={`w-5 h-5 ${isPositive ? 'text-emerald-400' : 'text-blue-400'}`} />
-            </div>
-            {trend && (
-                <div className={`text-xs flex items-center gap-1 ${trend > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {trend > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {Math.abs(trend)}%
-                </div>
-            )}
-        </div>
-        <div className="text-sm text-slate-400 mb-1">{label}</div>
-        <div className={`text-3xl font-bold ${value > 0 ? 'text-emerald-400' : value < 0 ? 'text-rose-400' : 'text-white'
-            }`}>
-            {value > 0 && !label.includes('Beta') ? '+' : ''}{value.toFixed(2)}{suffix}
-        </div>
-    </div>
+// Helper to format percent
+const formatPercent = (value) => {
+    return `${(value).toFixed(2)}%`;
+};
+
+const TabButton = ({ active, onClick, icon: Icon, label }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${active
+            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+    >
+        <Icon className="w-4 h-4" />
+        {label}
+    </button>
 );
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                <p className="text-slate-300 text-sm mb-1">{label}</p>
+            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl z-50">
+                <p className="text-slate-300 text-sm mb-1 font-medium">{label}</p>
                 {payload.map((entry, index) => (
-                    <p key={index} className="text-xs" style={{ color: entry.color }}>
+                    <p key={index} className="text-xs flex items-center gap-2" style={{ color: entry.color }}>
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
                         {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+                        {entry.name.toLowerCase().includes('return') || entry.name.toLowerCase().includes('drawdown') ? '%' : ''}
                     </p>
                 ))}
             </div>
@@ -86,315 +50,459 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-export default function PortfolioResults({ data = mockData }) {
+export default function PortfolioResults({ data }) {
+    const [activeTab, setActiveTab] = useState('summary');
+
+    if (!data) return null;
+
     return (
-        <div className="space-y-8">
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                <MetricCard
-                    icon={TrendingUp}
-                    label="Expected Return"
-                    value={data.metrics.expectedReturn}
-                    isPositive={true}
-                />
-                <MetricCard
-                    icon={Activity}
-                    label="Volatility"
-                    value={data.metrics.volatility}
-                    isPositive={false}
-                />
-                <MetricCard
-                    icon={Target}
-                    label="Sharpe Ratio"
-                    value={data.metrics.sharpeRatio}
-                    isPositive={true}
-                    suffix=""
-                />
-                <MetricCard
-                    icon={Shield}
-                    label="Sortino Ratio"
-                    value={data.metrics.sortinoRatio}
-                    isPositive={true}
-                    suffix=""
-                />
-                <MetricCard
-                    icon={BarChart3}
-                    label="Beta"
-                    value={data.metrics.beta}
-                    isPositive={false}
-                    suffix=""
-                />
-                <MetricCard
-                    icon={TrendingUp}
-                    label="Alpha"
-                    value={data.metrics.alpha}
-                    isPositive={true}
-                />
-                <MetricCard
-                    icon={AlertTriangle}
-                    label="Max Drawdown"
-                    value={data.metrics.maxDrawdown}
-                    isPositive={false}
-                />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Portfolio Analysis</h2>
+                    <p className="text-slate-400 text-sm mt-1">
+                        {data.performance[0]?.date} - {data.performance[data.performance.length - 1]?.date}
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <button className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Export PDF">
+                        <FileText className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Export CSV">
+                        <TableIcon className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
-            {/* Optimal Weights */}
-            <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                <h3 className="text-xl font-bold text-white mb-6">Optimal Portfolio Weights</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Table */}
-                    <div className="space-y-2">
-                        {data.weights.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: item.color }}
-                                    />
-                                    <span className="font-medium text-white">{item.asset}</span>
+            {/* Navigation Tabs */}
+            <div className="flex flex-wrap gap-2 p-1 bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm">
+                <TabButton active={activeTab === 'summary'} onClick={() => setActiveTab('summary')} icon={Activity} label="Summary" />
+                <TabButton active={activeTab === 'charts'} onClick={() => setActiveTab('charts')} icon={BarChart3} label="Charts" />
+                <TabButton active={activeTab === 'metrics'} onClick={() => setActiveTab('metrics')} icon={TableIcon} label="Metrics" />
+                <TabButton active={activeTab === 'assets'} onClick={() => setActiveTab('assets')} icon={PieChart} label="Assets" />
+            </div>
+
+            {/* Content Area */}
+            <div className="min-h-[500px]">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'summary' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-6"
+                        >
+                            {/* Key Metrics Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                    <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Start Balance</div>
+                                    <div className="text-xl font-bold text-white">{formatCurrency(data.metrics.startBalance)}</div>
                                 </div>
-                                <span className="text-lg font-bold text-blue-400">{item.weight.toFixed(1)}%</span>
+                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                    <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">End Balance</div>
+                                    <div className="text-xl font-bold text-emerald-400">{formatCurrency(data.metrics.endBalance)}</div>
+                                </div>
+                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                    <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">CAGR</div>
+                                    <div className="text-xl font-bold text-blue-400">{formatPercent(data.metrics.expectedReturn)}</div>
+                                </div>
+                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                    <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Max Drawdown</div>
+                                    <div className="text-xl font-bold text-rose-400">{formatPercent(data.metrics.maxDrawdown)}</div>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                    {/* Bar Chart */}
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data.weights} layout="vertical">
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis type="number" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
-                                <YAxis type="category" dataKey="asset" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Bar dataKey="weight" radius={[0, 8, 8, 0]}>
-                                    {data.weights.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
 
-            {/* Performance Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Backtest Performance */}
-                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                    <h3 className="text-xl font-bold text-white mb-6">Backtest Performance</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data.performance}>
-                                <defs>
-                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                    interval="preserveStartEnd"
-                                    minTickGap={50}
-                                />
-                                <YAxis
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8' }}
-                                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#3b82f6"
-                                    fillOpacity={1}
-                                    fill="url(#colorValue)"
-                                    strokeWidth={2}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Drawdown Chart */}
-                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                    <h3 className="text-xl font-bold text-white mb-6">Drawdown</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data.drawdown}>
-                                <defs>
-                                    <linearGradient id="colorDD" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                    interval="preserveStartEnd"
-                                    minTickGap={50}
-                                />
-                                <YAxis
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8' }}
-                                    tickFormatter={(value) => `${value.toFixed(0)}%`}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="drawdown"
-                                    stroke="#ef4444"
-                                    fillOpacity={1}
-                                    fill="url(#colorDD)"
-                                    strokeWidth={2}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
-            {/* Rolling Metrics - Only show if data exists */}
-            {data.rollingMetrics && data.rollingMetrics.length > 0 && (
-                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                    <h3 className="text-xl font-bold text-white mb-6">Rolling 30-Day Metrics</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={data.rollingMetrics}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                    interval={40}
-                                />
-                                <YAxis
-                                    yAxisId="left"
-                                    stroke="#8b5cf6"
-                                    tick={{ fill: '#8b5cf6' }}
-                                />
-                                <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    stroke="#10b981"
-                                    tick={{ fill: '#10b981' }}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend />
-                                <Line
-                                    yAxisId="left"
-                                    type="monotone"
-                                    dataKey="volatility"
-                                    stroke="#8b5cf6"
-                                    strokeWidth={2}
-                                    dot={false}
-                                    name="Volatility"
-                                />
-                                <Line
-                                    yAxisId="right"
-                                    type="monotone"
-                                    dataKey="sharpe"
-                                    stroke="#10b981"
-                                    strokeWidth={2}
-                                    dot={false}
-                                    name="Sharpe Ratio"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
-
-            {/* Efficient Frontier - Only show if data exists */}
-            {data.efficientFrontier && data.efficientFrontier.length > 0 && (
-                <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-900/20 to-slate-900/20 border border-purple-500/20 backdrop-blur-md">
-                    <h3 className="text-xl font-bold text-white mb-6">Efficient Frontier</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis
-                                    type="number"
-                                    dataKey="risk"
-                                    name="Risk"
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8' }}
-                                    label={{ value: 'Risk (Volatility)', position: 'bottom', fill: '#94a3b8' }}
-                                    tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
-                                />
-                                <YAxis
-                                    type="number"
-                                    dataKey="return"
-                                    name="Return"
-                                    stroke="#94a3b8"
-                                    tick={{ fill: '#94a3b8' }}
-                                    label={{ value: 'Expected Return', angle: -90, position: 'left', fill: '#94a3b8' }}
-                                    tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Scatter
-                                    data={data.efficientFrontier}
-                                    fill="#a855f7"
-                                    line={{ stroke: '#a855f7', strokeWidth: 2 }}
-                                />
-                                <Scatter
-                                    data={[{ risk: data.metrics.volatility / 100, return: data.metrics.expectedReturn / 100 }]}
-                                    fill="#10b981"
-                                    shape="star"
-                                    name="Optimal Portfolio"
-                                />
-                            </ScatterChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
-
-            {/* Correlation Heatmap - Only show if data exists */}
-            {data.correlation && data.correlation.length > 0 && (
-                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                    <h3 className="text-xl font-bold text-white mb-6">Asset Correlation Matrix</h3>
-                    <div className="overflow-x-auto">
-                        <div className="inline-grid gap-1" style={{ gridTemplateColumns: `auto repeat(${data.assets.length}, 1fr)` }}>
-                            {/* Header row */}
-                            <div></div>
-                            {data.assets.map((asset, i) => (
-                                <div key={i} className="p-2 text-center text-sm font-medium text-slate-400">
-                                    {asset}
+                            {/* Performance Summary Table */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Performance Summary</h3>
                                 </div>
-                            ))}
-
-                            {/* Data rows */}
-                            {data.correlation.map((row, i) => (
-                                <React.Fragment key={`row-${i}`}>
-                                    <div className="p-2 text-sm font-medium text-slate-400">
-                                        {data.assets[i]}
-                                    </div>
-                                    {row.map((value, j) => {
-                                        const hue = value >= 0 ? 142 : 0; // Green for positive, red for negative
-                                        const saturation = Math.abs(value) * 100;
-                                        const lightness = 50 + (1 - Math.abs(value)) * 20;
-                                        return (
-                                            <div
-                                                key={j}
-                                                className="p-4 rounded text-center text-sm font-medium transition-transform hover:scale-110"
-                                                style={{
-                                                    backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-                                                    color: Math.abs(value) > 0.5 ? '#ffffff' : '#1e293b'
-                                                }}
-                                            >
-                                                {value.toFixed(2)}
+                                <div className="bg-slate-900/40 p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Annualized Return (CAGR)</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.expectedReturn)}</span>
                                             </div>
-                                        );
-                                    })}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Standard Deviation</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.volatility)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Best Year</span>
+                                                <span className="font-mono text-emerald-400">{formatPercent(data.metrics.bestYear)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Worst Year</span>
+                                                <span className="font-mono text-rose-400">{formatPercent(data.metrics.worstYear)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Sharpe Ratio</span>
+                                                <span className="font-mono text-white">{data.metrics.sharpeRatio.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Sortino Ratio</span>
+                                                <span className="font-mono text-white">{data.metrics.sortinoRatio.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Alpha</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.alpha)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400">Beta</span>
+                                                <span className="font-mono text-white">{data.metrics.beta.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Trailing Returns */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Trailing Returns</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
+                                            <tr>
+                                                <th className="px-6 py-3">Metric</th>
+                                                <th className="px-6 py-3 text-right">3 Month</th>
+                                                <th className="px-6 py-3 text-right">YTD</th>
+                                                <th className="px-6 py-3 text-right">1 Year</th>
+                                                <th className="px-6 py-3 text-right">3 Year</th>
+                                                <th className="px-6 py-3 text-right">5 Year</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800">
+                                            <tr className="bg-slate-900/20">
+                                                <td className="px-6 py-4 font-medium text-white">Portfolio Return</td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3M"] !== null && data.trailingReturns["3M"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["3M"] !== null ? formatPercent(data.trailingReturns["3M"] * 100) : '-'}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["YTD"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {formatPercent(data.trailingReturns["YTD"] * 100)}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["1Y"] !== null && data.trailingReturns["1Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["1Y"] !== null ? formatPercent(data.trailingReturns["1Y"] * 100) : '-'}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3Y"] !== null && data.trailingReturns["3Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["3Y"] !== null ? formatPercent(data.trailingReturns["3Y"] * 100) : '-'}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["5Y"] !== null && data.trailingReturns["5Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["5Y"] !== null ? formatPercent(data.trailingReturns["5Y"] * 100) : '-'}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'charts' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-6"
+                        >
+                            {/* Growth Chart */}
+                            <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                <h3 className="text-lg font-bold text-white mb-6">Portfolio Growth</h3>
+                                <div className="h-[400px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={data.performance}>
+                                            <defs>
+                                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="#94a3b8"
+                                                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                                minTickGap={50}
+                                            />
+                                            <YAxis
+                                                stroke="#94a3b8"
+                                                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="value"
+                                                name="Portfolio Value"
+                                                stroke="#3b82f6"
+                                                fillOpacity={1}
+                                                fill="url(#colorValue)"
+                                                strokeWidth={2}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {/* Drawdown Chart */}
+                            <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                <h3 className="text-lg font-bold text-white mb-6">Drawdown</h3>
+                                <div className="h-[300px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={data.drawdown}>
+                                            <defs>
+                                                <linearGradient id="colorDD" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="#94a3b8"
+                                                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                                minTickGap={50}
+                                            />
+                                            <YAxis
+                                                stroke="#94a3b8"
+                                                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                                tickFormatter={(value) => `${value.toFixed(0)}%`}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="drawdown"
+                                                name="Drawdown"
+                                                stroke="#ef4444"
+                                                fillOpacity={1}
+                                                fill="url(#colorDD)"
+                                                strokeWidth={2}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'metrics' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-6"
+                        >
+                            {/* Monthly Returns Heatmap */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Monthly Returns</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-center">
+                                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left">Year</th>
+                                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
+                                                    <th key={m} className="px-2 py-3">{m}</th>
+                                                ))}
+                                                <th className="px-4 py-3 font-bold text-white">Year</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800">
+                                            {Object.keys(data.monthlyReturns || {}).sort((a, b) => b - a).map(year => {
+                                                const yearReturns = data.monthlyReturns[year];
+                                                const annualReturn = Object.values(yearReturns).reduce((acc, val) => (1 + acc) * (1 + val) - 1, 0);
+
+                                                // Calculate max absolute value for heatmap scaling (across all years)
+                                                const allValues = Object.values(data.monthlyReturns).flatMap(y => Object.values(y));
+                                                const maxAbsVal = Math.max(...allValues.map(Math.abs)) || 0.1; // Default to 0.1 to avoid div by zero
+
+                                                return (
+                                                    <tr key={year} className="bg-slate-900/20 hover:bg-slate-800/30 transition-colors">
+                                                        <td className="px-4 py-3 text-left font-medium text-slate-300">{year}</td>
+                                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(month => {
+                                                            const val = yearReturns[month];
+                                                            if (val === undefined) return <td key={month} className="px-2 py-3 text-slate-600">-</td>;
+
+                                                            const opacity = Math.min(Math.abs(val) / maxAbsVal, 1) * 0.4; // Max opacity 0.4
+                                                            const colorClass = val >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                                                            const bgStyle = {
+                                                                backgroundColor: val >= 0
+                                                                    ? `rgba(16, 185, 129, ${opacity})`
+                                                                    : `rgba(244, 63, 94, ${opacity})`
+                                                            };
+
+                                                            return (
+                                                                <td key={month} className={`px-2 py-3 font-mono text-xs ${colorClass}`} style={bgStyle}>
+                                                                    {val >= 0 ? '+' : ''}{(val * 100).toFixed(1)}%
+                                                                </td>
+                                                            );
+                                                        })}
+                                                        <td className={`px-4 py-3 font-bold font-mono ${annualReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {annualReturn >= 0 ? '+' : ''}{(annualReturn * 100).toFixed(1)}%
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Drawdowns Table */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Worst Drawdowns</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
+                                            <tr>
+                                                <th className="px-6 py-3">Rank</th>
+                                                <th className="px-6 py-3">Start Date</th>
+                                                <th className="px-6 py-3">End Date</th>
+                                                <th className="px-6 py-3">Max Drawdown</th>
+                                                <th className="px-6 py-3">Recovery Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800">
+                                            {data.drawdowns && data.drawdowns.map((dd, index) => (
+                                                <tr key={index} className="bg-slate-900/20">
+                                                    <td className="px-6 py-4 font-medium text-slate-400">#{index + 1}</td>
+                                                    <td className="px-6 py-4 text-slate-300">{dd.start}</td>
+                                                    <td className="px-6 py-4 text-slate-300">{dd.end}</td>
+                                                    <td className="px-6 py-4 font-bold text-rose-400 font-mono">
+                                                        {(dd.depth * 100).toFixed(2)}%
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-300">{dd.recovery_days} days</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'assets' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-6"
+                        >
+                            {/* Asset Allocation */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                    <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                        <h3 className="font-semibold text-white">Asset Allocation</h3>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="space-y-3">
+                                            {data.weights.map((item, index) => (
+                                                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                                        <span className="font-medium text-white">{item.asset}</span>
+                                                    </div>
+                                                    <span className="font-mono font-bold text-blue-400">{item.weight.toFixed(2)}%</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Correlation Matrix */}
+                                <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                    <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                        <h3 className="font-semibold text-white">Correlation Matrix</h3>
+                                    </div>
+                                    <div className="p-6 overflow-x-auto">
+                                        <div className="inline-grid gap-1" style={{ gridTemplateColumns: `auto repeat(${data.assets.length}, 1fr)` }}>
+                                            <div></div>
+                                            {data.assets.map((asset, i) => (
+                                                <div key={i} className="p-2 text-center text-xs font-bold text-slate-400">{asset}</div>
+                                            ))}
+                                            {data.assets.map((rowAsset, i) => (
+                                                <React.Fragment key={i}>
+                                                    <div className="p-2 text-xs font-bold text-slate-400 flex items-center">{rowAsset}</div>
+                                                    {data.assets.map((colAsset, j) => {
+                                                        const val = data.correlations?.[rowAsset]?.[colAsset] || 0;
+                                                        const hue = val >= 0 ? 142 : 0;
+                                                        const saturation = Math.abs(val) * 100;
+                                                        const lightness = 15 + (Math.abs(val) * 10); // Darker background
+                                                        return (
+                                                            <div
+                                                                key={j}
+                                                                className="w-10 h-10 flex items-center justify-center rounded text-[10px] font-mono transition-all hover:scale-110 cursor-default"
+                                                                style={{
+                                                                    backgroundColor: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.3)`,
+                                                                    color: Math.abs(val) > 0.5 ? '#fff' : '#94a3b8',
+                                                                    border: `1px solid hsla(${hue}, ${saturation}%, ${lightness + 20}%, 0.5)`
+                                                                }}
+                                                                title={`${rowAsset} vs ${colAsset}: ${val.toFixed(2)}`}
+                                                            >
+                                                                {val.toFixed(2)}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </React.Fragment>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Individual Asset Metrics */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Asset Statistics</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
+                                            <tr>
+                                                <th className="px-6 py-3">Asset</th>
+                                                <th className="px-6 py-3 text-right">Annualized Return</th>
+                                                <th className="px-6 py-3 text-right">Volatility</th>
+                                                <th className="px-6 py-3 text-right">Max Drawdown</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800">
+                                            {data.assets.map((asset, index) => {
+                                                const metrics = data.assetMetrics?.[asset] || {};
+                                                return (
+                                                    <tr key={index} className="bg-slate-900/20">
+                                                        <td className="px-6 py-4 font-medium text-white">{asset}</td>
+                                                        <td className={`px-6 py-4 text-right font-mono ${metrics.annualized_return >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {metrics.annualized_return ? formatPercent(metrics.annualized_return * 100) : '-'}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right font-mono text-slate-300">
+                                                            {metrics.annualized_volatility ? formatPercent(metrics.annualized_volatility * 100) : '-'}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right font-mono text-rose-400">
+                                                            {metrics.max_drawdown ? formatPercent(metrics.max_drawdown * 100) : '-'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 }

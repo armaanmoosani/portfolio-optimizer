@@ -21,6 +21,11 @@ def portfolio_volatility(weights, mean_returns, cov_matrix, risk_free_rate, annu
     r, s, sharpe = calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     return s
 
+def negative_return(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor):
+    """Objective function for Max Return"""
+    r, s, sharpe = calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor)
+    return -r
+
 def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252):
     """
     Run portfolio optimization based on the selected objective using Scipy.
@@ -49,12 +54,7 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
         obj_fun = portfolio_volatility
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     elif objective == "max_return":
-        # For max return, we minimize negative return
-        # This is a simplified version; usually requires a target risk constraint
-        # Here we just find the single asset with highest return if no risk constraint
-        # Better approach: Maximize return subject to volatility <= target_vol
-        # For now, let's default to Sharpe if not fully specified
-        obj_fun = negative_sharpe
+        obj_fun = negative_return
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     else:
         # Default to Sharpe
