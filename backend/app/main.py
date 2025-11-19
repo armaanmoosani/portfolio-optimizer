@@ -106,6 +106,8 @@ async def optimize(request: PortfolioRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Internal Server Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
