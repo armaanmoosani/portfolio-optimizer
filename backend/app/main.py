@@ -29,10 +29,10 @@ app.add_middleware(
 
 class PortfolioRequest(BaseModel):
     tickers: list[str]
-    start_year: int
-    end_year: int
+    start_date: str
+    end_date: str
     objective: str
-    start_balance: float
+    initial_capital: float
     min_weight: float = 0.0
     max_weight: float = 1.0
     benchmark: str = "SPY"
