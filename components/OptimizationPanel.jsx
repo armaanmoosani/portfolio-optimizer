@@ -82,8 +82,21 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Optimization failed');
+                let errorMessage = 'Optimization failed';
+                try {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.detail || errorMessage;
+                    } else {
+                        const text = await response.text();
+                        console.error("Non-JSON error response:", text);
+                        errorMessage = `Server Error (${response.status}): Please try again later.`;
+                    }
+                } catch (e) {
+                    console.error("Error parsing error response:", e);
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
