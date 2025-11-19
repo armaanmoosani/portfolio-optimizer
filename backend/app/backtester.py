@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series = None, initial_capital: float = 10000.0, risk_free_rate: float = 0.045, annualization_factor: int = 252):
+def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series = None, initial_capital: float = 10000.0, risk_free_rate: float = 0.045, annualization_factor: int = 252, mar: float = None):
     """
     Run a historical backtest of the optimized portfolio.
     """
@@ -43,11 +43,22 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
     # Sharpe Ratio
     sharpe_ratio = (annualized_return - risk_free_rate) / annualized_volatility if annualized_volatility != 0 else 0
     
-    # Sortino Ratio
-    # Only penalize negative returns (downside deviation)
-    negative_returns = portfolio_returns[portfolio_returns < 0]
-    downside_deviation = negative_returns.std() * np.sqrt(annualization_factor)
-    sortino_ratio = (annualized_return - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
+    # Sortino Ratio & Downside Deviation
+    # Use Lower Partial Moment (LPM) of order 2 for professional accuracy
+    # Target return (MAR) defaults to Risk Free Rate if not provided
+    target_return = mar if mar is not None else risk_free_rate
+    target_daily = (1 + target_return) ** (1/annualization_factor) - 1
+    
+    # Calculate downside deviation relative to target
+    downside_diff = portfolio_returns - target_daily
+    downside_diff = downside_diff[downside_diff < 0]
+    
+    # LPM2 = sqrt(mean(min(R - T, 0)^2))
+    # We use the full length of portfolio_returns for the mean to penalize frequency of losses correctly
+    downside_variance = (downside_diff ** 2).sum() / len(portfolio_returns)
+    downside_deviation = np.sqrt(downside_variance) * np.sqrt(annualization_factor)
+    
+    sortino_ratio = (annualized_return - target_return) / downside_deviation if downside_deviation != 0 else 0
     
     # Benchmark comparison (if provided)
     beta = 0
@@ -70,6 +81,43 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             bench_total_ret = (1 + bench_rets_aligned).cumprod().iloc[-1] - 1
             bench_ann_ret = (1 + bench_total_ret) ** (annualization_factor / len(bench_rets_aligned)) - 1
             alpha = annualized_return - (risk_free_rate + beta * (bench_ann_ret - risk_free_rate))
+
+    # --- COMPREHENSIVE PROFESSIONAL METRICS ---
+    
+    # Arithmetic Mean (Simple Average of Returns)
+    arithmetic_mean_monthly = float(portfolio_returns.mean())
+    arithmetic_mean_annualized = float(arithmetic_mean_monthly * annualization_factor)
+    
+    # Geometric Mean (Compounded Growth Rate)
+    # Formula: (Product of (1+r))^(1/n) - 1
+    geometric_mean_monthly = float((1 + portfolio_returns).prod() ** (1 / len(portfolio_returns)) - 1)
+    geometric_mean_annualized = float((1 + geometric_mean_monthly) ** annualization_factor - 1)
+    
+    # Standard Deviation (Total Volatility)
+    std_dev_monthly = float(portfolio_returns.std())
+    std_dev_annualized = float(std_dev_monthly * np.sqrt(annualization_factor))
+    
+    # Downside Deviation (Monthly)
+    # For monthly metric display, we calculate it based on 0 return threshold (loss)
+    # This is often what users expect for "Downside Deviation" in a general sense
+    monthly_downside_diff = portfolio_returns[portfolio_returns < 0]
+    monthly_downside_var = (monthly_downside_diff ** 2).sum() / len(portfolio_returns)
+    downside_dev_monthly = float(np.sqrt(monthly_downside_var))
+    
+    # Benchmark Correlation
+    benchmark_correlation = 0.0
+    if benchmark_data is not None and not benchmark_data.empty:
+        common_dates = portfolio_returns.index.intersection(benchmark_data.index)
+        if len(common_dates) > 10:
+            port_rets_aligned = portfolio_returns.loc[common_dates]
+            bench_rets_aligned = benchmark_data.pct_change().dropna().loc[common_dates]
+            benchmark_correlation = float(np.corrcoef(port_rets_aligned, bench_rets_aligned)[0, 1])
+    
+    # Treynor Ratio: (Return - Risk-Free Rate) / Beta
+    # Measures excess return per unit of systematic risk
+    treynor_ratio = float((annualized_return - risk_free_rate) / beta) if beta != 0 else 0.0
+
+    # Maximum Drawdown already calculated above as max_drawdown
 
     # Prepare chart data
     # --- Advanced Analytics ---
@@ -174,6 +222,16 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             "alpha": float(alpha),
             "best_year": best_year,
             "worst_year": worst_year,
+            # New comprehensive metrics
+            "arithmetic_mean_monthly": arithmetic_mean_monthly,
+            "arithmetic_mean_annualized": arithmetic_mean_annualized,
+            "geometric_mean_monthly": geometric_mean_monthly,
+            "geometric_mean_annualized": geometric_mean_annualized,
+            "std_dev_monthly": std_dev_monthly,
+            "std_dev_annualized": std_dev_annualized,
+            "downside_dev_monthly": downside_dev_monthly,
+            "benchmark_correlation": benchmark_correlation,
+            "treynor_ratio": treynor_ratio,
         },
         "trailing_returns": trailing_returns,
         "monthly_returns": monthly_matrix,

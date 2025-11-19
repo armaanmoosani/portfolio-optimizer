@@ -45,7 +45,11 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         if (e.key === "Enter") {
             e.preventDefault();
             if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+                // Add from selected suggestion
                 handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
+            } else if (ticker.trim()) {
+                // Add ticker directly if valid text is entered
+                handleAdd(ticker.trim(), ticker.trim());
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -60,6 +64,12 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         }
     };
 
+    const handleAddClick = () => {
+        if (ticker.trim()) {
+            handleAdd(ticker.trim(), ticker.trim());
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -70,17 +80,40 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
             {/* Search Input */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={ticker}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        onFocus={() => ticker && setShowSuggestions(true)}
-                        placeholder="Search for a ticker (e.g., AAPL)..."
-                        className="w-full px-5 py-3.5 pl-12 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-lg backdrop-blur-sm"
-                    />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="relative flex gap-2">
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            value={ticker}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            onFocus={() => ticker && setShowSuggestions(true)}
+                            placeholder="Search for a ticker (e.g., AAPL)..."
+                            className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        {ticker && (
+                            <button
+                                onClick={() => {
+                                    setTicker("");
+                                    setSuggestions([]);
+                                    setShowSuggestions(false);
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-slate-700/50 transition-colors text-slate-400 hover:text-white"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                    <button
+                        onClick={handleAddClick}
+                        disabled={!ticker.trim()}
+                        className="px-6 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-medium transition-all disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                        title="Add ticker to portfolio"
+                    >
+                        <PlusCircle className="w-5 h-5" />
+                        Add
+                    </button>
                 </div>
 
                 {/* Autocomplete Suggestions */}

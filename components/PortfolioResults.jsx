@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, Shield, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import EfficientFrontier from './EfficientFrontier';
 
 // Helper to format currency
 const formatCurrency = (value) => {
@@ -158,6 +159,53 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Comprehensive Professional Metrics */}
+                                    <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                        <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                            <h3 className="font-semibold text-white">Comprehensive Statistics</h3>
+                                        </div>
+                                        <div className="p-6">
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Arithmetic Mean (Monthly)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly * 100)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Arithmetic Mean (Annualized)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_annualized)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Geometric Mean (Monthly)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly * 100)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Geometric Mean (Annualized)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_annualized)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Std Deviation (Monthly)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly * 100)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Std Deviation (Annualized)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_annualized)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Downside Deviation (Monthly)</span>
+                                                    <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly * 100)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400">Benchmark Correlation</span>
+                                                    <span className="font-mono text-white">{data.metrics.benchmark_correlation.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2">
+                                                    <span className="text-slate-400">Treynor Ratio</span>
+                                                    <span className="font-mono text-white">{data.metrics.treynor_ratio.toFixed(3)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -212,6 +260,11 @@ export default function PortfolioResults({ data }) {
                             transition={{ duration: 0.3 }}
                             className="space-y-6"
                         >
+                            {/* Efficient Frontier */}
+                            {data.efficientFrontier && (
+                                <EfficientFrontier data={data.efficientFrontier} />
+                            )}
+
                             {/* Growth Chart */}
                             <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50">
                                 <h3 className="text-lg font-bold text-white mb-6">Portfolio Growth</h3>

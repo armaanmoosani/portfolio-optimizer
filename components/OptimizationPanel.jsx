@@ -24,6 +24,29 @@ const optimizationMethods = [
         description: "Maximize total returns",
         icon: Target,
         detail: "Maximizes expected returns regardless of risk. Aggressive strategy."
+    },
+    {
+        id: "kelly",
+        name: "Kelly Criterion",
+        description: "Maximize geometric growth",
+        icon: TrendingUp,
+        detail: "Maximizes expected log returns for optimal long-term wealth growth. Mathematically proven aggressive strategy."
+    },
+    {
+        id: "sortino",
+        name: "Max Sortino Ratio",
+        description: "Maximize downside-adjusted returns",
+        icon: Shield,
+        detail: "Like Sharpe, but only penalizes downside volatility. Requires a Minimum Acceptable Return (MAR).",
+        requiresMAR: true
+    },
+    {
+        id: "omega",
+        name: "Max Omega Ratio",
+        description: "Maximize probability of gains",
+        icon: Target,
+        detail: "Ratio of upside to downside potential relative to MAR. Comprehensive risk-reward measure.",
+        requiresMAR: true
     }
 ];
 
@@ -43,6 +66,8 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
     const [startingValue, setStartingValue] = useState("10000");
     const [minWeight, setMinWeight] = useState("0");
     const [maxWeight, setMaxWeight] = useState("100");
+    const [mar, setMar] = useState("0");  // Minimum Acceptable Return (%) for Sortino/Omega
+
 
     // Generate years array from 1985 to 2025
     const years = Array.from({ length: 2025 - 1985 + 1 }, (_, i) => 1985 + i);
@@ -70,7 +95,8 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                 benchmark: benchmark || "SPY",
                 min_weight: parseFloat(minWeight) / 100,
                 max_weight: parseFloat(maxWeight) / 100,
-                frequency: frequency
+                frequency: frequency,
+                mar: parseFloat(mar) / 100  // Convert percentage to decimal
             };
 
             const response = await fetch('/api/optimize', {
@@ -114,32 +140,26 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                     bestYear: data.backtest.metrics.best_year * 100,
                     worstYear: data.backtest.metrics.worst_year * 100,
                     startBalance: parseFloat(startingValue),
-                    endBalance: parseFloat(startingValue) * (1 + data.backtest.metrics.total_return)
+                    endBalance: parseFloat(startingValue) * (1 + data.backtest.metrics.total_return),
+                    ...data.backtest.metrics  // Include all other metrics
                 },
-                weights: Object.entries(data.optimization.weights).map(([symbol, weight], index) => ({
-                    asset: symbol,
+                weights: Object.entries(data.optimization.weights).map(([asset, weight]) => ({
+                    asset,
                     weight: weight * 100,
-                    color: ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#6366f1'][index % 7]
-                })).sort((a, b) => b.weight - a.weight),
-                performance: data.backtest.chart_data.map(d => ({
-                    date: d.date,
-                    value: d.value
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`
                 })),
-                drawdown: data.backtest.chart_data.map(d => ({
-                    date: d.date,
-                    drawdown: d.drawdown
-                })),
-                trailingReturns: data.backtest.trailing_returns,
-                monthlyReturns: data.backtest.monthly_returns,
-                drawdowns: data.backtest.drawdowns,
-                correlations: data.backtest.correlations,
-                assetMetrics: data.backtest.asset_metrics,
-                assets: assets.map(a => a.symbol)
+                chartData: data.backtest.chart_data,
+                assets: Object.keys(data.optimization.weights),
+                trailingReturns: data.backtest?.trailing_returns || {},
+                monthlyReturns: data.backtest?.monthly_returns || {},
+                drawdowns: data.backtest?.drawdowns || [],
+                correlations: data.backtest?.correlations || {},
+                assetMetrics: data.backtest?.asset_metrics || {},
+                efficientFrontier: data.efficient_frontier || null
             };
 
             onOptimizationComplete(results);
             showToast("Portfolio optimized successfully!", "success");
-
         } catch (error) {
             console.error("Optimization error:", error);
             showToast(error.message || "Failed to optimize portfolio", "error");
@@ -394,6 +414,37 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                                     <p className="text-xs text-slate-500 mt-1.5">Minimum and maximum allocation per asset</p>
                                 </div>
                             </div>
+
+                            {/* MAR Input (only for Sortino/Omega) */}
+                            {optimizationMethods.find(m => m.id === selectedMethod)?.requiresMAR && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="space-y-3"
+                                >
+                                    <label className="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-2">
+                                        <Target className="w-4 h-4" />
+                                        Minimum Acceptable Return (MAR)
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={mar}
+                                            onChange={(e) => setMar(e.target.value)}
+                                            step="0.5"
+                                            min="0"
+                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-12"
+                                            placeholder="0.0"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">%</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">
+                                        Threshold return for downside calculations. Common values: 0% (no loss) or ~4.5% (risk-free rate).
+                                    </p>
+                                </motion.div>
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

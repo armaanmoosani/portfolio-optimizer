@@ -28,15 +28,16 @@ app.add_middleware(
 )
 
 class PortfolioRequest(BaseModel):
-    tickers: List[str]
-    start_date: str
-    end_date: str
-    objective: str = "sharpe"  # sharpe, min_vol, max_return
-    initial_capital: float = 10000.0
-    benchmark: str = "SPY"
+    tickers: list[str]
+    start_year: int
+    end_year: int
+    objective: str
+    start_balance: float
     min_weight: float = 0.0
     max_weight: float = 1.0
-    frequency: str = "daily"  # daily, monthly
+    benchmark: str = "SPY"
+    frequency: str = "daily"
+    mar: float = 0.0  # Minimum Acceptable Return (annualized, as decimal)
 
 @app.get("/")
 def read_root():
@@ -75,11 +76,24 @@ async def optimize(request: PortfolioRequest):
             risk_free_rate=rf_rate,
             min_weight=request.min_weight,
             max_weight=request.max_weight,
-            annualization_factor=annualization_factor
+            annualization_factor=annualization_factor,
+            mar=request.mar
         )
         
         if not optimization_result["success"]:
             raise HTTPException(status_code=500, detail=f"Optimization failed: {optimization_result['message']}")
+        
+        # 3b. Calculate Efficient Frontier
+        print("Calculating efficient frontier...")
+        from optimizer import calculate_efficient_frontier
+        efficient_frontier_data = calculate_efficient_frontier(
+            prices,
+            risk_free_rate=rf_rate,
+            min_weight=request.min_weight,
+            max_weight=request.max_weight,
+            annualization_factor=annualization_factor,
+            num_portfolios=50
+        )
             
         # 4. Run Backtest
         print("Running backtest...")
@@ -90,12 +104,14 @@ async def optimize(request: PortfolioRequest):
             benchmark_data=benchmark_data, 
             initial_capital=request.initial_capital,
             risk_free_rate=rf_rate,
-            annualization_factor=annualization_factor
+            annualization_factor=annualization_factor,
+            mar=request.mar
         )
         
         return {
             "optimization": optimization_result,
             "backtest": backtest_result,
+            "efficient_frontier": efficient_frontier_data,
             "parameters": {
                 "risk_free_rate": rf_rate,
                 "tickers": request.tickers,
