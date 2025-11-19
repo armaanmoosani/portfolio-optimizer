@@ -206,16 +206,6 @@ ${aggregatedNews.slice(0, 15000)}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* AI Summary */}
-                        <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-500/20 backdrop-blur-md">
-                            <h3 className="text-lg font-semibold text-blue-400 mb-4 flex items-center gap-2">
-                                ✨ AI Analysis
-                            </h3>
-                            <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed">
-                                {aiSummary || "Generating AI summary..."}
-                            </div>
-                        </div>
-
                         {/* Recent News */}
                         <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
                             <h3 className="text-lg font-semibold text-white mb-4">Recent News</h3>
@@ -238,6 +228,16 @@ ${aggregatedNews.slice(0, 15000)}
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+
+                        {/* AI Summary */}
+                        <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-500/20 backdrop-blur-md">
+                            <h3 className="text-lg font-semibold text-blue-400 mb-4 flex items-center gap-2">
+                                AI Summary
+                            </h3>
+                            <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed">
+                                {aiSummary || "Generating AI summary..."}
+                            </div>
                         </div>
                     </div>
                 </div>
