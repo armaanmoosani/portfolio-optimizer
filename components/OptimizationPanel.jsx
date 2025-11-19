@@ -149,6 +149,14 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                     color: `hsl(${Math.random() * 360}, 70%, 50%)`
                 })),
                 chartData: data.backtest.chart_data,
+                performance: data.backtest.chart_data.map(d => ({
+                    date: d.date,
+                    value: d.value
+                })),
+                drawdown: data.backtest.chart_data.map(d => ({
+                    date: d.date,
+                    drawdown: d.drawdown
+                })),
                 assets: Object.keys(data.optimization.weights),
                 trailingReturns: data.backtest?.trailing_returns || {},
                 monthlyReturns: data.backtest?.monthly_returns || {},
