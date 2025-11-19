@@ -51,7 +51,15 @@ const optimizationMethods = [
 ];
 
 export default function OptimizationPanel({ assets = [], onOptimizationComplete }) {
-    const { showToast } = useToast();
+    const toast = useToast();
+
+    const showToast = (message, type = "info") => {
+        if (toast[type]) {
+            toast[type](message);
+        } else {
+            toast.info(message);
+        }
+    };
     const [selectedMethod, setSelectedMethod] = useState("sharpe");
     const [tooltipVisible, setTooltipVisible] = useState(null);
     const [showAdvanced, setShowAdvanced] = useState(false);
