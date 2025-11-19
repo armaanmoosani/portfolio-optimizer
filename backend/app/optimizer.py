@@ -23,7 +23,7 @@ def portfolio_volatility(weights, mean_returns, cov_matrix, risk_free_rate, annu
 
 def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252):
     """
-    Run portfolio optimization based on the selected objective.
+    Run portfolio optimization based on the selected objective using Scipy.
     """
     # Calculate daily returns
     returns = prices.pct_change().dropna()
