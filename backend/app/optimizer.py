@@ -2,26 +2,26 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-def calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate=0.045):
+def calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate=0.045, annualization_factor=252):
     """
     Calculate portfolio return, volatility, and Sharpe ratio.
     """
-    returns = np.sum(mean_returns * weights) * 252
-    std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
+    returns = np.sum(mean_returns * weights) * annualization_factor
+    std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(annualization_factor)
     sharpe = (returns - risk_free_rate) / std
     return returns, std, sharpe
 
-def negative_sharpe(weights, mean_returns, cov_matrix, risk_free_rate):
+def negative_sharpe(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor):
     """Objective function for Max Sharpe Ratio"""
-    r, s, sharpe = calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate)
+    r, s, sharpe = calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     return -sharpe
 
-def portfolio_volatility(weights, mean_returns, cov_matrix, risk_free_rate):
+def portfolio_volatility(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor):
     """Objective function for Minimum Variance"""
-    r, s, sharpe = calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate)
+    r, s, sharpe = calculate_portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     return s
 
-def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0):
+def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252):
     """
     Run portfolio optimization based on the selected objective.
     """
@@ -44,10 +44,10 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     # Select objective function
     if objective == "sharpe":
         obj_fun = negative_sharpe
-        args = (mean_returns, cov_matrix, risk_free_rate)
+        args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     elif objective == "min_vol":
         obj_fun = portfolio_volatility
-        args = (mean_returns, cov_matrix, risk_free_rate)
+        args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     elif objective == "max_return":
         # For max return, we minimize negative return
         # This is a simplified version; usually requires a target risk constraint
@@ -55,11 +55,11 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
         # Better approach: Maximize return subject to volatility <= target_vol
         # For now, let's default to Sharpe if not fully specified
         obj_fun = negative_sharpe
-        args = (mean_returns, cov_matrix, risk_free_rate)
+        args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     else:
         # Default to Sharpe
         obj_fun = negative_sharpe
-        args = (mean_returns, cov_matrix, risk_free_rate)
+        args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
 
     # Run optimization
     result = minimize(obj_fun, initial_guess, args=args, method='SLSQP', bounds=bounds, constraints=constraints)
@@ -68,7 +68,7 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     optimal_weights = result.x
     
     # Calculate final metrics
-    opt_return, opt_vol, opt_sharpe = calculate_portfolio_performance(optimal_weights, mean_returns, cov_matrix, risk_free_rate)
+    opt_return, opt_vol, opt_sharpe = calculate_portfolio_performance(optimal_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor)
 
     return {
         "weights": dict(zip(tickers, optimal_weights)),

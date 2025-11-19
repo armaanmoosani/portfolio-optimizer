@@ -1,8 +1,7 @@
-"use client";
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, Shield, Target, PieChart, Sliders, Info, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, Shield, Target, PieChart, Sliders, Info, Calendar, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useToast } from "@/components/Toast";
 
 const optimizationMethods = [
     {
@@ -13,52 +12,122 @@ const optimizationMethods = [
         detail: "Optimizes for the highest return per unit of risk taken. Best for balanced growth."
     },
     {
-        id: "min-variance",
+        id: "min_vol",
         name: "Minimum Volatility",
         description: "Minimize portfolio risk",
         icon: Shield,
         detail: "Seeks the lowest possible portfolio risk. Ideal for conservative investors."
     },
     {
-        id: "max-return",
-        name: "Max Return for Given Risk",
-        description: "Maximize returns with risk constraint",
+        id: "max_return",
+        name: "Max Return",
+        description: "Maximize total returns",
         icon: Target,
-        detail: "Maximizes expected returns subject to a specified risk tolerance level."
-    },
-    {
-        id: "risk-parity",
-        name: "Risk Parity",
-        description: "Equal risk contribution per asset",
-        icon: PieChart,
-        detail: "Balances risk across all assets so each contributes equally to portfolio risk."
-    },
-    {
-        id: "custom",
-        name: "Custom Risk/Return Target",
-        description: "Specify target return and risk",
-        icon: Sliders,
-        detail: "Set specific return and volatility targets for a customized portfolio."
+        detail: "Maximizes expected returns regardless of risk. Aggressive strategy."
     }
 ];
 
-export default function OptimizationPanel() {
+export default function OptimizationPanel({ assets = [], onOptimizationComplete }) {
+    const { showToast } = useToast();
     const [selectedMethod, setSelectedMethod] = useState("sharpe");
     const [tooltipVisible, setTooltipVisible] = useState(null);
     const [showAdvanced, setShowAdvanced] = useState(false);
+    const [isOptimizing, setIsOptimizing] = useState(false);
 
     // Configuration state
     const [startYear, setStartYear] = useState("2020");
     const [endYear, setEndYear] = useState("2024");
     const [frequency, setFrequency] = useState("daily");
     const [strategyType, setStrategyType] = useState("long-only");
-    const [benchmark, setBenchmark] = useState("");
+    const [benchmark, setBenchmark] = useState("SPY");
     const [startingValue, setStartingValue] = useState("10000");
     const [minWeight, setMinWeight] = useState("0");
     const [maxWeight, setMaxWeight] = useState("100");
 
     // Generate years array from 1985 to 2025
     const years = Array.from({ length: 2025 - 1985 + 1 }, (_, i) => 1985 + i);
+
+    const handleOptimize = async () => {
+        if (assets.length < 2) {
+            showToast("Please add at least 2 assets to optimize", "warning");
+            return;
+        }
+
+        if (parseInt(startYear) >= parseInt(endYear)) {
+            showToast("Start year must be before end year", "error");
+            return;
+        }
+
+        setIsOptimizing(true);
+
+        try {
+            const payload = {
+                tickers: assets.map(a => a.symbol),
+                start_date: `${startYear}-01-01`,
+                end_date: `${endYear}-12-31`,
+                objective: selectedMethod,
+                initial_capital: parseFloat(startingValue),
+                benchmark: benchmark || "SPY",
+                min_weight: parseFloat(minWeight) / 100,
+                max_weight: parseFloat(maxWeight) / 100,
+                frequency: frequency
+            };
+
+            const response = await fetch('/api/optimize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Optimization failed');
+            }
+
+            const data = await response.json();
+
+            // Transform backend data to frontend format
+            const results = {
+                metrics: {
+                    expectedReturn: data.backtest.metrics.annualized_return * 100,
+                    volatility: data.backtest.metrics.annualized_volatility * 100,
+                    sharpeRatio: data.backtest.metrics.sharpe_ratio,
+                    sortinoRatio: data.backtest.metrics.sortino_ratio,
+                    maxDrawdown: data.backtest.metrics.max_drawdown * 100,
+                    alpha: data.backtest.metrics.alpha * 100,
+                    beta: data.backtest.metrics.beta
+                },
+                weights: Object.entries(data.optimization.weights).map(([symbol, weight], index) => ({
+                    asset: symbol,
+                    weight: weight * 100,
+                    color: ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#6366f1'][index % 7]
+                })).sort((a, b) => b.weight - a.weight),
+                performance: data.backtest.chart_data.map(d => ({
+                    date: d.date,
+                    value: d.value
+                })),
+                drawdown: data.backtest.chart_data.map(d => ({
+                    date: d.date,
+                    drawdown: d.drawdown
+                })),
+                rollingMetrics: [], // Can be implemented later if backend provides it
+                efficientFrontier: [], // Can be implemented later
+                correlation: [], // Can be implemented later
+                assets: assets.map(a => a.symbol)
+            };
+
+            onOptimizationComplete(results);
+            showToast("Portfolio optimized successfully!", "success");
+
+        } catch (error) {
+            console.error("Optimization error:", error);
+            showToast(error.message || "Failed to optimize portfolio", "error");
+        } finally {
+            setIsOptimizing(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -132,7 +201,10 @@ export default function OptimizationPanel() {
                 <label className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Strategy Type</label>
                 <div className="grid grid-cols-2 gap-2">
                     <button
-                        onClick={() => setStrategyType("long-only")}
+                        onClick={() => {
+                            setStrategyType("long-only");
+                            setMinWeight("0");
+                        }}
                         className={`py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${strategyType === "long-only"
                             ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
                             : "bg-slate-800/50 text-slate-400 border border-slate-700 hover:border-slate-600"
@@ -141,7 +213,10 @@ export default function OptimizationPanel() {
                         Long Only
                     </button>
                     <button
-                        onClick={() => setStrategyType("long-short")}
+                        onClick={() => {
+                            setStrategyType("long-short");
+                            setMinWeight("-100");
+                        }}
                         className={`py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${strategyType === "long-short"
                             ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30"
                             : "bg-slate-800/50 text-slate-400 border border-slate-700 hover:border-slate-600"
@@ -310,8 +385,22 @@ export default function OptimizationPanel() {
             </div>
 
             {/* Optimize Button */}
-            <button className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-200 transform hover:scale-[1.02]">
-                Optimize Portfolio
+            <button
+                onClick={handleOptimize}
+                disabled={isOptimizing || assets.length < 2}
+                className={`w-full py-4 rounded-xl font-semibold shadow-lg transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center gap-2 ${isOptimizing || assets.length < 2
+                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-none hover:scale-100'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/30 hover:shadow-blue-500/50'
+                    }`}
+            >
+                {isOptimizing ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Optimizing...
+                    </>
+                ) : (
+                    "Optimize Portfolio"
+                )}
             </button>
 
             {/* Info Note */}

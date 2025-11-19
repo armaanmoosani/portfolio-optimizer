@@ -195,7 +195,8 @@ export default function PortfolioResults({ data = mockData }) {
                                     dataKey="date"
                                     stroke="#94a3b8"
                                     tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                    interval={50}
+                                    interval="preserveStartEnd"
+                                    minTickGap={50}
                                 />
                                 <YAxis
                                     stroke="#94a3b8"
@@ -233,7 +234,8 @@ export default function PortfolioResults({ data = mockData }) {
                                     dataKey="date"
                                     stroke="#94a3b8"
                                     tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                    interval={50}
+                                    interval="preserveStartEnd"
+                                    minTickGap={50}
                                 />
                                 <YAxis
                                     stroke="#94a3b8"
@@ -255,138 +257,144 @@ export default function PortfolioResults({ data = mockData }) {
                 </div>
             </div>
 
-            {/* Rolling Metrics */}
-            <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                <h3 className="text-xl font-bold text-white mb-6">Rolling 30-Day Metrics</h3>
-                <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={data.rollingMetrics}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#94a3b8"
-                                tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                interval={40}
-                            />
-                            <YAxis
-                                yAxisId="left"
-                                stroke="#8b5cf6"
-                                tick={{ fill: '#8b5cf6' }}
-                            />
-                            <YAxis
-                                yAxisId="right"
-                                orientation="right"
-                                stroke="#10b981"
-                                tick={{ fill: '#10b981' }}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Line
-                                yAxisId="left"
-                                type="monotone"
-                                dataKey="volatility"
-                                stroke="#8b5cf6"
-                                strokeWidth={2}
-                                dot={false}
-                                name="Volatility"
-                            />
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey="sharpe"
-                                stroke="#10b981"
-                                strokeWidth={2}
-                                dot={false}
-                                name="Sharpe Ratio"
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Efficient Frontier */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-900/20 to-slate-900/20 border border-purple-500/20 backdrop-blur-md">
-                <h3 className="text-xl font-bold text-white mb-6">Efficient Frontier</h3>
-                <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                            <XAxis
-                                type="number"
-                                dataKey="risk"
-                                name="Risk"
-                                stroke="#94a3b8"
-                                tick={{ fill: '#94a3b8' }}
-                                label={{ value: 'Risk (Volatility)', position: 'bottom', fill: '#94a3b8' }}
-                                tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
-                            />
-                            <YAxis
-                                type="number"
-                                dataKey="return"
-                                name="Return"
-                                stroke="#94a3b8"
-                                tick={{ fill: '#94a3b8' }}
-                                label={{ value: 'Expected Return', angle: -90, position: 'left', fill: '#94a3b8' }}
-                                tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Scatter
-                                data={data.efficientFrontier}
-                                fill="#a855f7"
-                                line={{ stroke: '#a855f7', strokeWidth: 2 }}
-                            />
-                            <Scatter
-                                data={[{ risk: 0.185, return: 0.142 }]}
-                                fill="#10b981"
-                                shape="star"
-                                name="Optimal Portfolio"
-                            />
-                        </ScatterChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Correlation Heatmap */}
-            <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
-                <h3 className="text-xl font-bold text-white mb-6">Asset Correlation Matrix</h3>
-                <div className="overflow-x-auto">
-                    <div className="inline-grid gap-1" style={{ gridTemplateColumns: `auto repeat(${data.assets.length}, 1fr)` }}>
-                        {/* Header row */}
-                        <div></div>
-                        {data.assets.map((asset, i) => (
-                            <div key={i} className="p-2 text-center text-sm font-medium text-slate-400">
-                                {asset}
-                            </div>
-                        ))}
-
-                        {/* Data rows */}
-                        {data.correlation.map((row, i) => (
-                            <>
-                                <div key={`label-${i}`} className="p-2 text-sm font-medium text-slate-400">
-                                    {data.assets[i]}
-                                </div>
-                                {row.map((value, j) => {
-                                    const hue = value >= 0 ? 142 : 0; // Green for positive, red for negative
-                                    const saturation = Math.abs(value) * 100;
-                                    const lightness = 50 + (1 - Math.abs(value)) * 20;
-                                    return (
-                                        <div
-                                            key={j}
-                                            className="p-4 rounded text-center text-sm font-medium transition-transform hover:scale-110"
-                                            style={{
-                                                backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-                                                color: Math.abs(value) > 0.5 ? '#ffffff' : '#1e293b'
-                                            }}
-                                        >
-                                            {value.toFixed(2)}
-                                        </div>
-                                    );
-                                })}
-                            </>
-                        ))}
+            {/* Rolling Metrics - Only show if data exists */}
+            {data.rollingMetrics && data.rollingMetrics.length > 0 && (
+                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
+                    <h3 className="text-xl font-bold text-white mb-6">Rolling 30-Day Metrics</h3>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={data.rollingMetrics}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="#94a3b8"
+                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                    interval={40}
+                                />
+                                <YAxis
+                                    yAxisId="left"
+                                    stroke="#8b5cf6"
+                                    tick={{ fill: '#8b5cf6' }}
+                                />
+                                <YAxis
+                                    yAxisId="right"
+                                    orientation="right"
+                                    stroke="#10b981"
+                                    tick={{ fill: '#10b981' }}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend />
+                                <Line
+                                    yAxisId="left"
+                                    type="monotone"
+                                    dataKey="volatility"
+                                    stroke="#8b5cf6"
+                                    strokeWidth={2}
+                                    dot={false}
+                                    name="Volatility"
+                                />
+                                <Line
+                                    yAxisId="right"
+                                    type="monotone"
+                                    dataKey="sharpe"
+                                    stroke="#10b981"
+                                    strokeWidth={2}
+                                    dot={false}
+                                    name="Sharpe Ratio"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* Efficient Frontier - Only show if data exists */}
+            {data.efficientFrontier && data.efficientFrontier.length > 0 && (
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-900/20 to-slate-900/20 border border-purple-500/20 backdrop-blur-md">
+                    <h3 className="text-xl font-bold text-white mb-6">Efficient Frontier</h3>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis
+                                    type="number"
+                                    dataKey="risk"
+                                    name="Risk"
+                                    stroke="#94a3b8"
+                                    tick={{ fill: '#94a3b8' }}
+                                    label={{ value: 'Risk (Volatility)', position: 'bottom', fill: '#94a3b8' }}
+                                    tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
+                                />
+                                <YAxis
+                                    type="number"
+                                    dataKey="return"
+                                    name="Return"
+                                    stroke="#94a3b8"
+                                    tick={{ fill: '#94a3b8' }}
+                                    label={{ value: 'Expected Return', angle: -90, position: 'left', fill: '#94a3b8' }}
+                                    tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Scatter
+                                    data={data.efficientFrontier}
+                                    fill="#a855f7"
+                                    line={{ stroke: '#a855f7', strokeWidth: 2 }}
+                                />
+                                <Scatter
+                                    data={[{ risk: data.metrics.volatility / 100, return: data.metrics.expectedReturn / 100 }]}
+                                    fill="#10b981"
+                                    shape="star"
+                                    name="Optimal Portfolio"
+                                />
+                            </ScatterChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
+
+            {/* Correlation Heatmap - Only show if data exists */}
+            {data.correlation && data.correlation.length > 0 && (
+                <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md">
+                    <h3 className="text-xl font-bold text-white mb-6">Asset Correlation Matrix</h3>
+                    <div className="overflow-x-auto">
+                        <div className="inline-grid gap-1" style={{ gridTemplateColumns: `auto repeat(${data.assets.length}, 1fr)` }}>
+                            {/* Header row */}
+                            <div></div>
+                            {data.assets.map((asset, i) => (
+                                <div key={i} className="p-2 text-center text-sm font-medium text-slate-400">
+                                    {asset}
+                                </div>
+                            ))}
+
+                            {/* Data rows */}
+                            {data.correlation.map((row, i) => (
+                                <React.Fragment key={`row-${i}`}>
+                                    <div className="p-2 text-sm font-medium text-slate-400">
+                                        {data.assets[i]}
+                                    </div>
+                                    {row.map((value, j) => {
+                                        const hue = value >= 0 ? 142 : 0; // Green for positive, red for negative
+                                        const saturation = Math.abs(value) * 100;
+                                        const lightness = 50 + (1 - Math.abs(value)) * 20;
+                                        return (
+                                            <div
+                                                key={j}
+                                                className="p-4 rounded text-center text-sm font-medium transition-transform hover:scale-110"
+                                                style={{
+                                                    backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+                                                    color: Math.abs(value) > 0.5 ? '#ffffff' : '#1e293b'
+                                                }}
+                                            >
+                                                {value.toFixed(2)}
+                                            </div>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

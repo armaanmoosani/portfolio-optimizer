@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series = None, initial_capital: float = 10000.0):
+def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series = None, initial_capital: float = 10000.0, risk_free_rate: float = 0.045, annualization_factor: int = 252):
     """
     Run a historical backtest of the optimized portfolio.
     """
@@ -34,22 +34,20 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
     if days < 1:
         return {"metrics": {}, "chart_data": []}
         
-    years = days / 252
+    years = days / annualization_factor
     annualized_return = (1 + total_return) ** (1 / years) - 1 if years > 0 else 0
     
     daily_volatility = portfolio_returns.std()
-    annualized_volatility = daily_volatility * np.sqrt(252)
+    annualized_volatility = daily_volatility * np.sqrt(annualization_factor)
     
-    # Sharpe Ratio (assuming constant risk-free rate for backtest simplification)
-    # Industry standard often uses 0 or a fixed rate for simple backtests if historical RF not available
-    rf_rate = 0.045 
-    sharpe_ratio = (annualized_return - rf_rate) / annualized_volatility if annualized_volatility != 0 else 0
+    # Sharpe Ratio
+    sharpe_ratio = (annualized_return - risk_free_rate) / annualized_volatility if annualized_volatility != 0 else 0
     
     # Sortino Ratio
     # Only penalize negative returns (downside deviation)
     negative_returns = portfolio_returns[portfolio_returns < 0]
-    downside_deviation = negative_returns.std() * np.sqrt(252)
-    sortino_ratio = (annualized_return - rf_rate) / downside_deviation if downside_deviation != 0 else 0
+    downside_deviation = negative_returns.std() * np.sqrt(annualization_factor)
+    sortino_ratio = (annualized_return - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
     
     # Benchmark comparison (if provided)
     beta = 0
@@ -70,8 +68,8 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             # Calculate Alpha (Jensen's Alpha)
             # Alpha = R_p - (R_f + Beta * (R_m - R_f))
             bench_total_ret = (1 + bench_rets_aligned).cumprod().iloc[-1] - 1
-            bench_ann_ret = (1 + bench_total_ret) ** (252 / len(bench_rets_aligned)) - 1
-            alpha = annualized_return - (rf_rate + beta * (bench_ann_ret - rf_rate))
+            bench_ann_ret = (1 + bench_total_ret) ** (annualization_factor / len(bench_rets_aligned)) - 1
+            alpha = annualized_return - (risk_free_rate + beta * (bench_ann_ret - risk_free_rate))
 
     # Prepare chart data
     chart_data = []

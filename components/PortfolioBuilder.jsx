@@ -4,12 +4,11 @@ import { useState } from "react";
 import { Search, X, PlusCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function PortfolioBuilder() {
+export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) {
     const [ticker, setTicker] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
-    const [assets, setAssets] = useState([]);
 
     const handleInputChange = async (e) => {
         const value = e.target.value.toUpperCase();
@@ -34,25 +33,19 @@ export default function PortfolioBuilder() {
         }
     };
 
-    const handleAddAsset = (symbol, description) => {
-        if (!assets.find(asset => asset.symbol === symbol)) {
-            setAssets([...assets, { symbol, description, weight: 0 }]);
-        }
+    const handleAdd = (symbol, description) => {
+        onAddAsset(symbol, description);
         setTicker("");
         setSuggestions([]);
         setShowSuggestions(false);
         setSelectedIndex(-1);
     };
 
-    const handleRemoveAsset = (symbol) => {
-        setAssets(assets.filter(asset => asset.symbol !== symbol));
-    };
-
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
             if (selectedIndex >= 0 && suggestions[selectedIndex]) {
-                handleAddAsset(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
+                handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -96,7 +89,7 @@ export default function PortfolioBuilder() {
                         {suggestions.slice(0, 6).map((item, index) => (
                             <li
                                 key={index}
-                                onClick={() => handleAddAsset(item.symbol, item.description)}
+                                onClick={() => handleAdd(item.symbol, item.description)}
                                 className={`px-4 py-3 cursor-pointer transition-colors border-b border-slate-700/50 last:border-none ${index === selectedIndex ? 'bg-slate-700' : 'hover:bg-slate-700'
                                     }`}
                             >
@@ -175,7 +168,7 @@ export default function PortfolioBuilder() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => handleRemoveAsset(asset.symbol)}
+                                    onClick={() => onRemoveAsset(asset.symbol)}
                                     className="ml-4 p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
                                     aria-label={`Remove ${asset.symbol}`}
                                 >

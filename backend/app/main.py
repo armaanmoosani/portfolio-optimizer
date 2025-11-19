@@ -34,6 +34,9 @@ class PortfolioRequest(BaseModel):
     objective: str = "sharpe"  # sharpe, min_vol, max_return
     initial_capital: float = 10000.0
     benchmark: str = "SPY"
+    min_weight: float = 0.0
+    max_weight: float = 1.0
+    frequency: str = "daily"  # daily, monthly
 
 @app.get("/")
 def read_root():
@@ -46,9 +49,17 @@ def health_check():
 @app.post("/api/optimize")
 async def optimize(request: PortfolioRequest):
     try:
+        # Determine interval and annualization factor
+        interval = "1d"
+        annualization_factor = 252
+        
+        if request.frequency == "monthly":
+            interval = "1mo"
+            annualization_factor = 12
+
         # 1. Fetch Data
-        print(f"Fetching data for {request.tickers} from {request.start_date} to {request.end_date}")
-        prices = fetch_historical_data(request.tickers, request.start_date, request.end_date)
+        print(f"Fetching data for {request.tickers} from {request.start_date} to {request.end_date} ({request.frequency})")
+        prices = fetch_historical_data(request.tickers, request.start_date, request.end_date, interval=interval)
         
         if prices.empty:
             raise HTTPException(status_code=400, detail="No data found for the provided tickers and date range.")
@@ -58,7 +69,14 @@ async def optimize(request: PortfolioRequest):
         
         # 3. Run Optimization
         print(f"Running optimization with objective: {request.objective}")
-        optimization_result = optimize_portfolio(prices, objective=request.objective, risk_free_rate=rf_rate)
+        optimization_result = optimize_portfolio(
+            prices, 
+            objective=request.objective, 
+            risk_free_rate=rf_rate,
+            min_weight=request.min_weight,
+            max_weight=request.max_weight,
+            annualization_factor=annualization_factor
+        )
         
         if not optimization_result["success"]:
             raise HTTPException(status_code=500, detail=f"Optimization failed: {optimization_result['message']}")
@@ -70,7 +88,9 @@ async def optimize(request: PortfolioRequest):
             prices, 
             optimization_result["weights"], 
             benchmark_data=benchmark_data, 
-            initial_capital=request.initial_capital
+            initial_capital=request.initial_capital,
+            risk_free_rate=rf_rate,
+            annualization_factor=annualization_factor
         )
         
         return {

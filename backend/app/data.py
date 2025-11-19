@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, interval: str = "1d") -> pd.DataFrame:
     """
     Fetch historical adjusted close prices for the given tickers.
     """
@@ -11,7 +11,7 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
         # Download data
         # group_by='ticker' ensures we get a MultiIndex if multiple tickers, or we handle it
         # auto_adjust=True gets us the adjusted close directly usually, but 'Adj Close' is explicit
-        data = yf.download(tickers, start=start_date, end=end_date, progress=False)['Adj Close']
+        data = yf.download(tickers, start=start_date, end=end_date, interval=interval, progress=False)['Adj Close']
         
         # Handle single ticker case (returns Series instead of DataFrame)
         if isinstance(data, pd.Series):
