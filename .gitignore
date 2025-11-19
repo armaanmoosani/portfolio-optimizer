@@ -41,3 +41,17 @@ yarn-error.log*
 next-env.d.ts
 tsconfig.json
 .vscode/settings.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+backend/venv/
+*.egg-info/
+dist/
+build/

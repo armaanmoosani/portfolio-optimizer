@@ -1,0 +1,94 @@
+import sys
+import os
+
+# Add current directory to path to ensure imports work correctly in all environments (Vercel vs Local)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
+import pandas as pd
+from datetime import datetime
+
+# Use absolute imports now that path is fixed
+from data import fetch_historical_data, fetch_benchmark_data, get_risk_free_rate
+from optimizer import optimize_portfolio
+from backtester import run_backtest
+
+app = FastAPI(title="Portfolio Optimizer API")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class PortfolioRequest(BaseModel):
+    tickers: List[str]
+    start_date: str
+    end_date: str
+    objective: str = "sharpe"  # sharpe, min_vol, max_return
+    initial_capital: float = 10000.0
+    benchmark: str = "SPY"
+
+@app.get("/")
+def read_root():
+    return {"status": "online", "message": "Portfolio Optimizer API is running"}
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "healthy"}
+
+@app.post("/api/optimize")
+async def optimize(request: PortfolioRequest):
+    try:
+        # 1. Fetch Data
+        print(f"Fetching data for {request.tickers} from {request.start_date} to {request.end_date}")
+        prices = fetch_historical_data(request.tickers, request.start_date, request.end_date)
+        
+        if prices.empty:
+            raise HTTPException(status_code=400, detail="No data found for the provided tickers and date range.")
+
+        # 2. Get Risk Free Rate
+        rf_rate = get_risk_free_rate()
+        
+        # 3. Run Optimization
+        print(f"Running optimization with objective: {request.objective}")
+        optimization_result = optimize_portfolio(prices, objective=request.objective, risk_free_rate=rf_rate)
+        
+        if not optimization_result["success"]:
+            raise HTTPException(status_code=500, detail=f"Optimization failed: {optimization_result['message']}")
+            
+        # 4. Run Backtest
+        print("Running backtest...")
+        benchmark_data = fetch_benchmark_data(request.start_date, request.end_date, request.benchmark)
+        backtest_result = run_backtest(
+            prices, 
+            optimization_result["weights"], 
+            benchmark_data=benchmark_data, 
+            initial_capital=request.initial_capital
+        )
+        
+        return {
+            "optimization": optimization_result,
+            "backtest": backtest_result,
+            "parameters": {
+                "risk_free_rate": rf_rate,
+                "tickers": request.tickers,
+                "period": f"{request.start_date} to {request.end_date}"
+            }
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Internal Server Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
