@@ -10,13 +10,24 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
     try:
         # Download data
         # group_by='ticker' ensures we get a MultiIndex if multiple tickers, or we handle it
-        # auto_adjust=True gets us the adjusted close directly usually, but 'Adj Close' is explicit
-        data = yf.download(tickers, start=start_date, end=end_date, interval=interval, progress=False)['Adj Close']
+        raw_data = yf.download(tickers, start=start_date, end=end_date, interval=interval, progress=False)
+        
+        if raw_data.empty:
+            raise ValueError("No data found for the provided tickers and date range.")
+
+        # Handle 'Adj Close' vs 'Close'
+        if 'Adj Close' in raw_data.columns:
+            data = raw_data['Adj Close']
+        elif 'Close' in raw_data.columns:
+            data = raw_data['Close']
+        else:
+            raise ValueError("Could not find 'Adj Close' or 'Close' price data.")
         
         # Handle single ticker case (returns Series instead of DataFrame)
         if isinstance(data, pd.Series):
             data = data.to_frame()
-            data.columns = tickers
+            if len(tickers) == 1:
+                data.columns = tickers
             
         # Ensure index is datetime and remove timezone if present
         data.index = pd.to_datetime(data.index)
@@ -32,7 +43,7 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         data = data.dropna()
         
         if data.empty:
-            raise ValueError("No data available for the selected tickers and date range.")
+            raise ValueError("No data available after cleaning.")
             
         return data
     except Exception as e:
@@ -43,8 +54,20 @@ def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str =
     Fetch historical data for the benchmark (default SPY).
     """
     try:
-        data = yf.download(benchmark_ticker, start=start_date, end=end_date, progress=False)['Adj Close']
+    try:
+        raw_data = yf.download(benchmark_ticker, start=start_date, end=end_date, progress=False)
         
+        if 'Adj Close' in raw_data.columns:
+            data = raw_data['Adj Close']
+        elif 'Close' in raw_data.columns:
+            data = raw_data['Close']
+        else:
+            return pd.Series()
+        
+        # Ensure we have a Series
+        if isinstance(data, pd.DataFrame):
+            data = data.iloc[:, 0]
+            
         # Ensure index is datetime and remove timezone
         data.index = pd.to_datetime(data.index)
         if data.index.tz is not None:
