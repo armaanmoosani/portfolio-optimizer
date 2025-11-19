@@ -7,6 +7,7 @@ export default function StockViewer() {
     const [ticker, setTicker] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
     const [loading, setLoading] = useState(false);
     const [stockData, setStockData] = useState(null);
     const [news, setNews] = useState([]);
@@ -16,6 +17,7 @@ export default function StockViewer() {
     const handleInputChange = async (e) => {
         const value = e.target.value.toUpperCase();
         setTicker(value);
+        setSelectedIndex(-1);
 
         if (!value) {
             setSuggestions([]);
@@ -39,11 +41,29 @@ export default function StockViewer() {
         setTicker(symbol);
         setSuggestions([]);
         setShowSuggestions(false);
-        // Trigger search immediately after selection (optional, but good UX)
-        // We need to wrap handleSearch call or use a useEffect, but calling it directly here requires passing the symbol
-        // For now, just set ticker. The user can click search. 
-        // Actually, let's trigger it.
+        setSelectedIndex(-1);
         handleSearch(symbol);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+                handleSuggestionClick(suggestions[selectedIndex].symbol);
+            } else {
+                handleSearch();
+            }
+        } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (showSuggestions && suggestions.length > 0) {
+                setSelectedIndex(prev => (prev + 1) % Math.min(suggestions.length, 6));
+            }
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (showSuggestions && suggestions.length > 0) {
+                setSelectedIndex(prev => (prev - 1 + Math.min(suggestions.length, 6)) % Math.min(suggestions.length, 6));
+            }
+        }
     };
 
     // Modified to accept an optional overrideTicker
@@ -57,6 +77,7 @@ export default function StockViewer() {
         setNews([]);
         setAiSummary("");
         setShowSuggestions(false); // Hide suggestions if open
+        setSelectedIndex(-1);
 
         try {
             // Fetch Metadata
@@ -147,7 +168,7 @@ ${aggregatedNews.slice(0, 15000)}
                         type="text"
                         value={ticker}
                         onChange={handleInputChange}
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        onKeyDown={handleKeyDown}
                         onFocus={() => ticker && setShowSuggestions(true)}
                         placeholder="Enter ticker symbol (e.g. AAPL)..."
                         className="w-full px-6 py-4 rounded-full bg-slate-800/50 border border-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-lg backdrop-blur-sm"
@@ -166,7 +187,7 @@ ${aggregatedNews.slice(0, 15000)}
                                 <li
                                     key={index}
                                     onClick={() => handleSuggestionClick(item.symbol)}
-                                    className="px-4 py-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700/50 last:border-none"
+                                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-slate-700/50 last:border-none ${index === selectedIndex ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
                                 >
                                     <div className="font-bold text-white">{item.symbol}</div>
                                     <div className="text-xs text-slate-400 truncate">{item.description}</div>
@@ -191,7 +212,7 @@ ${aggregatedNews.slice(0, 15000)}
                         <div className="flex justify-between items-start mb-4">
                             <div>
                                 <h2 className="text-3xl font-bold text-white">{stockData.name}</h2>
-                                <p className="text-slate-400 mt-1 line-clamp-2">{stockData.description}</p>
+                                <p className="text-slate-400 mt-1">{stockData.description}</p>
                             </div>
                             <div className="text-right">
                                 <div className="text-3xl font-mono font-bold text-white">

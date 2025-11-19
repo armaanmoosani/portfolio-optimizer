@@ -23,6 +23,24 @@ export default function NavBar() {
         }
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            const currentIndex = tabs.findIndex(tab => tab.href === pathname);
+            if (currentIndex === -1) return;
+
+            if (e.key === "ArrowRight") {
+                const nextIndex = (currentIndex + 1) % tabs.length;
+                router.push(tabs[nextIndex].href);
+            } else if (e.key === "ArrowLeft") {
+                const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                router.push(tabs[prevIndex].href);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [pathname, router]);
+
     const activeTab = tabs.find((tab) => tab.href === pathname)?.id || "home";
 
     return (
