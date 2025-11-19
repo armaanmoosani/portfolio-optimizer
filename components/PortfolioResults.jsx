@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, Shield, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,7 +56,7 @@ export default function PortfolioResults({ data }) {
     if (!data) return null;
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700" data-internal-navigation>
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -400,26 +400,109 @@ export default function PortfolioResults({ data }) {
                             transition={{ duration: 0.3 }}
                             className="space-y-6"
                         >
-                            {/* Asset Allocation */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="rounded-xl border border-slate-700/50 overflow-hidden">
-                                    <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
-                                        <h3 className="font-semibold text-white">Asset Allocation</h3>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="space-y-3">
+                            {/* Asset Allocation - Pie Chart (First) */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Asset Allocation</h3>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                        {/* Pie Chart */}
+                                        <div className="h-[350px] flex items-center justify-center">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <defs>
+                                                        {data.weights.map((item, index) => (
+                                                            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor={item.color} stopOpacity={1} />
+                                                                <stop offset="100%" stopColor={item.color} stopOpacity={0.7} />
+                                                            </linearGradient>
+                                                        ))}
+                                                    </defs>
+                                                    <Pie
+                                                        data={data.weights}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        labelLine={{
+                                                            stroke: '#64748b',
+                                                            strokeWidth: 1
+                                                        }}
+                                                        label={({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
+                                                        outerRadius={120}
+                                                        innerRadius={60}
+                                                        paddingAngle={2}
+                                                        dataKey="weight"
+                                                        animationBegin={0}
+                                                        animationDuration={800}
+                                                    >
+                                                        {data.weights.map((entry, index) => (
+                                                            <Cell
+                                                                key={`cell-${index}`}
+                                                                fill={`url(#gradient-${index})`}
+                                                                stroke="#1e293b"
+                                                                strokeWidth={2}
+                                                                className="transition-all hover:opacity-80 cursor-pointer"
+                                                            />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip
+                                                        content={({ active, payload }) => {
+                                                            if (active && payload && payload.length) {
+                                                                const data = payload[0].payload;
+                                                                return (
+                                                                    <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: data.color }} />
+                                                                            <p className="text-white font-semibold">{data.asset}</p>
+                                                                        </div>
+                                                                        <p className="text-blue-400 font-mono text-lg">{data.weight.toFixed(2)}%</p>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        }}
+                                                    />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        {/* Legend/List */}
+                                        <div className="space-y-2">
                                             {data.weights.map((item, index) => (
-                                                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 transition-all group"
+                                                >
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                                        <div
+                                                            className="w-4 h-4 rounded-full ring-2 ring-slate-700 group-hover:ring-slate-500 transition-all"
+                                                            style={{ backgroundColor: item.color }}
+                                                        />
                                                         <span className="font-medium text-white">{item.asset}</span>
                                                     </div>
-                                                    <span className="font-mono font-bold text-blue-400">{item.weight.toFixed(2)}%</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-32 h-2 bg-slate-800 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full rounded-full transition-all duration-500"
+                                                                style={{
+                                                                    width: `${item.weight}%`,
+                                                                    backgroundColor: item.color
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <span className="font-mono font-bold text-blue-400 w-16 text-right">
+                                                            {item.weight.toFixed(2)}%
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Grid for Correlation Matrix and Asset Stats */}
+                            <div className="grid grid-cols-1 gap-6">
 
                                 {/* Correlation Matrix */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
@@ -503,6 +586,6 @@ export default function PortfolioResults({ data }) {
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </div >
     );
 }

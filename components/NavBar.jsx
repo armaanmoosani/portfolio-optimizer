@@ -23,18 +23,32 @@ export default function NavBar() {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === "ArrowLeft") {
-                const newIndex = (activeIndex - 1 + tabs.length) % tabs.length;
-                router.push(tabs[newIndex].path);
-            } else if (e.key === "ArrowRight") {
-                const newIndex = (activeIndex + 1) % tabs.length;
-                router.push(tabs[newIndex].path);
+            // Prevent navigation if user is typing or interacting with focused elements
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) {
+                return;
+            }
+
+            // Prevent navigation if inside a component with its own tab/navigation system
+            if (e.target.closest('[data-internal-navigation]')) {
+                return;
+            }
+
+            if (e.key === 'ArrowLeft') {
+                const currentIndex = tabs.findIndex(tab => pathname === tab.path);
+                if (currentIndex > 0) {
+                    router.push(tabs[currentIndex - 1].path);
+                }
+            } else if (e.key === 'ArrowRight') {
+                const currentIndex = tabs.findIndex(tab => pathname === tab.path);
+                if (currentIndex < tabs.length - 1) {
+                    router.push(tabs[currentIndex + 1].path);
+                }
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [activeIndex, router]);
+    }, [activeIndex, router, pathname]);
 
     // Close mobile menu on route change
     useEffect(() => {
