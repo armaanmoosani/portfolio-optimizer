@@ -72,24 +72,25 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             alpha = annualized_return - (risk_free_rate + beta * (bench_ann_ret - risk_free_rate))
 
     # Prepare chart data
+    # Prepare chart data
     chart_data = []
     for date, value in portfolio_value.items():
         chart_data.append({
             "date": date.strftime("%Y-%m-%d"),
-            "value": round(value, 2),
-            "drawdown": round(drawdown.loc[date] * 100, 2)
+            "value": float(round(value, 2)),
+            "drawdown": float(round(drawdown.loc[date] * 100, 2))
         })
 
     return {
         "metrics": {
-            "total_return": total_return,
-            "annualized_return": annualized_return,
-            "annualized_volatility": annualized_volatility,
-            "sharpe_ratio": sharpe_ratio,
-            "sortino_ratio": sortino_ratio,
-            "max_drawdown": max_drawdown,
-            "beta": beta,
-            "alpha": alpha
+            "total_return": float(total_return),
+            "annualized_return": float(annualized_return),
+            "annualized_volatility": float(annualized_volatility),
+            "sharpe_ratio": float(sharpe_ratio),
+            "sortino_ratio": float(sortino_ratio),
+            "max_drawdown": float(max_drawdown),
+            "beta": float(beta),
+            "alpha": float(alpha)
         },
         "chart_data": chart_data
     }

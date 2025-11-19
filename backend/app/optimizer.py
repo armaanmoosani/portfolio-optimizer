@@ -71,12 +71,12 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     opt_return, opt_vol, opt_sharpe = calculate_portfolio_performance(optimal_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor)
 
     return {
-        "weights": dict(zip(tickers, optimal_weights)),
+        "weights": {k: float(v) for k, v in zip(tickers, optimal_weights)},
         "metrics": {
-            "expected_return": opt_return,
-            "volatility": opt_vol,
-            "sharpe_ratio": opt_sharpe
+            "expected_return": float(opt_return),
+            "volatility": float(opt_vol),
+            "sharpe_ratio": float(opt_sharpe)
         },
-        "success": result.success,
-        "message": result.message
+        "success": bool(result.success),
+        "message": str(result.message)
     }
