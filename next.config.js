@@ -10,6 +10,9 @@ const nextConfig = {
             },
         ];
     },
+    experimental: {
+        optimizePackageImports: ['framer-motion'],
+    },
 };
 
 module.exports = nextConfig;
