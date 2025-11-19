@@ -11,8 +11,8 @@ export default function Home() {
             className="flex items-center justify-center min-h-screen"
         >
             <div className="text-center">
-                <h1 className="text-4xl font-bold text-white mb-4">Welcome to Portfolio Optimizer</h1>
-                <p className="text-slate-400">Navigate using the menu above to get started</p>
+                <h1 className="text-4xl font-bold text-white mb-4">Portfolio Optimizer</h1>
+                <p className="text-slate-400">Navigate using the menu above</p>
             </div>
         </motion.div>
     );

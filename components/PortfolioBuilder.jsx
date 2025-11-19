@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, X, Plus } from "lucide-react";
+import { Search, X, PlusCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function PortfolioBuilder() {
@@ -116,44 +116,75 @@ export default function PortfolioBuilder() {
                     </h3>
                 </div>
 
-                <AnimatePresence mode="popLayout">
-                    {assets.length === 0 ? (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="p-8 rounded-xl border border-dashed border-slate-700 text-center"
-                        >
-                            <Plus className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                            <p className="text-slate-500">No assets added yet</p>
-                            <p className="text-sm text-slate-600 mt-1">Search for tickers to build your portfolio</p>
-                        </motion.div>
-                    ) : (
-                        <div className="space-y-2">
-                            {assets.map((asset) => (
-                                <motion.div
-                                    key={asset.symbol}
-                                    layout
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, x: -100 }}
-                                    className="group flex items-center justify-between p-4 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-slate-600 transition-all"
-                                >
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-bold text-white">{asset.symbol}</div>
-                                        <div className="text-xs text-slate-400 truncate">{asset.description}</div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleRemoveAsset(asset.symbol)}
-                                        className="ml-4 p-2 rounded-lg bg-slate-700/50 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </motion.div>
-                            ))}
+                {/* Empty State or Assets */}
+                {assets.length === 0 ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-12 px-6"
+                    >
+                        <div className="inline-flex p-6 rounded-full bg-blue-500/10 mb-6">
+                            <PlusCircle className="w-12 h-12 text-blue-400" />
                         </div>
-                    )}
-                </AnimatePresence>
+                        <h3 className="text-xl font-bold text-white mb-3">Build Your Portfolio</h3>
+                        <p className="text-slate-400 mb-6 max-w-md mx-auto leading-relaxed">
+                            Start by searching for stocks above. Add at least 2 assets to begin optimization.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto text-left">
+                            <div className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5" />
+                                    <div>
+                                        <p className="text-sm font-medium text-white">Search by ticker</p>
+                                        <p className="text-xs text-slate-500 mt-1">Type AAPL, GOOGL, MSFT...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5" />
+                                    <div>
+                                        <p className="text-sm font-medium text-white">Use autocomplete</p>
+                                        <p className="text-xs text-slate-500 mt-1">Select from suggestions</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <AnimatePresence mode="popLayout">
+                        {assets.map((asset) => (
+                            <motion.div
+                                key={asset.symbol}
+                                layout
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, x: -100 }}
+                                transition={{ duration: 0.2 }}
+                                className="group flex items-center justify-between p-4 rounded-lg bg-slate-800/50 border border-slate-700/30 hover:border-slate-600 transition-all"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                                            <span className="text-white font-bold text-sm">{asset.symbol.charAt(0)}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-white">{asset.symbol}</div>
+                                            <div className="text-sm text-slate-400 truncate">{asset.description}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleRemoveAsset(asset.symbol)}
+                                    className="ml-4 p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                    aria-label={`Remove ${asset.symbol}`}
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                )}
             </div>
         </div>
     );

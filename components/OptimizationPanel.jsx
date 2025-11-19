@@ -48,14 +48,17 @@ export default function OptimizationPanel() {
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     // Configuration state
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [startYear, setStartYear] = useState("2020");
+    const [endYear, setEndYear] = useState("2024");
     const [frequency, setFrequency] = useState("daily");
     const [strategyType, setStrategyType] = useState("long-only");
     const [benchmark, setBenchmark] = useState("");
     const [startingValue, setStartingValue] = useState("10000");
     const [minWeight, setMinWeight] = useState("0");
     const [maxWeight, setMaxWeight] = useState("100");
+
+    // Generate years array from 1985 to 2025
+    const years = Array.from({ length: 2025 - 1985 + 1 }, (_, i) => 1985 + i);
 
     return (
         <div className="space-y-6">
@@ -65,7 +68,7 @@ export default function OptimizationPanel() {
                 <p className="text-slate-400">Set up your optimization parameters</p>
             </div>
 
-            {/* Date Range */}
+            {/* Year Range */}
             <div className="space-y-3">
                 <label className="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -73,22 +76,28 @@ export default function OptimizationPanel() {
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <label className="text-xs text-slate-500 mb-1.5 block">Start Date</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+                        <label className="text-xs text-slate-500 mb-1.5 block">Start Year</label>
+                        <select
+                            value={startYear}
+                            onChange={(e) => setStartYear(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2394a3b8%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.5em] bg-[center_right_0.5em] bg-no-repeat pr-10"
+                        >
+                            {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
-                        <label className="text-xs text-slate-500 mb-1.5 block">End Date</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+                        <label className="text-xs text-slate-500 mb-1.5 block">End Year</label>
+                        <select
+                            value={endYear}
+                            onChange={(e) => setEndYear(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2394a3b8%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1.5em] bg-[center_right_0.5em] bg-no-repeat pr-10"
+                        >
+                            {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>
