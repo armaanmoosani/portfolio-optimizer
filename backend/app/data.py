@@ -54,7 +54,6 @@ def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str =
     Fetch historical data for the benchmark (default SPY).
     """
     try:
-    try:
         raw_data = yf.download(benchmark_ticker, start=start_date, end=end_date, progress=False)
         
         if 'Adj Close' in raw_data.columns:
