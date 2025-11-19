@@ -11,4 +11,4 @@ backend/
 requirements.txt
 Dockerfile
 render.yaml
-api/
+
