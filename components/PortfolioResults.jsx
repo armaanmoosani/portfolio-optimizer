@@ -507,7 +507,7 @@ export default function PortfolioResults({ data }) {
                                         <h3 className="font-semibold text-white">Correlation Matrix</h3>
                                     </div>
                                     <div className="p-6 overflow-x-auto">
-                                        <div className="inline-grid gap-1" style={{ gridTemplateColumns: `auto repeat(${data.assets.length}, 1fr)` }}>
+                                        <div className="inline-grid gap-2" style={{ gridTemplateColumns: `auto repeat(${data.assets.length}, 1fr)` }}>
                                             <div></div>
                                             {data.assets.map((asset, i) => (
                                                 <div key={i} className="p-2 text-center text-xs font-bold text-slate-400">{asset}</div>
@@ -519,15 +519,15 @@ export default function PortfolioResults({ data }) {
                                                         const val = data.correlations?.[rowAsset]?.[colAsset] || 0;
                                                         const hue = val >= 0 ? 142 : 0;
                                                         const saturation = Math.abs(val) * 100;
-                                                        const lightness = 15 + (Math.abs(val) * 10); // Darker background
+                                                        const lightness = 15 + (Math.abs(val) * 10);
                                                         return (
                                                             <div
                                                                 key={j}
-                                                                className="w-10 h-10 flex items-center justify-center rounded text-[10px] font-mono transition-all hover:scale-110 cursor-default"
+                                                                className="w-16 h-16 flex items-center justify-center rounded text-xs font-mono font-semibold transition-all hover:scale-110 cursor-default"
                                                                 style={{
-                                                                    backgroundColor: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.3)`,
+                                                                    backgroundColor: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.4)`,
                                                                     color: Math.abs(val) > 0.5 ? '#fff' : '#94a3b8',
-                                                                    border: `1px solid hsla(${hue}, ${saturation}%, ${lightness + 20}%, 0.5)`
+                                                                    border: `1px solid hsla(${hue}, ${saturation}%, ${lightness + 20}%, 0.6)`
                                                                 }}
                                                                 title={`${rowAsset} vs ${colAsset}: ${val.toFixed(2)}`}
                                                             >

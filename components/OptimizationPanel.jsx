@@ -158,10 +158,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
 
             {/* Year Range */}
             <div className="space-y-3">
-                <label className="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Backtesting Period
-                </label>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className="text-xs text-slate-500 mb-1.5 block">Start Year</label>
