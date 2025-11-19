@@ -58,7 +58,7 @@ export default function EfficientFrontier({ data }) {
     // Custom label for assets
     const CustomLabel = (props) => {
         const { x, y, payload } = props;
-        if (payload.name) {
+        if (payload && payload.name) {
             return (
                 <text
                     x={x}
