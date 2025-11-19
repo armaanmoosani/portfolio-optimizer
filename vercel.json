@@ -1,22 +1,8 @@
 {
-    "builds": [
+    "rewrites": [
         {
-            "src": "backend/app/main.py",
-            "use": "@vercel/python"
-        },
-        {
-            "src": "package.json",
-            "use": "@vercel/next"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/optimize",
-            "dest": "backend/app/main.py"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/$1"
+            "source": "/api/(.*)",
+            "destination": "/api/index.py"
         }
     ]
 }
