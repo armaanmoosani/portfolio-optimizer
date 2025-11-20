@@ -236,6 +236,30 @@ export default function EfficientFrontier({ data }) {
                         </div>
                     </div>
                 </div>
+
+                {/* Diagnostic Panel - TEMPORARY FOR DEBUGGING */}
+                {optimalPortfolio && (
+                    <div className="mt-4 p-4 rounded-xl bg-red-900/20 border border-red-500/30">
+                        <h4 className="text-red-400 font-bold text-sm mb-2">Diagnostic Data (Max Sharpe Point)</h4>
+                        <div className="grid grid-cols-2 gap-4 text-xs font-mono text-slate-300">
+                            <div>
+                                <span className="text-slate-500">Return:</span> {optimalPortfolio.return.toFixed(4)}%
+                            </div>
+                            <div>
+                                <span className="text-slate-500">Volatility:</span> {optimalPortfolio.volatility.toFixed(4)}%
+                            </div>
+                            <div>
+                                <span className="text-slate-500">Sharpe:</span> {optimalPortfolio.sharpe_ratio.toFixed(4)}
+                            </div>
+                            <div className="col-span-2">
+                                <span className="text-slate-500">Weights:</span>
+                                <pre className="mt-1 text-emerald-400">
+                                    {JSON.stringify(optimalPortfolio.weights, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
