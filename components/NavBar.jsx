@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -67,11 +66,14 @@ export default function NavBar() {
                     <div className="flex items-center justify-center">
                         {/* Desktop Navigation */}
                         <div className="hidden md:block relative">
-                            <motion.div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
+                            <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab) => (
-                                    <Link
+                                    <button
                                         key={tab.path}
-                                        href={tab.path}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            router.push(tab.path);
+                                        }}
                                         className={`relative block px-6 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${pathname === tab.path
                                             ? "text-white"
                                             : "text-slate-400 hover:text-white"
@@ -80,15 +82,14 @@ export default function NavBar() {
                                         {pathname === tab.path && (
                                             <motion.div
                                                 layoutId="bubble"
-                                                layout
                                                 className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full"
                                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                             />
                                         )}
                                         <span className="relative z-10">{tab.name}</span>
-                                    </Link>
+                                    </button>
                                 ))}
-                            </motion.div>
+                            </div>
                         </div>
 
                         {/* Mobile Menu Button */}
@@ -126,16 +127,19 @@ export default function NavBar() {
                         >
                             <div className="p-6 space-y-2">
                                 {tabs.map((tab) => (
-                                    <Link
+                                    <button
                                         key={tab.path}
-                                        href={tab.path}
-                                        className={`block px-4 py-3 rounded-lg font-medium transition-colors ${pathname === tab.path
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            router.push(tab.path);
+                                        }}
+                                        className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${pathname === tab.path
                                             ? "bg-blue-500 text-white"
                                             : "text-slate-400 hover:text-white hover:bg-slate-800"
                                             }`}
                                     >
                                         {tab.name}
-                                    </Link>
+                                    </button>
                                 ))}
                             </div>
                         </motion.div>
