@@ -212,7 +212,7 @@ export default function EfficientFrontier({ data }) {
                                     fill="#10b981"
                                     fontSize={12}
                                     fontWeight="bold"
-                                    offset={15}
+                                    offset={25} // Increased offset to prevent overlap with points
                                 />
                             </ReferenceDot>
                         )}
