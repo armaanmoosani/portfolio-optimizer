@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -18,24 +18,17 @@ export default function EfficientFrontier({ data }) {
         type: 'Efficient Frontier'
     }));
 
-    const individualAssets = data.individual_assets.map(a => ({
-        volatility: a.volatility * 100,
-        return: a.return * 100,
-        name: a.name,
-        type: 'Individual Asset'
-    }));
-
-    const optimalPortfolio = data.optimal_portfolio ? [{
+    const optimalPortfolio = data.optimal_portfolio ? {
         volatility: data.optimal_portfolio.volatility * 100,
         return: data.optimal_portfolio.return * 100,
         sharpe_ratio: data.optimal_portfolio.sharpe_ratio || 0,
         weights: data.optimal_portfolio.weights || {},
         name: 'Optimal Portfolio',
         type: 'Optimal Portfolio'
-    }] : [];
+    } : null;
 
     // Calculate dynamic axis ranges
-    const allPoints = [...frontierPoints, ...individualAssets, ...optimalPortfolio];
+    const allPoints = optimalPortfolio ? [...frontierPoints, optimalPortfolio] : frontierPoints;
     const minVol = Math.min(...allPoints.map(p => p.volatility));
     const maxVol = Math.max(...allPoints.map(p => p.volatility));
     const minRet = Math.min(...allPoints.map(p => p.return));
@@ -63,7 +56,7 @@ export default function EfficientFrontier({ data }) {
                 ? Object.entries(point.weights)
                     .filter(([_, weight]) => weight > 0.001)
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5) // Show top 5 allocations
+                    .slice(0, 5)
                 : [];
 
             return (
@@ -71,7 +64,7 @@ export default function EfficientFrontier({ data }) {
                     {/* Header */}
                     <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-3 border-b border-slate-600/50">
                         <p className="text-white font-bold text-sm tracking-wide">
-                            {point.name || point.type}
+                            {point.name || 'Portfolio'}
                         </p>
                     </div>
 
@@ -129,34 +122,13 @@ export default function EfficientFrontier({ data }) {
         return null;
     };
 
-    // Cleaner asset labels
-    const CustomLabel = (props) => {
-        const { x, y, payload } = props;
-        if (payload && payload.name) {
-            return (
-                <text
-                    x={x}
-                    y={y - 14}
-                    fill="#cbd5e1"
-                    fontSize={11}
-                    fontWeight="700"
-                    textAnchor="middle"
-                    style={{ textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}
-                >
-                    {payload.name}
-                </text>
-            );
-        }
-        return null;
-    };
-
     return (
         <div className="rounded-2xl border border-slate-700/40 overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-800/20 shadow-xl">
             {/* Header */}
             <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/60 px-6 py-5 border-b border-slate-600/30 backdrop-blur-sm">
                 <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier</h3>
                 <p className="text-sm text-slate-300 mt-1.5">
-                    Portfolio optimization across risk-return spectrum
+                    Portfolio optimization curve with {frontierPoints.length} optimal allocations
                 </p>
             </div>
 
@@ -203,11 +175,6 @@ export default function EfficientFrontier({ data }) {
                             }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
-                        <Legend
-                            wrapperStyle={{ paddingTop: '14px' }}
-                            iconType="circle"
-                            iconSize={10}
-                        />
 
                         {/* Efficient Frontier Curve */}
                         <Scatter
@@ -221,54 +188,51 @@ export default function EfficientFrontier({ data }) {
                             animationEasing="ease-out"
                         />
 
-                        {/* Individual Assets */}
-                        <Scatter
-                            name="Individual Assets"
-                            data={individualAssets}
-                            fill="#ec4899"
-                            shape="diamond"
-                            label={<CustomLabel />}
-                            isAnimationActive={true}
-                            animationDuration={1000}
-                        />
-
-                        {/* Optimal Portfolio */}
-                        {optimalPortfolio.length > 0 && (
+                        {/* Optimal Portfolio Point */}
+                        {optimalPortfolio && (
                             <Scatter
                                 name="Max Sharpe Portfolio"
-                                data={optimalPortfolio}
+                                data={[optimalPortfolio]}
                                 fill="#10b981"
                                 shape="star"
                                 isAnimationActive={true}
                                 animationDuration={1000}
                             />
                         )}
+
+                        {/* Label for Optimal Portfolio */}
+                        {optimalPortfolio && (
+                            <ReferenceDot
+                                x={optimalPortfolio.volatility}
+                                y={optimalPortfolio.return}
+                                r={0}
+                                isFront={true}
+                            >
+                                <Label
+                                    value="Max Sharpe Ratio"
+                                    position="top"
+                                    fill="#10b981"
+                                    fontSize={12}
+                                    fontWeight="bold"
+                                    offset={15}
+                                />
+                            </ReferenceDot>
+                        )}
                     </ScatterChart>
                 </ResponsiveContainer>
 
-                {/* Legend */}
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-start gap-3.5 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 hover:bg-slate-800/60 transition-all group">
-                        <div className="w-3.5 h-3.5 rounded-full bg-blue-500 mt-0.5 flex-shrink-0 shadow-lg shadow-blue-500/50" />
-                        <div className="flex-1">
-                            <p className="font-semibold text-white text-sm">Efficient Frontier</p>
-                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">Optimal portfolios at each risk level</p>
-                        </div>
-                    </div>
-                    <div className="flex items-start gap-3.5 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 hover:bg-slate-800/60 transition-all group">
-                        <div className="w-3.5 h-3.5 rotate-45 bg-pink-500 mt-0.5 flex-shrink-0 shadow-lg shadow-pink-500/50" />
-                        <div className="flex-1">
-                            <p className="font-semibold text-white text-sm">Individual Assets</p>
-                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">Standalone risk-return profile</p>
-                        </div>
-                    </div>
-                    <div className="flex items-start gap-3.5 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 hover:bg-slate-800/60 transition-all group">
-                        <svg className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" viewBox="0 0 24 24" fill="#10b981">
-                            <path d="M12 2L15 9L22 10L17 15L18 22L12 18L6 22L7 15L2 10L9 9L12 2Z" />
+                {/* Info Note */}
+                <div className="mt-6 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40">
+                    <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                         </svg>
-                        <div className="flex-1">
-                            <p className="font-semibold text-white text-sm">Max Sharpe Portfolio</p>
-                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">Optimal risk-adjusted allocation</p>
+                        <div>
+                            <p className="font-semibold text-white text-sm">How to Use</p>
+                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Hover over any point on the curve to see the portfolio allocation, expected return, risk, and Sharpe ratio.
+                                The <span className="text-emerald-400 font-semibold">green star</span> marks the portfolio with the maximum Sharpe ratio (optimal risk-adjusted returns).
+                            </p>
                         </div>
                     </div>
                 </div>

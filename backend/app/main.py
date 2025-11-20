@@ -92,7 +92,7 @@ async def optimize(request: PortfolioRequest):
             min_weight=request.min_weight,
             max_weight=request.max_weight,
             annualization_factor=annualization_factor,
-            num_portfolios=50
+            num_portfolios=150
         )
             
         # 4. Run Backtest
