@@ -297,8 +297,7 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             "volatility": float(opt_vol),
             "return": float(opt_ret),
             "sharpe_ratio": float(opt_sharpe),
-            "weights": {ticker: float(optimal_weights.get(ticker, 0.0)) for ticker in tickers},
-            "source": "provided_weights"
+            "weights": {ticker: float(optimal_weights.get(ticker, 0.0)) for ticker in tickers}
         }
     else:
         # Fallback: calculate max Sharpe if weights not provided
@@ -320,8 +319,7 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
                 "volatility": float(opt_vol),
                 "return": float(opt_ret),
                 "sharpe_ratio": float(opt_sharpe),
-                "weights": weights_dict,
-                "source": "calculated_fallback"
+                "weights": weights_dict
             }
         else:
             optimal_portfolio = None

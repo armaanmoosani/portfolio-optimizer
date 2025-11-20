@@ -73,11 +73,6 @@ export default function NavBar() {
                                         <Link
                                             key={tab.path}
                                             href={tab.path}
-                                            prefetch={false}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                router.push(tab.path);
-                                            }}
                                             className={`relative px-6 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${pathname === tab.path
                                                 ? "text-white"
                                                 : "text-slate-400 hover:text-white"

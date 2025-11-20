@@ -86,15 +86,30 @@ async def optimize(request: PortfolioRequest):
         # 3b. Calculate Efficient Frontier
         print("Calculating efficient frontier...")
         from optimizer import calculate_efficient_frontier
+        
+        # Only pass optimal weights if the objective was Max Sharpe, 
+        # otherwise let the frontier calculate the global Max Sharpe point independently
+        pass_weights = optimization_result["weights"] if request.objective == "sharpe" else None
+        
         efficient_frontier_data = calculate_efficient_frontier(
             prices,
-            optimal_weights=optimization_result["weights"],  # Pass the already-optimized weights
+            optimal_weights=pass_weights,
             risk_free_rate=rf_rate,
             min_weight=request.min_weight,
             max_weight=request.max_weight,
             annualization_factor=annualization_factor,
             num_portfolios=150
         )
+        
+        # FORCE CONSISTENCY: If the user selected Max Sharpe, ensure the chart shows 
+        # EXACTLY the same metrics and weights as the Assets tab
+        if request.objective == "sharpe":
+            efficient_frontier_data["optimal_portfolio"] = {
+                "return": optimization_result["metrics"]["expected_return"],
+                "volatility": optimization_result["metrics"]["volatility"],
+                "sharpe_ratio": optimization_result["metrics"]["sharpe_ratio"],
+                "weights": optimization_result["weights"]
+            }
             
         # 4. Run Backtest
         print("Running backtest...")
