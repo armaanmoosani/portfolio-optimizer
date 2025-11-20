@@ -47,30 +47,12 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 10) * 10
     ];
 
-    // Sort frontier points by return for correct line rendering (bottom to top)
-    const sortedFrontierPoints = [...frontierPoints].sort((a, b) => a.return - b.return);
-
     // Enhanced professional tooltip
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length > 0) {
-            // 1. Try to find the explicit "Max Sharpe" point or "Hit Area"
-            let point = payload.find(p => p.name === "Max Sharpe Portfolio" || p.name === "Max Sharpe Hit Area")?.payload;
-
-            // 2. If not found, check if the first payload point is "close enough" to optimal (fuzzy match)
-            // This handles cases where Recharts snaps to a nearby frontier point
-            if (!point && optimalPortfolio && payload[0]) {
-                const p = payload[0].payload;
-                // Fuzzy match: if return is within 0.5% and volatility within 0.5%
-                const isClose = Math.abs(p.return - optimalPortfolio.return) < 0.5 &&
-                    Math.abs(p.volatility - optimalPortfolio.volatility) < 0.5;
-                if (isClose) {
-                    point = optimalPortfolio;
-                } else {
-                    point = p;
-                }
-            } else if (!point) {
-                point = payload[0].payload;
-            }
+            // Prioritize the Max Sharpe point if it's in the payload (handling overlapping points)
+            const maxSharpePoint = payload.find(p => p.name === "Max Sharpe Portfolio");
+            const point = maxSharpePoint ? maxSharpePoint.payload : payload[0].payload;
 
             const hasWeights = point.weights && Object.keys(point.weights).length > 0;
             const topAllocations = hasWeights
@@ -80,15 +62,12 @@ export default function EfficientFrontier({ data }) {
                     .slice(0, 5)
                 : [];
 
-            // Determine title
-            const isMaxSharpe = point === optimalPortfolio || (optimalPortfolio && point.return === optimalPortfolio.return && point.volatility === optimalPortfolio.volatility);
-
             return (
                 <div className="bg-slate-900/98 border-2 border-slate-600/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden" style={{ minWidth: '260px', maxWidth: '320px' }}>
                     {/* Header */}
                     <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-3 border-b border-slate-600/50">
                         <p className="text-white font-bold text-sm tracking-wide">
-                            {isMaxSharpe ? 'Max Sharpe Portfolio' : (point.name || 'Portfolio')}
+                            {maxSharpePoint ? 'Max Sharpe Portfolio' : (point.name || 'Portfolio')}
                         </p>
                     </div>
 
@@ -147,33 +126,37 @@ export default function EfficientFrontier({ data }) {
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-slate-900/50 rounded-xl border border-slate-800 p-6 shadow-xl backdrop-blur-sm">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        Efficient Frontier
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                            {frontierPoints.length} Portfolios
-                        </span>
-                    </h3>
-                    <p className="text-slate-400 text-sm mt-1">Risk vs. Return Optimization</p>
-                </div>
+        <div className="rounded-2xl border border-slate-700/40 overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-800/20 shadow-xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/60 px-6 py-5 border-b border-slate-600/30 backdrop-blur-sm">
+                <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier</h3>
+                <p className="text-sm text-slate-300 mt-1.5">
+                    Portfolio optimization curve with {frontierPoints.length} optimal allocations
+                </p>
             </div>
 
-            <div className="flex-1 w-full min-h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+            {/* Chart */}
+            <div className="p-8">
+                <ResponsiveContainer width="100%" height={500}>
+                    <ScatterChart margin={{ top: 10, right: 80, bottom: 60, left: 60 }}>
+                        <CartesianGrid strokeDasharray="4 4" stroke="#475569" opacity={0.25} />
                         <XAxis
                             type="number"
                             dataKey="volatility"
                             name="Volatility"
                             unit="%"
                             stroke="#94a3b8"
-                            tick={{ fill: '#94a3b8', fontSize: 12 }}
-                            tickFormatter={(value) => value.toFixed(1)}
-                            label={{ value: 'Volatility (Risk)', position: 'bottom', offset: 0, fill: '#94a3b8', fontSize: 12 }}
-                            domain={['auto', 'auto']}
+                            tick={{ fill: '#cbd5e1', fontSize: 11 }}
+                            domain={volDomain}
+                            tickCount={10}
+                            label={{
+                                value: 'Standard Deviation (Risk) %',
+                                position: 'bottom',
+                                offset: 40,
+                                fill: '#e2e8f0',
+                                fontSize: 13,
+                                fontWeight: 600
+                            }}
                         />
                         <YAxis
                             type="number"
@@ -181,23 +164,25 @@ export default function EfficientFrontier({ data }) {
                             name="Return"
                             unit="%"
                             stroke="#94a3b8"
-                            tick={{ fill: '#94a3b8', fontSize: 12 }}
-                            tickFormatter={(value) => value.toFixed(1)}
-                            label={{ value: 'Expected Return', angle: -90, position: 'left', offset: 0, fill: '#94a3b8', fontSize: 12 }}
-                            domain={['auto', 'auto']}
-                        />
-                        <ZAxis
-                            type="number"
-                            dataKey="sharpe_ratio"
-                            range={[50, 400]}
-                            name="Sharpe Ratio"
+                            tick={{ fill: '#cbd5e1', fontSize: 11 }}
+                            domain={retDomain}
+                            tickCount={8}
+                            label={{
+                                value: 'Expected Return %',
+                                angle: -90,
+                                position: 'left',
+                                offset: 40,
+                                fill: '#e2e8f0',
+                                fontSize: 13,
+                                fontWeight: 600
+                            }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
 
                         {/* Efficient Frontier Curve */}
                         <Scatter
                             name="Efficient Frontier"
-                            data={sortedFrontierPoints}
+                            data={frontierPoints}
                             fill="#3b82f6"
                             line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
                             lineType="monotone"
@@ -206,7 +191,7 @@ export default function EfficientFrontier({ data }) {
                             animationEasing="ease-out"
                         />
 
-                        {/* Optimal Portfolio Point - Visual Star */}
+                        {/* Optimal Portfolio Point */}
                         {optimalPortfolio && (
                             <Scatter
                                 name="Max Sharpe Portfolio"
@@ -215,20 +200,6 @@ export default function EfficientFrontier({ data }) {
                                 shape="star"
                                 isAnimationActive={true}
                                 animationDuration={1000}
-                            />
-                        )}
-
-                        {/* Optimal Portfolio Hit Area - Invisible but captures hover */}
-                        {optimalPortfolio && (
-                            <Scatter
-                                name="Max Sharpe Hit Area"
-                                data={[optimalPortfolio]}
-                                fill="red"
-                                opacity={0.01} // Almost invisible but definitely captures events
-                                legendType="none"
-                                shape={(props) => (
-                                    <circle cx={props.cx} cy={props.cy} r={30} fill="red" fillOpacity={0.01} cursor="pointer" />
-                                )}
                             />
                         )}
 
