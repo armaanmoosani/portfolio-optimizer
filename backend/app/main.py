@@ -84,12 +84,13 @@ async def optimize(request: PortfolioRequest):
             raise HTTPException(status_code=500, detail=f"Optimization failed: {optimization_result['message']}")
         
         # 3b. Calculate Efficient Frontier
-        print("Calculating efficient frontier...")
+        print(f"Calculating efficient frontier for objective: {request.objective}")
         from optimizer import calculate_efficient_frontier
         
         # Only pass optimal weights if the objective was Max Sharpe, 
         # otherwise let the frontier calculate the global Max Sharpe point independently
-        pass_weights = optimization_result["weights"] if request.objective == "sharpe" else None
+        is_sharpe = request.objective == "sharpe"
+        pass_weights = optimization_result["weights"] if is_sharpe else None
         
         efficient_frontier_data = calculate_efficient_frontier(
             prices,
@@ -103,13 +104,16 @@ async def optimize(request: PortfolioRequest):
         
         # FORCE CONSISTENCY: If the user selected Max Sharpe, ensure the chart shows 
         # EXACTLY the same metrics and weights as the Assets tab
-        if request.objective == "sharpe":
+        if is_sharpe:
+            print("Forcing Max Sharpe consistency with main optimization results")
             efficient_frontier_data["optimal_portfolio"] = {
                 "return": optimization_result["metrics"]["expected_return"],
                 "volatility": optimization_result["metrics"]["volatility"],
                 "sharpe_ratio": optimization_result["metrics"]["sharpe_ratio"],
                 "weights": optimization_result["weights"]
             }
+        else:
+            print(f"Objective is {request.objective}, skipping Max Sharpe override")
             
         # 4. Run Backtest
         print("Running backtest...")

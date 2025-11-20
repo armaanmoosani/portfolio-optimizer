@@ -68,27 +68,29 @@ export default function NavBar() {
                         {/* Desktop Navigation */}
                         <div className="hidden md:block relative">
                             <motion.div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
-                                <LayoutGroup>
-                                    {tabs.map((tab, index) => (
-                                        <Link
-                                            key={tab.path}
-                                            href={tab.path}
-                                            className={`relative px-6 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${pathname === tab.path
-                                                ? "text-white"
-                                                : "text-slate-400 hover:text-white"
-                                                }`}
-                                        >
-                                            {pathname === tab.path && (
-                                                <motion.div
-                                                    layoutId="bubble"
-                                                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full"
-                                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                                />
-                                            )}
-                                            <span className="relative z-10">{tab.name}</span>
-                                        </Link>
-                                    ))}
-                                </LayoutGroup>
+                                <div className="flex space-x-1">
+                                    <LayoutGroup>
+                                        {tabs.map((tab) => (
+                                            <Link
+                                                key={tab.path}
+                                                href={tab.path}
+                                                className={`relative px-6 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${pathname === tab.path
+                                                    ? "text-white"
+                                                    : "text-slate-400 hover:text-white"
+                                                    }`}
+                                            >
+                                                {pathname === tab.path && (
+                                                    <motion.div
+                                                        layoutId="bubble"
+                                                        className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full"
+                                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                                    />
+                                                )}
+                                                <span className="relative z-10">{tab.name}</span>
+                                            </Link>
+                                        ))}
+                                    </LayoutGroup>
+                                </div>
                             </motion.div>
                         </div>
 
