@@ -151,15 +151,15 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                     endBalance: parseFloat(startingValue) * (1 + (data.backtest.metrics.total_return || 0)),
 
                     // Comprehensive Metrics (Convert to %)
-                    arithmetic_mean_monthly: (data.backtest.metrics.arithmetic_mean_monthly || 0) * 100,
+                    arithmetic_mean_monthly: (data.backtest.metrics.arithmetic_mean_monthly || 0),
                     arithmetic_mean_annualized: (data.backtest.metrics.arithmetic_mean_annualized || 0) * 100,
-                    geometric_mean_monthly: (data.backtest.metrics.geometric_mean_monthly || 0) * 100,
+                    geometric_mean_monthly: (data.backtest.metrics.geometric_mean_monthly || 0),
                     geometric_mean_annualized: (data.backtest.metrics.geometric_mean_annualized || 0) * 100,
-                    std_dev_monthly: (data.backtest.metrics.std_dev_monthly || 0) * 100,
+                    std_dev_monthly: (data.backtest.metrics.std_dev_monthly || 0),
                     std_dev_annualized: (data.backtest.metrics.std_dev_annualized || 0) * 100,
-                    downside_dev_monthly: (data.backtest.metrics.downside_dev_monthly || 0) * 100,
+                    downside_dev_monthly: (data.backtest.metrics.downside_dev_monthly || 0),
                     benchmark_correlation: data.backtest.metrics.benchmark_correlation || 0,
-                    treynor_ratio: data.backtest.metrics.treynor_ratio || 0
+                    treynor_ratio: (data.backtest.metrics.treynor_ratio || 0) * 100
                 },
                 weights: Object.entries(data.optimization.weights || {}).map(([asset, weight]) => ({
                     asset,

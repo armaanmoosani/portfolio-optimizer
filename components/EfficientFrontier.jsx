@@ -50,7 +50,10 @@ export default function EfficientFrontier({ data }) {
     // Enhanced professional tooltip
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length > 0) {
-            const point = payload[0].payload;
+            // Prioritize the Max Sharpe point if it's in the payload (handling overlapping points)
+            const maxSharpePoint = payload.find(p => p.name === "Max Sharpe Portfolio");
+            const point = maxSharpePoint ? maxSharpePoint.payload : payload[0].payload;
+
             const hasWeights = point.weights && Object.keys(point.weights).length > 0;
             const topAllocations = hasWeights
                 ? Object.entries(point.weights)
@@ -64,7 +67,7 @@ export default function EfficientFrontier({ data }) {
                     {/* Header */}
                     <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-3 border-b border-slate-600/50">
                         <p className="text-white font-bold text-sm tracking-wide">
-                            {point.name || 'Portfolio'}
+                            {maxSharpePoint ? 'Max Sharpe Portfolio' : (point.name || 'Portfolio')}
                         </p>
                     </div>
 
@@ -236,30 +239,6 @@ export default function EfficientFrontier({ data }) {
                         </div>
                     </div>
                 </div>
-
-                {/* Diagnostic Panel - TEMPORARY FOR DEBUGGING */}
-                {optimalPortfolio && (
-                    <div className="mt-4 p-4 rounded-xl bg-red-900/20 border border-red-500/30">
-                        <h4 className="text-red-400 font-bold text-sm mb-2">Diagnostic Data (Max Sharpe Point)</h4>
-                        <div className="grid grid-cols-2 gap-4 text-xs font-mono text-slate-300">
-                            <div>
-                                <span className="text-slate-500">Return:</span> {optimalPortfolio.return.toFixed(4)}%
-                            </div>
-                            <div>
-                                <span className="text-slate-500">Volatility:</span> {optimalPortfolio.volatility.toFixed(4)}%
-                            </div>
-                            <div>
-                                <span className="text-slate-500">Sharpe:</span> {optimalPortfolio.sharpe_ratio.toFixed(4)}
-                            </div>
-                            <div className="col-span-2">
-                                <span className="text-slate-500">Weights:</span>
-                                <pre className="mt-1 text-emerald-400">
-                                    {JSON.stringify(optimalPortfolio.weights, null, 2)}
-                                </pre>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
