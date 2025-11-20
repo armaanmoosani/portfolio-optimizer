@@ -70,9 +70,14 @@ export default function NavBar() {
                             <motion.div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
                                 <LayoutGroup>
                                     {tabs.map((tab, index) => (
-                                        <button
+                                        <Link
                                             key={tab.path}
-                                            onClick={() => router.push(tab.path)}
+                                            href={tab.path}
+                                            prefetch={false}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                router.push(tab.path);
+                                            }}
                                             className={`relative px-6 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${pathname === tab.path
                                                 ? "text-white"
                                                 : "text-slate-400 hover:text-white"
@@ -86,7 +91,7 @@ export default function NavBar() {
                                                 />
                                             )}
                                             <span className="relative z-10">{tab.name}</span>
-                                        </button>
+                                        </Link>
                                     ))}
                                 </LayoutGroup>
                             </motion.div>

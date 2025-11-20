@@ -56,19 +56,28 @@ def negative_sortino(weights, mean_returns, cov_matrix, risk_free_rate, annualiz
     if mar is None:
         mar = 0.0
     
+    # Calculate portfolio daily returns
     portfolio_returns = returns_matrix.dot(weights)
+    
+    # Annualized return (Geometric for accuracy, or Arithmetic * 252)
+    # Using Arithmetic * 252 to match standard Sharpe optimization convention
     mean_return = np.mean(portfolio_returns) * annualization_factor
     
-    # Calculate downside deviation (semi-deviation below MAR)
-    mar_daily = mar / annualization_factor
+    # Convert annual MAR to daily geometric MAR for accurate downside comparison
+    # (1 + MAR_annual) = (1 + MAR_daily)^252
+    mar_daily = (1 + mar) ** (1 / annualization_factor) - 1
+    
+    # Calculate downside deviation relative to daily MAR
     downside_returns = portfolio_returns - mar_daily
     downside_returns = downside_returns[downside_returns < 0]
     
     if len(downside_returns) == 0:
-        # No downside - perfect scenario
-        return -1e10
+        return -1e10  # No downside
     
-    downside_deviation = np.sqrt(np.mean(downside_returns**2)) * np.sqrt(annualization_factor)
+    # LPM2 (Lower Partial Moment order 2)
+    # Sum of squared shortfalls / Total observations (not just downside observations)
+    downside_variance = np.sum(downside_returns**2) / len(portfolio_returns)
+    downside_deviation = np.sqrt(downside_variance) * np.sqrt(annualization_factor)
     
     if downside_deviation < 1e-10:
         return -1e10
@@ -81,28 +90,32 @@ def negative_omega(weights, mean_returns, cov_matrix, risk_free_rate, annualizat
     Omega Ratio: Maximize probability-weighted gains vs losses.
     
     Ratio of upside potential to downside risk relative to MAR.
-    Formula: E[max(R - MAR, 0)] / E[max(MAR - R, 0)]
+    Formula: Sum(max(R - MAR, 0)) / Sum(max(MAR - R, 0))
     """
     if returns_matrix is None:
         raise ValueError("Omega Ratio requires historical returns matrix")
     if mar is None:
         mar = 0.0
     
-    portfolio_returns = returns_matrix.dot(weights) * annualization_factor
+    # Calculate portfolio daily returns
+    portfolio_returns = returns_matrix.dot(weights)
     
-    # Upside: average of returns above MAR
-    upside_returns = portfolio_returns[portfolio_returns > mar] - mar
-    upside_potential = np.mean(upside_returns) if len(upside_returns) > 0 else 0
+    # Convert annual MAR to daily geometric MAR
+    mar_daily = (1 + mar) ** (1 / annualization_factor) - 1
     
-    # Downside: average of returns below MAR
-    downside_returns = mar - portfolio_returns[portfolio_returns < mar]
-    downside_risk = np.mean(downside_returns) if len(downside_returns) > 0 else 1e-10
+    # Calculate excess returns relative to MAR
+    excess_returns = portfolio_returns - mar_daily
     
-    if downside_risk < 1e-10:
-        # Almost no downside risk
+    # Upside: Sum of positive excess returns
+    upside_sum = np.sum(excess_returns[excess_returns > 0])
+    
+    # Downside: Sum of absolute negative excess returns
+    downside_sum = np.abs(np.sum(excess_returns[excess_returns < 0]))
+    
+    if downside_sum < 1e-10:
         return -1e10
     
-    omega = upside_potential / downside_risk
+    omega = upside_sum / downside_sum
     return -omega
 
 def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, mar: float = 0.0):
@@ -170,14 +183,17 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
         "message": str(result.message)
     }
 
-def calculate_efficient_frontier(prices: pd.DataFrame, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 50):
+def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = None, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 50):
     """
     Calculate the efficient frontier by optimizing portfolios across a range of target returns.
+    
+    Args:
+        optimal_weights: Pre-calculated optimal portfolio weights from main optimization (ensures consistency)
     
     Returns:
         - frontier_points: List of {volatility, return} points forming the efficient frontier
         - individual_assets: List of {name, volatility, return} for each asset
-        - optimal_portfolio: The max Sharpe ratio portfolio coordinates
+        - optimal_portfolio: The max Sharpe ratio portfolio coordinates (from provided optimal_weights)
     """
     # Calculate returns
     returns = prices.pct_change().dropna()
@@ -266,29 +282,49 @@ def calculate_efficient_frontier(prices: pd.DataFrame, risk_free_rate: float = 0
                 "weights": weights_dict
             })
     
-    # Calculate optimal (max Sharpe) portfolio
-    sharpe_result = minimize(
-        negative_sharpe,
-        initial_guess,
-        args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
-        method='SLSQP',
-        bounds=bounds,
-        constraints=constraints
-    )
-    
-    if sharpe_result.success:
+    # Use the provided optimal portfolio weights (already calculated in main optimization)
+    # This ensures the Max Sharpe point matches exactly with the Assets tab
+    if optimal_weights:
+        # Convert dict to array in same order as tickers
+        weights_array = np.array([optimal_weights.get(ticker, 0.0) for ticker in tickers])
+        
+        # Calculate performance using the provided weights
         opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
-            sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            weights_array, mean_returns, cov_matrix, risk_free_rate, annualization_factor
         )
-        weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
+        
         optimal_portfolio = {
             "volatility": float(opt_vol),
             "return": float(opt_ret),
             "sharpe_ratio": float(opt_sharpe),
-            "weights": weights_dict
+            "weights": {ticker: float(optimal_weights.get(ticker, 0.0)) for ticker in tickers},
+            "source": "provided_weights"
         }
     else:
-        optimal_portfolio = None
+        # Fallback: calculate max Sharpe if weights not provided
+        sharpe_result = minimize(
+            negative_sharpe,
+            initial_guess,
+            args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints
+        )
+        
+        if sharpe_result.success:
+            opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
+                sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            )
+            weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
+            optimal_portfolio = {
+                "volatility": float(opt_vol),
+                "return": float(opt_ret),
+                "sharpe_ratio": float(opt_sharpe),
+                "weights": weights_dict,
+                "source": "calculated_fallback"
+            }
+        else:
+            optimal_portfolio = None
     
     return {
         "frontier_points": frontier_points,

@@ -88,6 +88,7 @@ async def optimize(request: PortfolioRequest):
         from optimizer import calculate_efficient_frontier
         efficient_frontier_data = calculate_efficient_frontier(
             prices,
+            optimal_weights=optimization_result["weights"],  # Pass the already-optimized weights
             risk_free_rate=rf_rate,
             min_weight=request.min_weight,
             max_weight=request.max_weight,

@@ -84,25 +84,46 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
 
     # --- COMPREHENSIVE PROFESSIONAL METRICS ---
     
-    # Arithmetic Mean (Simple Average of Returns)
-    arithmetic_mean_monthly = float(portfolio_returns.mean())
-    arithmetic_mean_annualized = float(arithmetic_mean_monthly * annualization_factor)
+    # --- COMPREHENSIVE PROFESSIONAL METRICS ---
     
-    # Geometric Mean (Compounded Growth Rate)
-    # Formula: (Product of (1+r))^(1/n) - 1
-    geometric_mean_monthly = float((1 + portfolio_returns).prod() ** (1 / len(portfolio_returns)) - 1)
-    geometric_mean_annualized = float((1 + geometric_mean_monthly) ** annualization_factor - 1)
+    # Calculate true monthly returns series for monthly metrics
+    # Resample to month end, compounding daily returns
+    monthly_returns_series = portfolio_returns.resample('M').apply(lambda x: (1 + x).prod() - 1)
     
-    # Standard Deviation (Total Volatility)
-    std_dev_monthly = float(portfolio_returns.std())
-    std_dev_annualized = float(std_dev_monthly * np.sqrt(annualization_factor))
+    # 1. Arithmetic Mean
+    # Annualized: derived from daily for precision (Daily Mean * 252)
+    arithmetic_mean_annualized = float(portfolio_returns.mean() * annualization_factor)
+    # Monthly: derived from actual monthly returns
+    arithmetic_mean_monthly = float(monthly_returns_series.mean()) if not monthly_returns_series.empty else 0.0
     
-    # Downside Deviation (Monthly)
-    # For monthly metric display, we calculate it based on 0 return threshold (loss)
-    # This is often what users expect for "Downside Deviation" in a general sense
-    monthly_downside_diff = portfolio_returns[portfolio_returns < 0]
-    monthly_downside_var = (monthly_downside_diff ** 2).sum() / len(portfolio_returns)
-    downside_dev_monthly = float(np.sqrt(monthly_downside_var))
+    # 2. Geometric Mean (Compounded Growth Rate)
+    # Annualized: CAGR formula (already calculated as annualized_return)
+    geometric_mean_annualized = float(annualized_return)
+    # Monthly: Geometric mean of monthly returns
+    if not monthly_returns_series.empty:
+        geo_mean_monthly = (1 + monthly_returns_series).prod() ** (1 / len(monthly_returns_series)) - 1
+        geometric_mean_monthly = float(geo_mean_monthly)
+    else:
+        geometric_mean_monthly = 0.0
+    
+    # 3. Standard Deviation (Volatility)
+    # Annualized: derived from daily for precision (Daily Std * sqrt(252))
+    std_dev_annualized = float(portfolio_returns.std() * np.sqrt(annualization_factor))
+    # Monthly: Standard deviation of monthly returns
+    std_dev_monthly = float(monthly_returns_series.std()) if not monthly_returns_series.empty else 0.0
+    
+    # 4. Downside Deviation
+    # Monthly: Calculated on monthly returns with 0% threshold
+    if not monthly_returns_series.empty:
+        monthly_downside = monthly_returns_series[monthly_returns_series < 0]
+        if len(monthly_downside) > 0:
+            # LPM2 on monthly data
+            monthly_downside_var = (monthly_downside ** 2).sum() / len(monthly_returns_series)
+            downside_dev_monthly = float(np.sqrt(monthly_downside_var))
+        else:
+            downside_dev_monthly = 0.0
+    else:
+        downside_dev_monthly = 0.0
     
     # Benchmark Correlation
     benchmark_correlation = 0.0
