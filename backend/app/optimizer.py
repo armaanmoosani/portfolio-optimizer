@@ -249,20 +249,20 @@ def calculate_efficient_frontier(prices: pd.DataFrame, risk_free_rate: float = 0
         )
         
         if result.success:
-            vol = float(result.fun)
             weights = result.x
             
-            # Calculate Sharpe ratio for this point
-            portfolio_return = float(target_ret)
-            sharpe = (portfolio_return - risk_free_rate) / vol if vol != 0 else 0
+            # Use the same performance calculation function for consistency and accuracy
+            portfolio_return, portfolio_vol, portfolio_sharpe = calculate_portfolio_performance(
+                weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            )
             
             # Create weights dictionary
             weights_dict = {ticker: float(w) for ticker, w in zip(tickers, weights)}
             
             frontier_points.append({
-                "volatility": vol,
-                "return": portfolio_return,
-                "sharpe_ratio": float(sharpe),
+                "volatility": float(portfolio_vol),
+                "return": float(portfolio_return),
+                "sharpe_ratio": float(portfolio_sharpe),
                 "weights": weights_dict
             })
     
