@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -179,29 +179,24 @@ export default function EfficientFrontier({ data }) {
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
 
-                        {/* Efficient Frontier Curve */}
+                        {/* Efficient Frontier Curve & Points */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
-                            fill="#3b82f6"
                             line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
                             lineType="monotone"
                             isAnimationActive={true}
                             animationDuration={1000}
                             animationEasing="ease-out"
-                        />
-
-                        {/* Optimal Portfolio Point */}
-                        {optimalPortfolio && (
-                            <Scatter
-                                name="Max Sharpe Portfolio"
-                                data={[optimalPortfolio]}
-                                fill="#10b981"
-                                shape="star"
-                                isAnimationActive={true}
-                                animationDuration={1000}
-                            />
-                        )}
+                        >
+                            {frontierPoints.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={entry.name === 'Max Sharpe Portfolio' ? '#10b981' : '#3b82f6'}
+                                    stroke={entry.name === 'Max Sharpe Portfolio' ? '#10b981' : 'none'}
+                                />
+                            ))}
+                        </Scatter>
 
                         {/* Label for Optimal Portfolio */}
                         {optimalPortfolio && (
