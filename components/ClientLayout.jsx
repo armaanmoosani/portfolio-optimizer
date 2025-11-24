@@ -1,8 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { LayoutGroup } from "framer-motion";
-const NavBar = dynamic(() => import("@/components/NavBar"), { ssr: false });
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { ToastProvider } from "@/components/Toast";
 

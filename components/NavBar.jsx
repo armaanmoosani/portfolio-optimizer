@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -10,6 +11,7 @@ export default function NavBar() {
     const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const navRef = useRef(null);
+    const [mounted, setMounted] = useState(false);
 
     const tabs = [
         { name: "Home", path: "/" },
@@ -17,6 +19,10 @@ export default function NavBar() {
         { name: "Stock Viewer", path: "/stocks" },
         { name: "About", path: "/about" }
     ];
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const activeIndex = tabs.findIndex(tab => tab.path === pathname);
 
@@ -68,18 +74,15 @@ export default function NavBar() {
                         <div className="hidden md:block relative">
                             <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab) => (
-                                    <button
+                                    <Link
                                         key={tab.path}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            router.push(tab.path);
-                                        }}
+                                        href={tab.path}
                                         className={`relative block px-6 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${pathname === tab.path
                                             ? "text-white"
                                             : "text-slate-400 hover:text-white"
                                             }`}
                                     >
-                                        {pathname === tab.path && (
+                                        {mounted && pathname === tab.path && (
                                             <motion.div
                                                 layoutId="bubble"
                                                 className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full"
@@ -87,7 +90,7 @@ export default function NavBar() {
                                             />
                                         )}
                                         <span className="relative z-10">{tab.name}</span>
-                                    </button>
+                                    </Link>
                                 ))}
                             </div>
                         </div>
@@ -127,19 +130,16 @@ export default function NavBar() {
                         >
                             <div className="p-6 space-y-2">
                                 {tabs.map((tab) => (
-                                    <button
+                                    <Link
                                         key={tab.path}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            router.push(tab.path);
-                                        }}
+                                        href={tab.path}
                                         className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${pathname === tab.path
                                             ? "bg-blue-500 text-white"
                                             : "text-slate-400 hover:text-white hover:bg-slate-800"
                                             }`}
                                     >
                                         {tab.name}
-                                    </button>
+                                    </Link>
                                 ))}
                             </div>
                         </motion.div>
