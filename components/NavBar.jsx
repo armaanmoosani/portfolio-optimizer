@@ -102,10 +102,10 @@ export default function NavBar() {
                         </button>
                     </div>
                 </div>
-            </nav>
+            </nav >
 
             {/* Mobile Menu Overlay */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {mobileMenuOpen && (
                     <>
                         {/* Backdrop */}
@@ -144,8 +144,9 @@ export default function NavBar() {
                             </div>
                         </motion.div>
                     </>
-                )}
-            </AnimatePresence>
+                )
+                }
+            </AnimatePresence >
         </>
     );
 }
