@@ -80,6 +80,54 @@ def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str =
         print(f"Warning: Failed to fetch benchmark data: {e}")
         return pd.Series()
 
+def validate_price_data(prices: pd.DataFrame, min_days: int = 60) -> dict:
+    """
+    Validate price data quality for portfolio optimization.
+    
+    Returns:
+        dict with 'valid' (bool), 'warnings' (list), 'stats' (dict)
+    """
+    warnings = []
+    
+    # Check minimum data requirement
+    num_days = len(prices)
+    if num_days < min_days:
+        return {
+            "valid": False,
+            "warnings": [f"Insufficient data: {num_days} days (minimum: {min_days} required for stable covariance matrix)"],
+            "stats": {"days": num_days}
+        }
+    
+    # Calculate returns for outlier detection
+    returns = prices.pct_change().dropna()
+    
+    # Detect extreme single-day moves (>50% - likely data errors or stock splits missed)
+    for col in returns.columns:
+        extreme_moves = returns[col][abs(returns[col]) > 0.5]
+        if len(extreme_moves) > 0:
+            warnings.append(f"{col}: {len(extreme_moves)} extreme moves (>50%) detected on {extreme_moves.index.tolist()}")
+    
+    # Check for excessive missing data
+    missing_pct = prices.isna().sum() / len(prices)
+    for col in prices.columns:
+        if missing_pct[col] > 0.1:  # More than 10% missing
+            warnings.append(f"{col}: {missing_pct[col]:.1%} missing data")
+    
+    # Calculate actual trading days per year for this dataset
+    date_range = (prices.index[-1] - prices.index[0]).days
+    years = date_range / 365.25
+    actual_trading_days_per_year = num_days / years if years > 0 else 252
+    
+    return {
+        "valid": True,
+        "warnings": warnings,
+        "stats": {
+            "days": num_days,
+            "years": round(years, 2),
+            "actual_trading_days_per_year": round(actual_trading_days_per_year, 1)
+        }
+    }
+
 def get_risk_free_rate() -> float:
     """
     Fetch the current 3-month Treasury Bill rate as a proxy for risk-free rate.

@@ -38,6 +38,7 @@ class PortfolioRequest(BaseModel):
     benchmark: str = "SPY"
     frequency: str = "daily"
     mar: float = 0.0  # Minimum Acceptable Return (annualized, as decimal)
+    rebalance_freq: str = "never"  # Rebalancing frequency
 
 @app.get("/")
 def read_root():
@@ -64,6 +65,21 @@ async def optimize(request: PortfolioRequest):
         
         if prices.empty:
             raise HTTPException(status_code=400, detail="No data found for the provided tickers and date range.")
+        
+        # Validate data quality
+        from data import validate_price_data
+        validation = validate_price_data(prices, min_days=60)
+        
+        if not validation["valid"]:
+            raise HTTPException(status_code=400, detail=validation["warnings"][0])
+        
+        # Log warnings but continue
+        if validation["warnings"]:
+            print(f"Data quality warnings: {validation['warnings']}")
+        
+        # Use actual trading days from validation
+        actual_ann_factor = validation["stats"].get("actual_trading_days_per_year", annualization_factor)
+        print(f"Using actual annualization factor: {actual_ann_factor} (vs default {annualization_factor})")
 
         # 2. Get Risk Free Rate
         rf_rate = get_risk_free_rate()
@@ -125,7 +141,8 @@ async def optimize(request: PortfolioRequest):
             initial_capital=request.initial_capital,
             risk_free_rate=rf_rate,
             annualization_factor=annualization_factor,
-            mar=request.mar
+            mar=request.mar,
+            rebalance_freq=request.rebalance_freq
         )
         
         return {

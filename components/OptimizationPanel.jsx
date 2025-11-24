@@ -75,6 +75,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
     const [minWeight, setMinWeight] = useState("0");
     const [maxWeight, setMaxWeight] = useState("100");
     const [mar, setMar] = useState("0");  // Minimum Acceptable Return (%) for Sortino/Omega
+    const [rebalanceFreq, setRebalanceFreq] = useState("never");  // Rebalancing frequency
 
 
     // Generate years array from 1985 to 2025
@@ -104,7 +105,8 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                 min_weight: parseFloat(minWeight) / 100,
                 max_weight: parseFloat(maxWeight) / 100,
                 frequency: frequency,
-                mar: parseFloat(mar) / 100  // Convert percentage to decimal
+                mar: parseFloat(mar) / 100,  // Convert percentage to decimal
+                rebalance_freq: rebalanceFreq  // Portfolio rebalancing
             };
 
             const response = await fetch('/api/optimize', {
@@ -471,6 +473,26 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
                                     </p>
                                 </motion.div>
                             )}
+
+                            {/* Rebalancing Frequency */}
+                            <div className="space-y-3 p-4 rounded-lg bg-slate-800/20 border border-slate-700/30 mt-4">
+                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block">
+                                    Rebalancing Strategy
+                                </label>
+                                <select
+                                    value={rebalanceFreq}
+                                    onChange={(e) => setRebalanceFreq(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="never">Buy & Hold (No Rebalancing)</option>
+                                    <option value="monthly">Monthly Rebalancing</option>
+                                    <option value="quarterly">Quarterly Rebalancing</option>
+                                    <option value="annual">Annual Rebalancing</option>
+                                </select>
+                                <p className="text-xs text-slate-500">
+                                    Compare buy-and-hold vs. periodic rebalancing. Transaction costs: 0.1% per trade.
+                                </p>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
