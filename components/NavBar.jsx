@@ -18,7 +18,6 @@ export default function NavBar() {
         { name: "Portfolio Optimizer", path: "/portfolio" },
         { name: "Stock Viewer", path: "/stocks" },
         { name: "About", path: "/about" },
-        { name: "Test", path: "/test" },
     ];
 
     useEffect(() => {
@@ -84,7 +83,13 @@ export default function NavBar() {
                                             : "text-slate-400 hover:text-white"
                                             }`}
                                     >
-                                        {/* Animation temporarily removed for debugging */}
+                                        {mounted && pathname === tab.path && (
+                                            <motion.div
+                                                layoutId="bubble"
+                                                className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full"
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                            />
+                                        )}
                                         <span className="relative z-10">{tab.name}</span>
                                     </Link>
                                 ))}
