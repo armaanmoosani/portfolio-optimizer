@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, X, PlusCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,6 +9,19 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
+    const searchContainerRef = useRef(null);
+
+    // Click outside to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const handleInputChange = async (e) => {
         const value = e.target.value.toUpperCase();
@@ -87,7 +100,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
             </div>
 
             {/* Search Input */}
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
                 <div className="relative flex gap-2">
                     <div className="relative flex-1">
                         <input

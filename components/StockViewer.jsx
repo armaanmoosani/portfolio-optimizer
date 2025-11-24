@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
 
 export default function StockViewer() {
@@ -13,6 +13,19 @@ export default function StockViewer() {
     const [news, setNews] = useState([]);
     const [aiSummary, setAiSummary] = useState("");
     const [error, setError] = useState("");
+    const searchContainerRef = useRef(null);
+
+    // Click outside to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const handleInputChange = async (e) => {
         const value = e.target.value.toUpperCase();
@@ -163,7 +176,7 @@ ${aggregatedNews.slice(0, 15000)}
         <div className="w-full max-w-4xl mx-auto p-6 space-y-8" onClick={() => setShowSuggestions(false)}>
             {/* Search Section */}
             <div className="flex flex-col items-center gap-4 relative z-20">
-                <div className="relative w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                <div className="relative w-full max-w-md" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
                     <input
                         type="text"
                         value={ticker}
