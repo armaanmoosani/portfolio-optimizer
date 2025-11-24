@@ -1,9 +1,1 @@
-.git
-.next
-node_modules
-__pycache__
-*.pyc
-.DS_Store
-.vscode
-venv
-env
+requirements.txt
