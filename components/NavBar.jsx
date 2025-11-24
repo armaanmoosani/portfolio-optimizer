@@ -72,7 +72,7 @@ export default function NavBar() {
                     <div className="flex items-center justify-center">
                         {/* Desktop Navigation */}
                         <div className="hidden md:block relative">
-                            <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-800 shadow-2xl shadow-black/50">
+                            <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-xsm border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab) => (
                                     <Link
                                         key={tab.path}
