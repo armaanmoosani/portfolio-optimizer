@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: false,
+    swcMinify: false, // Fixes Framer Motion production animation issues
     async rewrites() {
         return [
             {
