@@ -17,7 +17,8 @@ export default function NavBar() {
         { name: "Home", path: "/" },
         { name: "Portfolio Optimizer", path: "/portfolio" },
         { name: "Stock Viewer", path: "/stocks" },
-        { name: "About", path: "/about" }
+        { name: "About", path: "/about" },
+        { name: "Test", path: "/test" },
     ];
 
     useEffect(() => {
