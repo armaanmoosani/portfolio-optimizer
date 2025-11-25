@@ -156,3 +156,42 @@ def get_risk_free_rate() -> float:
         return 0.045  # Fallback to 4.5% if fetch fails
     except:
         return 0.045  # Fallback
+
+def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> list[dict]:
+    """
+    Fetch historical data for a single ticker formatted for frontend charts.
+    Returns list of dicts: {'date': str, 'price': float}
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=period, interval=interval)
+        
+        if hist.empty:
+            return []
+            
+        # Reset index to get Date/Datetime as a column
+        hist = hist.reset_index()
+        
+        results = []
+        for _, row in hist.iterrows():
+            # Handle different date column names (Date vs Datetime)
+            date_col = 'Date' if 'Date' in hist.columns else 'Datetime'
+            date_val = row[date_col]
+            
+            # Format date based on interval
+            if interval in ['1m', '2m', '5m', '15m', '30m', '60m', '90m', '1h']:
+                # Intraday: ISO format or specific time format
+                date_str = date_val.strftime('%Y-%m-%d %H:%M')
+            else:
+                # Daily or larger: YYYY-MM-DD
+                date_str = date_val.strftime('%Y-%m-%d')
+                
+            results.append({
+                "date": date_str,
+                "price": row['Close']
+            })
+            
+        return results
+    except Exception as e:
+        print(f"Error fetching chart data for {ticker}: {e}")
+        return []

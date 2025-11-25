@@ -164,6 +164,16 @@ async def optimize(request: PortfolioRequest):
         print(f"Internal Server Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/history")
+def get_history(ticker: str, period: str = "1mo", interval: str = "1d"):
+    try:
+        from data import get_chart_data
+        data = get_chart_data(ticker, period, interval)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
