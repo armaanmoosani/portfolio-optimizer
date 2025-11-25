@@ -272,7 +272,7 @@ ${aggregatedNews.slice(0, 15000)}
 
     // Calculate baseline price based on time range
     const baselinePrice = useMemo(() => {
-        if (timeRange === '1D' && stockData?.open) return stockData.open;
+        if (timeRange === '1D' && stockData?.prevClose) return stockData.prevClose;
         return chartData.length > 0 ? chartData[0].price : 0;
     }, [timeRange, stockData, chartData]);
 
@@ -307,7 +307,7 @@ ${aggregatedNews.slice(0, 15000)}
                         {isPositive ? '+' : ''}{change.toFixed(2)} ({isPositive ? '+' : ''}{changePercent.toFixed(2)}%)
                     </div>
                     <p className="text-xs text-slate-500 mt-2 pt-2 border-t border-white/5">
-                        vs {timeRange} start (${startPrice.toFixed(2)})
+                        vs {timeRange === '1D' ? 'prev close' : `${timeRange} start`} (${startPrice.toFixed(2)})
                     </p>
                 </div>
             );
@@ -539,7 +539,7 @@ ${aggregatedNews.slice(0, 15000)}
                                                 dx={-10}
                                             />
                                             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }} />
-                                            {baselinePrice > 0 && (
+                                            {timeRange === '1D' && baselinePrice > 0 && (
                                                 <ReferenceLine
                                                     y={baselinePrice}
                                                     stroke="#94a3b8"
