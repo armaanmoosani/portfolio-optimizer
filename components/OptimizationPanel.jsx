@@ -201,7 +201,9 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                 drawdowns: data.backtest?.drawdowns || [],
                 correlations: data.backtest?.correlations || {},
                 assetMetrics: data.backtest?.asset_metrics || {},
-                efficientFrontier: data.efficient_frontier || null
+                efficientFrontier: data.efficient_frontier || null,
+                risk_contributions: data.backtest?.risk_contributions || {},
+                rebalancing: data.rebalancing || null
             };
 
             onOptimizationComplete(results);

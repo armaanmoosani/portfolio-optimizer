@@ -118,8 +118,9 @@ export default function PortfolioResults({ data }) {
                         )}
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={() => window.print()} className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Export PDF">
+                        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/20" title="Export PDF">
                             <FileText className="w-4 h-4" />
+                            Export PDF
                         </button>
                         <button onClick={exportCSV} className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Export CSV">
                             <TableIcon className="w-4 h-4" />
