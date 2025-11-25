@@ -556,7 +556,7 @@ export default function PortfolioResults({ data }) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
-                            className="space-y-6"
+                            className="space-y-8" // Changed from space-y-6 to space-y-8
                         >
                             {/* Efficient Frontier */}
                             {data.efficientFrontier && (
@@ -564,7 +564,7 @@ export default function PortfolioResults({ data }) {
                             )}
 
                             {/* Growth Chart */}
-                            <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                            <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]"> {/* Added min-h-[400px] */}
                                 <h3 className="text-lg font-bold text-white mb-6">Portfolio Growth</h3>
                                 <div className="h-[400px]">
                                     <ResponsiveContainer width="100%" height="100%">
@@ -603,9 +603,9 @@ export default function PortfolioResults({ data }) {
                             </div>
 
                             {/* Drawdown Chart */}
-                            <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                            <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]"> {/* Added min-h-[400px] and adjusted height */}
                                 <h3 className="text-lg font-bold text-white mb-6">Drawdown</h3>
-                                <div className="h-[300px]">
+                                <div className="h-[400px]"> {/* Changed from h-[300px] to h-[400px] */}
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={data.drawdown}>
                                             <defs>

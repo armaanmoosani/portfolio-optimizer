@@ -35,26 +35,28 @@ export default function SortableTable({ columns, data }) {
     };
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-slate-700/50">
+        <div className="overflow-x-auto rounded-xl border border-slate-700/50 shadow-sm">
             <table className="w-full text-sm text-left">
-                <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
+                <thead className="text-xs text-slate-300 uppercase bg-slate-900 border-b border-slate-700">
                     <tr>
                         {columns.map(col => (
                             <th
                                 key={col.key}
-                                className={`px-4 py-2 cursor-pointer hover:text-white ${col.numeric ? 'text-right' : ''}`}
+                                className={`px-4 py-3 cursor-pointer hover:text-white hover:bg-slate-800 transition-colors ${col.numeric ? 'text-right' : ''}`}
                                 onClick={() => handleSort(col.key)}
                             >
-                                {col.label} {getArrow(col.key)}
+                                <div className={`flex items-center gap-1 ${col.numeric ? 'justify-end' : 'justify-start'}`}>
+                                    {col.label} {getArrow(col.key)}
+                                </div>
                             </th>
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-800/50 bg-slate-800/20">
                     {sortedData.map((row, idx) => (
-                        <tr key={idx} className="bg-slate-900/20 hover:bg-slate-800/30 transition-colors">
+                        <tr key={idx} className="hover:bg-slate-700/30 transition-colors">
                             {columns.map(col => (
-                                <td key={col.key} className={`px-4 py-2 ${col.numeric ? 'text-right font-mono' : ''}`}>
+                                <td key={col.key} className={`px-4 py-3 ${col.numeric ? 'text-right font-mono' : ''}`}>
                                     {col.render ? col.render(row[col.key], row) : row[col.key]}
                                 </td>
                             ))}
