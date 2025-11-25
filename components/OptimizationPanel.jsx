@@ -162,7 +162,24 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     std_dev_annualized: (data.backtest.metrics.std_dev_annualized || 0) * 100,
                     downside_dev_monthly: (data.backtest.metrics.downside_dev_monthly || 0),
                     benchmark_correlation: data.backtest.metrics.benchmark_correlation || 0,
-                    treynor_ratio: (data.backtest.metrics.treynor_ratio || 0) * 100
+                    treynor_ratio: (data.backtest.metrics.treynor_ratio || 0) * 100,
+
+                    // Advanced Risk Metrics
+                    calmar_ratio: data.backtest.metrics.calmar_ratio || 0,
+                    var_95_daily: data.backtest.metrics.var_95_daily || 0,
+                    var_99_daily: data.backtest.metrics.var_99_daily || 0,
+                    cvar_95_daily: data.backtest.metrics.cvar_95_daily || 0,
+                    cvar_99_daily: data.backtest.metrics.cvar_99_daily || 0,
+                    var_95_annual: data.backtest.metrics.var_95_annual || 0,
+                    var_99_annual: data.backtest.metrics.var_99_annual || 0,
+                    skewness: data.backtest.metrics.skewness || 0,
+                    kurtosis: data.backtest.metrics.kurtosis || 0,
+
+                    // Benchmark Metrics
+                    information_ratio: data.backtest.metrics.information_ratio || 0,
+                    up_capture: data.backtest.metrics.up_capture || 0,
+                    down_capture: data.backtest.metrics.down_capture || 0,
+                    r_squared: data.backtest.metrics.r_squared || 0
                 },
                 weights: Object.entries(data.optimization.weights || {}).map(([asset, weight]) => ({
                     asset,
