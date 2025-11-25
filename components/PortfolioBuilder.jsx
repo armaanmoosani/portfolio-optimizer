@@ -244,7 +244,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
             {/* Right Column: Live Allocation Preview (Span 1) */}
             <div className="lg:col-span-1">
-                <div className="sticky top-24 glass-panel rounded-3xl p-8 border border-white/5 shadow-2xl bg-slate-900/40 backdrop-blur-md">
+                <div className="glass-panel rounded-3xl p-8 border border-white/5 shadow-2xl bg-slate-900/40 backdrop-blur-md">
                     <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
                             <PieIcon className="w-6 h-6" />

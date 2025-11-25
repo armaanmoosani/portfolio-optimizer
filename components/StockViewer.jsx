@@ -10,6 +10,7 @@ const TIME_RANGES = {
     '1W': { period: '5d', interval: '15m' },
     '1M': { period: '1mo', interval: '1d' },
     '3M': { period: '3mo', interval: '1d' },
+    'YTD': { period: 'ytd', interval: '1d' },
     '1Y': { period: '1y', interval: '1d' },
     '5Y': { period: '5y', interval: '1wk' },
 };
@@ -105,6 +106,15 @@ export default function StockViewer() {
                 if (!res.ok) throw new Error("Failed to fetch history");
 
                 const data = await res.json();
+
+                // Sync last point with live price for 1D view
+                if (timeRange === '1D' && stockData?.price && data.length > 0) {
+                    const lastPoint = data[data.length - 1];
+                    // Update the last point's price to match the live quote
+                    // This ensures the chart line connects to the big number at the top
+                    lastPoint.price = stockData.price;
+                }
+
                 setChartData(data);
             } catch (err) {
                 console.error("Chart fetch error:", err);
@@ -284,6 +294,24 @@ ${aggregatedNews.slice(0, 15000)}
         const percent = (change / baselinePrice) * 100;
         return { change, percent, isPositive: change >= 0 };
     }, [chartData, baselinePrice]);
+
+    // Calculate Y-axis domain to ensure reference line is visible
+    const yDomain = useMemo(() => {
+        if (chartData.length === 0) return ['auto', 'auto'];
+
+        let min = Math.min(...chartData.map(d => d.price));
+        let max = Math.max(...chartData.map(d => d.price));
+
+        // If we have a baseline price (prevClose) in 1D view, ensure it's included in the domain
+        if (timeRange === '1D' && baselinePrice > 0) {
+            min = Math.min(min, baselinePrice);
+            max = Math.max(max, baselinePrice);
+        }
+
+        // Add some padding (2%)
+        const padding = (max - min) * 0.02;
+        return [min - padding, max + padding];
+    }, [chartData, baselinePrice, timeRange]);
 
     // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
@@ -529,7 +557,7 @@ ${aggregatedNews.slice(0, 15000)}
                                                 tickFormatter={formatXAxis}
                                             />
                                             <YAxis
-                                                domain={['auto', 'auto']}
+                                                domain={yDomain}
                                                 stroke="#475569"
                                                 tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
                                                 tickLine={false}
