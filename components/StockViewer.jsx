@@ -270,22 +270,27 @@ ${aggregatedNews.slice(0, 15000)}
         }
     };
 
+    // Calculate baseline price based on time range
+    const baselinePrice = useMemo(() => {
+        if (timeRange === '1D' && stockData?.open) return stockData.open;
+        return chartData.length > 0 ? chartData[0].price : 0;
+    }, [timeRange, stockData, chartData]);
+
     // Calculate period change for header
     const periodChange = useMemo(() => {
-        if (chartData.length < 2) return null;
-        const startPrice = chartData[0].price;
+        if (chartData.length === 0 || !baselinePrice) return null;
         const currentPrice = chartData[chartData.length - 1].price;
-        const change = currentPrice - startPrice;
-        const percent = (change / startPrice) * 100;
+        const change = currentPrice - baselinePrice;
+        const percent = (change / baselinePrice) * 100;
         return { change, percent, isPositive: change >= 0 };
-    }, [chartData]);
+    }, [chartData, baselinePrice]);
 
     // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             const currentPrice = payload[0].value;
-            // Calculate change relative to the first point in the visible chart data
-            const startPrice = chartData.length > 0 ? chartData[0].price : currentPrice;
+            // Calculate change relative to the baseline price
+            const startPrice = baselinePrice || currentPrice;
             const change = currentPrice - startPrice;
             const changePercent = (change / startPrice) * 100;
             const isPositive = change >= 0;
@@ -534,9 +539,9 @@ ${aggregatedNews.slice(0, 15000)}
                                                 dx={-10}
                                             />
                                             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }} />
-                                            {chartData.length > 0 && (
+                                            {baselinePrice > 0 && (
                                                 <ReferenceLine
-                                                    y={chartData[0].price}
+                                                    y={baselinePrice}
                                                     stroke="#94a3b8"
                                                     strokeDasharray="3 3"
                                                     strokeOpacity={0.5}

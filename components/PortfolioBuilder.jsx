@@ -82,7 +82,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
-            if (showSuggestions && suggestions.length > 0) {
+            if (showSuggestions && suggestions.length > 6) {
                 setSelectedIndex(prev => (prev + 1) % Math.min(suggestions.length, 6));
             }
         } else if (e.key === "ArrowUp") {
@@ -244,7 +244,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
             {/* Right Column: Live Allocation Preview (Span 1) */}
             <div className="lg:col-span-1">
-                <div className="sticky top-24 glass-panel rounded-3xl p-8 border border-white/5 shadow-2xl bg-slate-900/40 backdrop-blur-md">
+                <div className="sticky top-32 glass-panel rounded-3xl p-8 border border-white/5 shadow-2xl bg-slate-900/40 backdrop-blur-md">
                     <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
                             <PieIcon className="w-6 h-6" />
@@ -254,13 +254,13 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
                     {assets.length > 0 ? (
                         <div className="relative">
-                            <div className="h-[280px] w-full relative z-10 min-h-[280px]">
+                            <div className="h-[320px] w-full relative z-10">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
                                             data={allocationData}
-                                            innerRadius={70}
-                                            outerRadius={100}
+                                            innerRadius={60}
+                                            outerRadius={80}
                                             paddingAngle={4}
                                             dataKey="value"
                                             stroke="none"
