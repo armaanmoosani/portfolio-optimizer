@@ -23,6 +23,10 @@ def calculate_risk_contributions(weights: dict, asset_returns: pd.DataFrame, ann
     # Portfolio Volatility (Annualized)
     port_vol = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
     
+    # Numerical stability: Avoid division by zero
+    if port_vol < 1e-8:
+        port_vol = 1e-8
+
     # Marginal Contribution to Risk (MCR)
     # MCR = (Cov * w) / sigma
     mcr = np.dot(cov_matrix, w) / port_vol

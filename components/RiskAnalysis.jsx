@@ -10,7 +10,10 @@ export default function RiskAnalysis({ data }) {
     if (!data) return null;
 
     // Convert data object to array and sort by PCR descending
-    const riskData = Object.values(data).sort((a, b) => b.PCR - a.PCR);
+    const riskData = Object.entries(data).map(([ticker, metrics]) => ({
+        Ticker: ticker,
+        ...metrics
+    })).sort((a, b) => b.PCR - a.PCR);
     const topRiskDriver = riskData[0];
 
     return (
@@ -119,6 +122,16 @@ export default function RiskAnalysis({ data }) {
                                         />
                                     </div>
                                 </th>
+                                <th className="px-6 py-3 text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                        CVaR Contrib (95%)
+                                        <MetricTooltip
+                                            title="CVaR Contribution"
+                                            description="Expected loss contribution from this asset during tail events (worst 5% of days). Measures downside risk beyond VaR."
+                                            formula="Weight × Avg(Asset Return | Portfolio Return ≤ VaR)"
+                                        />
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
@@ -141,6 +154,7 @@ export default function RiskAnalysis({ data }) {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right font-mono text-slate-300">{formatPercent(asset.Parametric_VaR_Contrib)}</td>
+                                    <td className="px-6 py-4 text-right font-mono text-slate-300">{formatPercent(asset.CVaR_Contrib)}</td>
                                 </tr>
                             ))}
                         </tbody>

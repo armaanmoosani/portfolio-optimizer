@@ -104,6 +104,11 @@ export default function PortfolioResults({ data }) {
 
     if (!data) return null;
 
+    const handleExportPDF = () => {
+        localStorage.setItem('portfolioReportData', JSON.stringify(data));
+        window.open('/portfolio/report', '_blank');
+    };
+
     return (
         <>
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 print:hidden" data-internal-navigation>
@@ -118,7 +123,7 @@ export default function PortfolioResults({ data }) {
                         )}
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/20" title="Export PDF">
+                        <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/20" title="Export PDF">
                             <FileText className="w-4 h-4" />
                             Export PDF
                         </button>

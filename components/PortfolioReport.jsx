@@ -98,10 +98,11 @@ export default function PortfolioReport({ data }) {
                                 <th className="px-4 py-2 border border-slate-200 text-right">MCR</th>
                                 <th className="px-4 py-2 border border-slate-200 text-right">PCR</th>
                                 <th className="px-4 py-2 border border-slate-200 text-right">VaR Contrib</th>
+                                <th className="px-4 py-2 border border-slate-200 text-right">CVaR Contrib</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.values(data.risk_contributions || {}).sort((a, b) => b.PCR - a.PCR).map((asset, i) => (
+                            {Object.entries(data.risk_contributions || {}).map(([ticker, metrics]) => ({ Ticker: ticker, ...metrics })).sort((a, b) => b.PCR - a.PCR).map((asset, i) => (
                                 <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                                     <td className="px-4 py-2 border border-slate-200 font-medium">{asset.Ticker}</td>
                                     <td className="px-4 py-2 border border-slate-200 text-right">{formatPercent(asset.Weight)}</td>
@@ -110,6 +111,7 @@ export default function PortfolioReport({ data }) {
                                         {formatPercent(asset.PCR)}
                                     </td>
                                     <td className="px-4 py-2 border border-slate-200 text-right">{formatPercent(asset.Parametric_VaR_Contrib)}</td>
+                                    <td className="px-4 py-2 border border-slate-200 text-right">{formatPercent(asset.CVaR_Contrib)}</td>
                                 </tr>
                             ))}
                         </tbody>
