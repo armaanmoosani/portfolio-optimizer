@@ -109,6 +109,7 @@ export default function RiskAnalysis({ data }) {
                                             title="Percent Contribution to Risk"
                                             description="Percentage of total portfolio risk explained by this asset. Sums to 100%."
                                             formula="(Weight × MCR) / Portfolio Volatility"
+                                            align="right"
                                         />
                                     </div>
                                 </th>
@@ -119,6 +120,7 @@ export default function RiskAnalysis({ data }) {
                                             title="VaR Contribution"
                                             description="Amount of the portfolio's Value at Risk attributable to this asset."
                                             formula="PCR × Portfolio VaR"
+                                            align="right"
                                         />
                                     </div>
                                 </th>
@@ -129,6 +131,7 @@ export default function RiskAnalysis({ data }) {
                                             title="CVaR Contribution"
                                             description="Expected loss contribution from this asset during tail events (worst 5% of days). Measures downside risk beyond VaR."
                                             formula="Weight × Avg(Asset Return | Portfolio Return ≤ VaR)"
+                                            align="right"
                                         />
                                     </div>
                                 </th>
