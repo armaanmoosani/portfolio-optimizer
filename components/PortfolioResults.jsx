@@ -239,6 +239,17 @@ export default function PortfolioResults({ data }) {
                                                 </span>
                                                 <span className="font-mono text-white">{data.metrics.beta.toFixed(2)} {data.metrics.beta >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                             </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                <span className="text-slate-400 flex items-center">
+                                                    R-Squared
+                                                    <MetricTooltip
+                                                        title="R-Squared"
+                                                        description="Percentage of the portfolio's movements explained by the benchmark. 1.0 = perfect correlation."
+                                                        formula="Correlation^2"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-white">{data.metrics.r_squared !== undefined ? data.metrics.r_squared.toFixed(2) : '-'}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
