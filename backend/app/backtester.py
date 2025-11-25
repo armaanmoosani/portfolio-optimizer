@@ -393,7 +393,7 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             "drawdown": float(round(drawdown.loc[date] * 100, 2))
         })
 
-    return {
+    result = {
         "metrics": {
             "total_return": float(total_return),
             "annualized_return": float(annualized_return),
@@ -439,9 +439,8 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
         "drawdowns": top_drawdowns,
         "correlations": correlation_matrix,
         "asset_metrics": asset_metrics,
-        "chart_data": chart_data
+        "chart_data": chart_data,
     }
-    
     # Add rebalancing comparison (Phase 4)
     if rebalance_freq != "never":
         rebalanced_results = run_backtest_with_rebalancing(
@@ -452,7 +451,7 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
         bh_final = portfolio_value.iloc[-1]
         rb_final = rebalanced_results["portfolio_value"].iloc[-1]
         
-        return_dict["rebalancing"] = {
+        result["rebalancing"] = {
             "buy_and_hold_final": float(bh_final),
             "rebalanced_final": float(rb_final),
             "difference": float(rb_final - bh_final),
@@ -465,4 +464,4 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             "frequency": rebalance_freq,
         }
     
-    return return_dict
+    return result

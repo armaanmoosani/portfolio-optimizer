@@ -10,6 +10,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const searchContainerRef = useRef(null);
+    const inputRef = useRef(null);
 
     // Click outside to close suggestions
     useEffect(() => {
@@ -49,6 +50,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const handleAdd = (symbol, description) => {
         onAddAsset(symbol, description);
         setTicker("");
+        if (inputRef.current) inputRef.current.value = "";
         setSuggestions([]);
         setShowSuggestions(false);
         setSelectedIndex(-1);
@@ -103,13 +105,16 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
             <div className="relative" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
                 <div className="relative flex gap-2">
                     <div className="relative flex-1">
+
                         <input
+                            ref={inputRef}
                             type="text"
                             value={ticker}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
                             onFocus={() => ticker && setShowSuggestions(true)}
                             placeholder="Search for a ticker (e.g., AAPL)..."
+                            autoComplete="off"
                             className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         />
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />

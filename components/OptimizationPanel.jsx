@@ -50,7 +50,7 @@ const optimizationMethods = [
     }
 ];
 
-export default function OptimizationPanel({ assets = [], onOptimizationComplete }) {
+export default function OptimizationPanel({ assets = [], onOptimizationComplete, onOptimizationStart }) {
     const toast = useToast();
 
     const showToast = (message, type = "info") => {
@@ -92,6 +92,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete 
             return;
         }
 
+        if (onOptimizationStart) onOptimizationStart();
         setIsOptimizing(true);
 
         try {
