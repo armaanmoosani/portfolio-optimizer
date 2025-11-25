@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Shield, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 import SortableTable from './SortableTable';
 import LoadingSkeleton from './LoadingSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -253,7 +253,6 @@ export default function PortfolioResults({ data }) {
                                         onClick={() => setShowAdvanced(!showAdvanced)}
                                     >
                                         <h3 className="font-semibold text-white flex items-center gap-2">
-                                            <Shield className="w-5 h-5 text-blue-400" />
                                             Advanced Risk Metrics
                                         </h3>
                                         <div className="text-slate-400">
