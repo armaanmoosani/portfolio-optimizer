@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PortfolioBuilder from "@/components/PortfolioBuilder";
 import OptimizationPanel from "@/components/OptimizationPanel";
+import PortfolioResults from "@/components/PortfolioResults";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 export default function PortfolioPage() {
