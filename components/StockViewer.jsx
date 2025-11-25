@@ -270,6 +270,16 @@ ${aggregatedNews.slice(0, 15000)}
         }
     };
 
+    // Calculate period change for header
+    const periodChange = useMemo(() => {
+        if (chartData.length < 2) return null;
+        const startPrice = chartData[0].price;
+        const currentPrice = chartData[chartData.length - 1].price;
+        const change = currentPrice - startPrice;
+        const percent = (change / startPrice) * 100;
+        return { change, percent, isPositive: change >= 0 };
+    }, [chartData]);
+
     // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
@@ -462,9 +472,16 @@ ${aggregatedNews.slice(0, 15000)}
                             {/* Chart Card */}
                             <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
-                                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                        Price Performance
-                                    </h3>
+                                    <div className="flex flex-col">
+                                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            Price Performance
+                                        </h3>
+                                        {periodChange && (
+                                            <div className={`text-sm font-medium mt-1 ${periodChange.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {periodChange.isPositive ? '+' : ''}{periodChange.percent.toFixed(2)}% <span className="text-slate-500">({timeRange})</span>
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
                                         {Object.keys(TIME_RANGES).map((range) => (
                                             <button
@@ -517,9 +534,9 @@ ${aggregatedNews.slice(0, 15000)}
                                                 dx={-10}
                                             />
                                             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }} />
-                                            {stockData?.open && (
+                                            {chartData.length > 0 && (
                                                 <ReferenceLine
-                                                    y={stockData.open}
+                                                    y={chartData[0].price}
                                                     stroke="#94a3b8"
                                                     strokeDasharray="3 3"
                                                     strokeOpacity={0.5}
