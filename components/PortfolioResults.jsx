@@ -241,359 +241,360 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
 
-                                    {/* Professional Risk Metrics */}
-                                    {data.metrics.calmar_ratio !== undefined && (
-                                        <div className="mt-6 rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
-                                            <div
-                                                className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-800/80 transition-colors"
-                                                onClick={() => setShowAdvanced(!showAdvanced)}
+                            {/* Professional Risk Metrics */}
+
+                            {data.metrics.calmar_ratio !== undefined && (
+                                <div className="rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
+                                    <div
+                                        className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-800/80 transition-colors"
+                                        onClick={() => setShowAdvanced(!showAdvanced)}
+                                    >
+                                        <h3 className="font-semibold text-white flex items-center gap-2">
+                                            <Shield className="w-5 h-5 text-blue-400" />
+                                            Advanced Risk Metrics
+                                        </h3>
+                                        <div className="text-slate-400">
+                                            {showAdvanced ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
+                                        </div>
+                                    </div>
+                                    <AnimatePresence>
+                                        {showAdvanced && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
                                             >
-                                                <h3 className="font-semibold text-white flex items-center gap-2">
-                                                    <Shield className="w-5 h-5 text-blue-400" />
-                                                    Advanced Risk Metrics
-                                                </h3>
-                                                <div className="text-slate-400">
-                                                    {showAdvanced ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
-                                                </div>
-                                            </div>
-                                            <AnimatePresence>
-                                                {showAdvanced && (
-                                                    <motion.div
-                                                        initial={{ height: 0, opacity: 0 }}
-                                                        animate={{ height: "auto", opacity: 1 }}
-                                                        exit={{ height: 0, opacity: 0 }}
-                                                        transition={{ duration: 0.3 }}
-                                                    >
-                                                        <div className="bg-slate-900/40 p-6 border-t border-slate-700/50">
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                                                                <div className="space-y-3">
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Calmar Ratio
-                                                                            <MetricTooltip
-                                                                                title="Calmar Ratio"
-                                                                                description="Return divided by maximum drawdown. Preferred by hedge funds as it shows return per unit of worst loss. Higher is better."
-                                                                                formula="Annualized Return / |Max Drawdown|"
-                                                                            />
-                                                                        </span>
-                                                                        <span className="font-mono text-white">{data.metrics.calmar_ratio.toFixed(2)} {data.metrics.calmar_ratio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            VaR (95%, Daily)
-                                                                            <MetricTooltip
-                                                                                title="Value at Risk (95%)"
-                                                                                description="With 95% confidence, daily loss won't exceed this amount. Uses historical simulation method (5th percentile of returns)."
-                                                                                formula="5th Percentile of Daily Returns"
-                                                                            />
-                                                                        </span>
-                                                                        <span className="font-mono text-rose-400">{formatPercent(data.metrics.var_95_daily * 100)} {data.metrics.var_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400">VaR (99%, Daily)</span>
-                                                                        <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_daily * 100)} {data.metrics.var_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            CVaR (95%, Daily)
-                                                                            <MetricTooltip
-                                                                                title="Conditional Value at Risk"
-                                                                                description="Expected loss when losses exceed VaR. Also called Expected Shortfall. Used in Basel III banking regulations for tail risk."
-                                                                                formula="Mean of returns below VaR threshold"
-                                                                            />
-                                                                        </span>
-                                                                        <span className="font-mono text-rose-400">{formatPercent(data.metrics.cvar_95_daily * 100)} {data.metrics.cvar_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400">CVaR (99%, Daily)</span>
-                                                                        <span className="font-mono text-rose-500">{formatPercent(data.metrics.cvar_99_daily * 100)} {data.metrics.cvar_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-3">
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Skewness
-                                                                            <MetricTooltip
-                                                                                title="Skewness"
-                                                                                description="Measures asymmetry of returns. Negative = left tail (crash risk), Positive = right tail (large gains more likely). Normal distribution = 0."
-                                                                                formula="Sample Skewness = E[(X - μ)³] / σ³"
-                                                                            />
-                                                                        </span>
-                                                                        <span className={`font-mono ${data.metrics.skewness < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                                                            {data.metrics.skewness.toFixed(3)} {data.metrics.skewness >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Kurtosis
-                                                                            <MetricTooltip
-                                                                                title="Kurtosis"
-                                                                                description="Measures tail heaviness. >3 = fat tails (higher crash risk), =3 = normal distribution, <3 = thin tails. High kurtosis indicates extreme events are more likely."
-                                                                                formula="Sample Kurtosis = E[(X - μ)⁴] / σ⁴"
-                                                                            />
-                                                                        </span>
-                                                                        <span className={`font-mono ${data.metrics.kurtosis > 3 ? 'text-amber-400' : 'text-slate-300'}`}>
-                                                                            {data.metrics.kurtosis.toFixed(3)} {data.metrics.kurtosis >= 3 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400">VaR (99%, Annual)</span>
-                                                                        <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_annual * 100)}</span>
-                                                                    </div>
-                                                                </div>
+                                                <div className="bg-slate-900/40 p-6 border-t border-slate-700/50">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                                                        <div className="space-y-3">
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Calmar Ratio
+                                                                    <MetricTooltip
+                                                                        title="Calmar Ratio"
+                                                                        description="Return divided by maximum drawdown. Preferred by hedge funds as it shows return per unit of worst loss. Higher is better."
+                                                                        formula="Annualized Return / |Max Drawdown|"
+                                                                    />
+                                                                </span>
+                                                                <span className="font-mono text-white">{data.metrics.calmar_ratio.toFixed(2)} {data.metrics.calmar_ratio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    VaR (95%, Daily)
+                                                                    <MetricTooltip
+                                                                        title="Value at Risk (95%)"
+                                                                        description="With 95% confidence, daily loss won't exceed this amount. Uses historical simulation method (5th percentile of returns)."
+                                                                        formula="5th Percentile of Daily Returns"
+                                                                    />
+                                                                </span>
+                                                                <span className="font-mono text-rose-400">{formatPercent(data.metrics.var_95_daily * 100)} {data.metrics.var_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400">VaR (99%, Daily)</span>
+                                                                <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_daily * 100)} {data.metrics.var_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    CVaR (95%, Daily)
+                                                                    <MetricTooltip
+                                                                        title="Conditional Value at Risk"
+                                                                        description="Expected loss when losses exceed VaR. Also called Expected Shortfall. Used in Basel III banking regulations for tail risk."
+                                                                        formula="Mean of returns below VaR threshold"
+                                                                    />
+                                                                </span>
+                                                                <span className="font-mono text-rose-400">{formatPercent(data.metrics.cvar_95_daily * 100)} {data.metrics.cvar_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400">CVaR (99%, Daily)</span>
+                                                                <span className="font-mono text-rose-500">{formatPercent(data.metrics.cvar_99_daily * 100)} {data.metrics.cvar_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                             </div>
                                                         </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-                                    )}
-
-                                    {/* Benchmark Comparison */}
-                                    {data.metrics.tracking_error !== undefined && data.metrics.tracking_error > 0 && (
-                                        <div className="mt-6 rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
-                                            <div
-                                                className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-800/80 transition-colors"
-                                                onClick={() => setShowBenchmark(!showBenchmark)}
-                                            >
-                                                <h3 className="font-semibold text-white flex items-center gap-2">
-                                                    <Target className="w-5 h-5 text-purple-400" />
-                                                    Benchmark Comparison
-                                                </h3>
-                                                <div className="text-slate-400">
-                                                    {showBenchmark ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
-                                                </div>
-                                            </div>
-                                            <AnimatePresence>
-                                                {showBenchmark && (
-                                                    <motion.div
-                                                        initial={{ height: 0, opacity: 0 }}
-                                                        animate={{ height: "auto", opacity: 1 }}
-                                                        exit={{ height: 0, opacity: 0 }}
-                                                        transition={{ duration: 0.3 }}
-                                                    >
-                                                        <div className="bg-slate-900/40 p-6 border-t border-slate-700/50">
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                                                                <div className="space-y-3">
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Tracking Error
-                                                                            <MetricTooltip
-                                                                                title="Tracking Error"
-                                                                                description="Standard deviation of the difference between portfolio and benchmark returns. Measures how closely the portfolio follows the benchmark."
-                                                                                formula="StdDev(Portfolio Return - Benchmark Return)"
-                                                                            />
-                                                                        </span>
-                                                                        <span className="font-mono text-white">{formatPercent(data.metrics.tracking_error * 100)}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Information Ratio
-                                                                            <MetricTooltip
-                                                                                title="Information Ratio"
-                                                                                description="Measures excess return per unit of active risk (tracking error). Higher is better."
-                                                                                formula="Alpha / Tracking Error"
-                                                                            />
-                                                                        </span>
-                                                                        <span className="font-mono text-white">{data.metrics.information_ratio.toFixed(2)}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            R-Squared
-                                                                            <MetricTooltip
-                                                                                title="R-Squared"
-                                                                                description="Percentage of the portfolio's movements explained by the benchmark. 1.0 = perfect correlation."
-                                                                                formula="Correlation^2"
-                                                                            />
-                                                                        </span>
-                                                                        <span className="font-mono text-white">{data.metrics.r_squared.toFixed(2)}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-3">
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Up Capture
-                                                                            <MetricTooltip
-                                                                                title="Up Capture Ratio"
-                                                                                description="Percentage of benchmark gains captured by the portfolio when the benchmark is up. >100% is good."
-                                                                                formula="(Portfolio Up Return / Benchmark Up Return) * 100"
-                                                                            />
-                                                                        </span>
-                                                                        <span className={`font-mono ${data.metrics.up_capture > 100 ? 'text-emerald-400' : 'text-slate-300'}`}>
-                                                                            {data.metrics.up_capture.toFixed(1)}%
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                        <span className="text-slate-400 flex items-center">
-                                                                            Down Capture
-                                                                            <MetricTooltip
-                                                                                title="Down Capture Ratio"
-                                                                                description="Percentage of benchmark losses captured by the portfolio when the benchmark is down. <100% is good."
-                                                                                formula="(Portfolio Down Return / Benchmark Down Return) * 100"
-                                                                            />
-                                                                        </span>
-                                                                        <span className={`font-mono ${data.metrics.down_capture < 100 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                            {data.metrics.down_capture.toFixed(1)}%
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
+                                                        <div className="space-y-3">
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Skewness
+                                                                    <MetricTooltip
+                                                                        title="Skewness"
+                                                                        description="Measures asymmetry of returns. Negative = left tail (crash risk), Positive = right tail (large gains more likely). Normal distribution = 0."
+                                                                        formula="Sample Skewness = E[(X - μ)³] / σ³"
+                                                                    />
+                                                                </span>
+                                                                <span className={`font-mono ${data.metrics.skewness < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                                    {data.metrics.skewness.toFixed(3)} {data.metrics.skewness >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Kurtosis
+                                                                    <MetricTooltip
+                                                                        title="Kurtosis"
+                                                                        description="Measures tail heaviness. >3 = fat tails (higher crash risk), =3 = normal distribution, <3 = thin tails. High kurtosis indicates extreme events are more likely."
+                                                                        formula="Sample Kurtosis = E[(X - μ)⁴] / σ⁴"
+                                                                    />
+                                                                </span>
+                                                                <span className={`font-mono ${data.metrics.kurtosis > 3 ? 'text-amber-400' : 'text-slate-300'}`}>
+                                                                    {data.metrics.kurtosis.toFixed(3)} {data.metrics.kurtosis >= 3 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400">VaR (99%, Annual)</span>
+                                                                <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_annual * 100)}</span>
                                                             </div>
                                                         </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-                                    )}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )}
 
-                                    {/* Rebalancing Analysis Section */}
-                                    {data.rebalancing && (
-                                        <>
-                                            <div className="flex items-center justify-between mt-6 mb-2">
+                            {/* Benchmark Comparison */}
+                            {data.metrics.tracking_error !== undefined && data.metrics.tracking_error > 0 && (
+                                <div className="mt-6 rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
+                                    <div
+                                        className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50 flex justify-between items-center cursor-pointer hover:bg-slate-800/80 transition-colors"
+                                        onClick={() => setShowBenchmark(!showBenchmark)}
+                                    >
+                                        <h3 className="font-semibold text-white flex items-center gap-2">
+                                            <Target className="w-5 h-5 text-purple-400" />
+                                            Benchmark Comparison
+                                        </h3>
+                                        <div className="text-slate-400">
+                                            {showBenchmark ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
+                                        </div>
+                                    </div>
+                                    <AnimatePresence>
+                                        {showBenchmark && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <div className="bg-slate-900/40 p-6 border-t border-slate-700/50">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                                                        <div className="space-y-3">
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Tracking Error
+                                                                    <MetricTooltip
+                                                                        title="Tracking Error"
+                                                                        description="Standard deviation of the difference between portfolio and benchmark returns. Measures how closely the portfolio follows the benchmark."
+                                                                        formula="StdDev(Portfolio Return - Benchmark Return)"
+                                                                    />
+                                                                </span>
+                                                                <span className="font-mono text-white">{formatPercent(data.metrics.tracking_error * 100)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Information Ratio
+                                                                    <MetricTooltip
+                                                                        title="Information Ratio"
+                                                                        description="Measures excess return per unit of active risk (tracking error). Higher is better."
+                                                                        formula="Alpha / Tracking Error"
+                                                                    />
+                                                                </span>
+                                                                <span className="font-mono text-white">{data.metrics.information_ratio.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    R-Squared
+                                                                    <MetricTooltip
+                                                                        title="R-Squared"
+                                                                        description="Percentage of the portfolio's movements explained by the benchmark. 1.0 = perfect correlation."
+                                                                        formula="Correlation^2"
+                                                                    />
+                                                                </span>
+                                                                <span className="font-mono text-white">{data.metrics.r_squared.toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Up Capture
+                                                                    <MetricTooltip
+                                                                        title="Up Capture Ratio"
+                                                                        description="Percentage of benchmark gains captured by the portfolio when the benchmark is up. >100% is good."
+                                                                        formula="(Portfolio Up Return / Benchmark Up Return) * 100"
+                                                                    />
+                                                                </span>
+                                                                <span className={`font-mono ${data.metrics.up_capture > 100 ? 'text-emerald-400' : 'text-slate-300'}`}>
+                                                                    {data.metrics.up_capture.toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b border-slate-800">
+                                                                <span className="text-slate-400 flex items-center">
+                                                                    Down Capture
+                                                                    <MetricTooltip
+                                                                        title="Down Capture Ratio"
+                                                                        description="Percentage of benchmark losses captured by the portfolio when the benchmark is down. <100% is good."
+                                                                        formula="(Portfolio Down Return / Benchmark Down Return) * 100"
+                                                                    />
+                                                                </span>
+                                                                <span className={`font-mono ${data.metrics.down_capture < 100 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                    {data.metrics.down_capture.toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )}
+
+                            {/* Rebalancing Analysis Section */}
+                            {data.rebalancing && (
+                                <>
+                                    <div className="flex items-center justify-between mt-6 mb-2">
+                                        <h3 className="font-semibold text-white">Rebalancing Analysis</h3>
+                                        <button onClick={() => setShowRebalancing(!showRebalancing)} className="text-slate-400 hover:text-white">{showRebalancing ? '▾' : '▸'}</button>
+                                    </div>
+                                    {showRebalancing && (
+                                        <div className="rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-shadow duration-300">
+                                            <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                                 <h3 className="font-semibold text-white">Rebalancing Analysis</h3>
-                                                <button onClick={() => setShowRebalancing(!showRebalancing)} className="text-slate-400 hover:text-white">{showRebalancing ? '▾' : '▸'}</button>
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    {data.rebalancing.frequency === 'monthly' && 'Monthly'}
+                                                    {data.rebalancing.frequency === 'quarterly' && 'Quarterly'}
+                                                    {data.rebalancing.frequency === 'annual' && 'Annual'}
+                                                    {' '}Rebalancing vs. Buy-and-Hold
+                                                </p>
                                             </div>
-                                            {showRebalancing && (
-                                                <div className="rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-shadow duration-300">
-                                                    <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
-                                                        <h3 className="font-semibold text-white">Rebalancing Analysis</h3>
-                                                        <p className="text-xs text-slate-400 mt-1">
-                                                            {data.rebalancing.frequency === 'monthly' && 'Monthly'}
-                                                            {data.rebalancing.frequency === 'quarterly' && 'Quarterly'}
-                                                            {data.rebalancing.frequency === 'annual' && 'Annual'}
-                                                            {' '}Rebalancing vs. Buy-and-Hold
-                                                        </p>
+                                            <div className="bg-slate-900/40 p-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="space-y-3">
+                                                        <div className="p-4 rounded-lg bg-slate-800/40">
+                                                            <p className="text-xs text-slate-400 mb-1">Buy & Hold Final Value</p>
+                                                            <p className="text-2xl font-bold text-white">
+                                                                {formatCurrency(data.rebalancing.buy_and_hold_final)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="p-4 rounded-lg bg-slate-800/40">
+                                                            <p className="text-xs text-slate-400 mb-1">Rebalanced Final Value</p>
+                                                            <p className="text-2xl font-bold text-emerald-400">
+                                                                {formatCurrency(data.rebalancing.rebalanced_final)}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div className="bg-slate-900/40 p-6">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                            <div className="space-y-3">
-                                                                <div className="p-4 rounded-lg bg-slate-800/40">
-                                                                    <p className="text-xs text-slate-400 mb-1">Buy & Hold Final Value</p>
-                                                                    <p className="text-2xl font-bold text-white">
-                                                                        {formatCurrency(data.rebalancing.buy_and_hold_final)}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="p-4 rounded-lg bg-slate-800/40">
-                                                                    <p className="text-xs text-slate-400 mb-1">Rebalanced Final Value</p>
-                                                                    <p className="text-2xl font-bold text-emerald-400">
-                                                                        {formatCurrency(data.rebalancing.rebalanced_final)}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-3">
-                                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                    <span className="text-slate-400">Difference</span>
-                                                                    <span className={`font-mono font-semibold ${data.rebalancing.difference > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                        {data.rebalancing.difference > 0 ? '+' : ''}{formatCurrency(data.rebalancing.difference)}
-                                                                        {' '}({data.rebalancing.difference_pct > 0 ? '+' : ''}{data.rebalancing.difference_pct.toFixed(2)}%)
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                    <span className="text-slate-400">Transaction Costs</span>
-                                                                    <span className="font-mono text-rose-400">
-                                                                        {formatCurrency(data.rebalancing.transaction_costs)}
-                                                                        {' '}({data.rebalancing.transaction_cost_pct.toFixed(2)}%)
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                                    <span className="text-slate-400">Number of Rebalances</span>
-                                                                    <span className="font-mono text-white">{data.rebalancing.num_rebalances}</span>
-                                                                </div>
-                                                            </div>
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                                            <span className="text-slate-400">Difference</span>
+                                                            <span className={`font-mono font-semibold ${data.rebalancing.difference > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                {data.rebalancing.difference > 0 ? '+' : ''}{formatCurrency(data.rebalancing.difference)}
+                                                                {' '}({data.rebalancing.difference_pct > 0 ? '+' : ''}{data.rebalancing.difference_pct.toFixed(2)}%)
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                                            <span className="text-slate-400">Transaction Costs</span>
+                                                            <span className="font-mono text-rose-400">
+                                                                {formatCurrency(data.rebalancing.transaction_costs)}
+                                                                {' '}({data.rebalancing.transaction_cost_pct.toFixed(2)}%)
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                                            <span className="text-slate-400">Number of Rebalances</span>
+                                                            <span className="font-mono text-white">{data.rebalancing.num_rebalances}</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
-
-                                    {/* Comprehensive Professional Metrics */}
-                                    <div className="rounded-xl border border-slate-700/50 overflow-hidden">
-                                        <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
-                                            <h3 className="font-semibold text-white">Comprehensive Statistics</h3>
-                                        </div>
-                                        <div className="p-6">
-                                            <div className="space-y-1.5">
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Arithmetic Mean (Monthly)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly * 100)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Arithmetic Mean (Annualized)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_annualized)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Geometric Mean (Monthly)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly * 100)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Geometric Mean (Annualized)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_annualized)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Std Deviation (Monthly)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly * 100)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Std Deviation (Annualized)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_annualized)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Downside Deviation (Monthly)</span>
-                                                    <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly * 100)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Benchmark Correlation</span>
-                                                    <span className="font-mono text-white">{data.metrics.benchmark_correlation.toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2">
-                                                    <span className="text-slate-400">Treynor Ratio</span>
-                                                    <span className="font-mono text-white">{data.metrics.treynor_ratio.toFixed(3)}</span>
-                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
+                                </>
+                            )}
 
-                                    {/* Trailing Returns */}
-                                    <div className="rounded-xl border border-slate-700/50 overflow-hidden">
-                                        <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
-                                            <h3 className="font-semibold text-white">Trailing Returns</h3>
+                            {/* Comprehensive Professional Metrics */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Comprehensive Statistics</h3>
+                                </div>
+                                <div className="p-6">
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Arithmetic Mean (Monthly)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly * 100)}</span>
                                         </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
-                                                    <tr>
-                                                        <th className="px-6 py-3">Metric</th>
-                                                        <th className="px-6 py-3 text-right">3 Month</th>
-                                                        <th className="px-6 py-3 text-right">YTD</th>
-                                                        <th className="px-6 py-3 text-right">1 Year</th>
-                                                        <th className="px-6 py-3 text-right">3 Year</th>
-                                                        <th className="px-6 py-3 text-right">5 Year</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-800">
-                                                    <tr className="bg-slate-900/20">
-                                                        <td className="px-6 py-4 font-medium text-white">Portfolio Return</td>
-                                                        <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3M"] !== null && data.trailingReturns["3M"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {data.trailingReturns["3M"] !== null ? formatPercent(data.trailingReturns["3M"] * 100) : '-'}
-                                                        </td>
-                                                        <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["YTD"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {formatPercent(data.trailingReturns["YTD"] * 100)}
-                                                        </td>
-                                                        <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["1Y"] !== null && data.trailingReturns["1Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {data.trailingReturns["1Y"] !== null ? formatPercent(data.trailingReturns["1Y"] * 100) : '-'}
-                                                        </td>
-                                                        <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3Y"] !== null && data.trailingReturns["3Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {data.trailingReturns["3Y"] !== null ? formatPercent(data.trailingReturns["3Y"] * 100) : '-'}
-                                                        </td>
-                                                        <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["5Y"] !== null && data.trailingReturns["5Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {data.trailingReturns["5Y"] !== null ? formatPercent(data.trailingReturns["5Y"] * 100) : '-'}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Arithmetic Mean (Annualized)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_annualized)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Geometric Mean (Monthly)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly * 100)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Geometric Mean (Annualized)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_annualized)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Std Deviation (Monthly)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly * 100)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Std Deviation (Annualized)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_annualized)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Downside Deviation (Monthly)</span>
+                                            <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly * 100)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2 border-b border-slate-800">
+                                            <span className="text-slate-400">Benchmark Correlation</span>
+                                            <span className="font-mono text-white">{data.metrics.benchmark_correlation.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between py-2">
+                                            <span className="text-slate-400">Treynor Ratio</span>
+                                            <span className="font-mono text-white">{data.metrics.treynor_ratio.toFixed(3)}</span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Trailing Returns */}
+                            <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
+                                    <h3 className="font-semibold text-white">Trailing Returns</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/40">
+                                            <tr>
+                                                <th className="px-6 py-3">Metric</th>
+                                                <th className="px-6 py-3 text-right">3 Month</th>
+                                                <th className="px-6 py-3 text-right">YTD</th>
+                                                <th className="px-6 py-3 text-right">1 Year</th>
+                                                <th className="px-6 py-3 text-right">3 Year</th>
+                                                <th className="px-6 py-3 text-right">5 Year</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800">
+                                            <tr className="bg-slate-900/20">
+                                                <td className="px-6 py-4 font-medium text-white">Portfolio Return</td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3M"] !== null && data.trailingReturns["3M"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["3M"] !== null ? formatPercent(data.trailingReturns["3M"] * 100) : '-'}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["YTD"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {formatPercent(data.trailingReturns["YTD"] * 100)}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["1Y"] !== null && data.trailingReturns["1Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["1Y"] !== null ? formatPercent(data.trailingReturns["1Y"] * 100) : '-'}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3Y"] !== null && data.trailingReturns["3Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["3Y"] !== null ? formatPercent(data.trailingReturns["3Y"] * 100) : '-'}
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["5Y"] !== null && data.trailingReturns["5Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {data.trailingReturns["5Y"] !== null ? formatPercent(data.trailingReturns["5Y"] * 100) : '-'}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </motion.div>
