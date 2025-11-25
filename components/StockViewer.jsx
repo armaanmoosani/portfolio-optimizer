@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -41,10 +41,24 @@ export default function StockViewer() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Load last viewed ticker on mount
+    useEffect(() => {
+        const savedTicker = localStorage.getItem('lastViewedTicker');
+        if (savedTicker) {
+            setTicker(savedTicker);
+            handleSearch(savedTicker);
+        }
+    }, []);
+
     // Fetch chart data when time range or stock data changes
     useEffect(() => {
         const fetchChartData = async () => {
             if (!stockData?.name) return;
+
+            // Save to localStorage when we have valid stock data
+            if (stockData.symbol) {
+                localStorage.setItem('lastViewedTicker', stockData.symbol);
+            }
 
             setChartLoading(true);
             try {
@@ -265,6 +279,21 @@ ${aggregatedNews.slice(0, 15000)}
         return true;
     };
 
+    // Helper to format X-axis dates based on time range
+    const formatXAxis = (tickItem) => {
+        if (!tickItem) return '';
+        const date = new Date(tickItem);
+
+        if (timeRange === '1D') {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (timeRange === '5Y') {
+            return date.getFullYear().toString();
+        } else {
+            // 1W, 1M, 3M, 1Y -> Short Month + Day (e.g., "Nov 25")
+            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+    };
+
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
             {/* Search Section */}
@@ -276,7 +305,7 @@ ${aggregatedNews.slice(0, 15000)}
 
                 <div className="relative w-full max-w-2xl" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
                     <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-10 group-hover:opacity-25 transition duration-500 blur-sm"></div>
                         <input
                             type="text"
                             value={ticker}
@@ -284,11 +313,11 @@ ${aggregatedNews.slice(0, 15000)}
                             onKeyDown={handleKeyDown}
                             onFocus={() => ticker && setShowSuggestions(true)}
                             placeholder="Search for stocks, ETFs & more..."
-                            className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all shadow-2xl backdrop-blur-xl text-lg font-medium"
+                            className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-lg font-medium"
                         />
                         <button
                             onClick={() => handleSearch()}
-                            className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95"
+                            className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95"
                         >
                             <Search className="w-5 h-5" />
                         </button>
@@ -328,7 +357,7 @@ ${aggregatedNews.slice(0, 15000)}
             {loading && (
                 <div className="flex flex-col items-center justify-center py-32 space-y-6">
                     <div className="relative">
-                        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse"></div>
+                        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-10 animate-pulse"></div>
                         <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
                     </div>
                     <p className="text-slate-400 animate-pulse font-medium tracking-wide">Analyzing market data...</p>
@@ -376,6 +405,7 @@ ${aggregatedNews.slice(0, 15000)}
                                 <span className="w-1 h-1 rounded-full bg-slate-600"></span>
                                 <span className="text-slate-500">Nasdaq</span>
                             </div>
+                            <p className="text-lg text-slate-400 mt-4 max-w-3xl leading-relaxed">{stockData.description}</p>
                         </div>
                         <div className="text-left md:text-right">
                             <div className="text-6xl font-bold text-white tracking-tighter tabular-nums">
@@ -395,7 +425,7 @@ ${aggregatedNews.slice(0, 15000)}
                         <div className="lg:col-span-2 space-y-8">
 
                             {/* Chart Card */}
-                            <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-2xl shadow-black/20">
+                            <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                                         Price Performance
@@ -406,8 +436,8 @@ ${aggregatedNews.slice(0, 15000)}
                                                 key={range}
                                                 onClick={() => setTimeRange(range)}
                                                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === range
-                                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/10'
+                                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                                                     }`}
                                             >
                                                 {range}
@@ -426,7 +456,7 @@ ${aggregatedNews.slice(0, 15000)}
                                         <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
                                                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
@@ -439,6 +469,7 @@ ${aggregatedNews.slice(0, 15000)}
                                                 axisLine={false}
                                                 minTickGap={60}
                                                 dy={10}
+                                                tickFormatter={formatXAxis}
                                             />
                                             <YAxis
                                                 domain={['auto', 'auto']}
@@ -451,6 +482,14 @@ ${aggregatedNews.slice(0, 15000)}
                                                 dx={-10}
                                             />
                                             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }} />
+                                            {stockData?.open && (
+                                                <ReferenceLine
+                                                    y={stockData.open}
+                                                    stroke="#94a3b8"
+                                                    strokeDasharray="3 3"
+                                                    strokeOpacity={0.5}
+                                                />
+                                            )}
                                             <Area
                                                 type="monotone"
                                                 dataKey="price"
@@ -500,10 +539,10 @@ ${aggregatedNews.slice(0, 15000)}
                         {/* Right Column: AI & News (Span 1) */}
                         <div className="space-y-8">
                             {/* AI Summary */}
-                            <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-2xl shadow-blue-900/10">
-                                <div className="absolute top-0 right-0 p-32 bg-blue-500/10 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
+                            <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
+                                <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
-                                    <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400 shadow-inner shadow-blue-500/10 ring-1 ring-blue-500/20">
+                                    <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
                                         <TrendingUp className="w-5 h-5" />
                                     </div>
                                     AI Analysis

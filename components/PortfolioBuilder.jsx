@@ -115,7 +115,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
                 {/* Search Input */}
                 <div className="relative z-20" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
-                    <div className="relative flex gap-2">
+                    <div className="relative flex gap-3">
                         <div className="relative flex-1 group">
                             <input
                                 ref={inputRef}
@@ -126,9 +126,9 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                                 onFocus={() => ticker && setShowSuggestions(true)}
                                 placeholder="Search for a ticker (e.g., AAPL)..."
                                 autoComplete="off"
-                                className="w-full pl-12 pr-4 py-4 bg-slate-900/60 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-lg backdrop-blur-xl group-hover:border-white/20"
+                                className="w-full pl-14 pr-4 py-5 bg-slate-900/60 border border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all shadow-xl backdrop-blur-xl group-hover:border-white/20"
                             />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-hover:text-blue-400 transition-colors" />
                             {ticker && (
                                 <button
                                     onClick={() => {
@@ -136,46 +136,58 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                                         setSuggestions([]);
                                         setShowSuggestions(false);
                                     }}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-5 h-5" />
                                 </button>
                             )}
                         </div>
                         <button
                             onClick={handleAddClick}
                             disabled={!ticker.trim()}
-                            className="px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl font-semibold transition-all disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20 disabled:shadow-none transition-all disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap transform active:scale-95"
                             title="Add ticker to portfolio"
                         >
-                            <PlusCircle className="w-5 h-5" />
-                            Add Asset
+                            <PlusCircle className="w-6 h-6" />
+                            Add
                         </button>
                     </div>
 
                     {/* Autocomplete Suggestions */}
-                    {showSuggestions && suggestions.length > 0 && (
-                        <ul className="absolute w-full mt-2 bg-slate-900/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 max-h-60 overflow-y-auto backdrop-blur-xl">
-                            {suggestions.slice(0, 6).map((item, index) => (
-                                <li
-                                    key={index}
-                                    onClick={() => handleAdd(item.symbol, item.description)}
-                                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-white/5 last:border-none ${index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'
-                                        }`}
-                                >
-                                    <div className="font-bold text-white">{item.symbol}</div>
-                                    <div className="text-xs text-slate-400 truncate">{item.description}</div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    <AnimatePresence>
+                        {showSuggestions && suggestions.length > 0 && (
+                            <motion.ul
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute w-full mt-3 bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[320px] overflow-y-auto backdrop-blur-xl custom-scrollbar"
+                            >
+                                {suggestions.slice(0, 8).map((item, index) => (
+                                    <li
+                                        key={index}
+                                        onClick={() => handleAdd(item.symbol, item.description)}
+                                        className={`px-5 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none flex items-center justify-between group ${index === selectedIndex ? 'bg-blue-500/10' : 'hover:bg-white/5'
+                                            }`}
+                                    >
+                                        <div>
+                                            <div className={`font-bold text-lg ${index === selectedIndex ? 'text-blue-400' : 'text-white group-hover:text-blue-400 transition-colors'}`}>{item.symbol}</div>
+                                            <div className="text-sm text-slate-400 truncate max-w-[300px]">{item.description}</div>
+                                        </div>
+                                        <PlusCircle className={`w-5 h-5 ${index === selectedIndex ? 'text-blue-400' : 'text-slate-600 group-hover:text-blue-400'} transition-colors`} />
+                                    </li>
+                                ))}
+                            </motion.ul>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Asset List */}
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                            Portfolio Assets ({assets.length})
+                    <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <PieIcon className="w-4 h-4" />
+                            Current Assets <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-xs">{assets.length}</span>
                         </h3>
                     </div>
 
@@ -184,40 +196,47 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="text-center py-12 border-2 border-dashed border-white/5 rounded-2xl"
+                                className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.02]"
                             >
-                                <p className="text-slate-500">No assets added yet. Start searching above.</p>
+                                <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
+                                    <Search className="w-10 h-10 text-slate-600" />
+                                </div>
+                                <h4 className="text-xl font-semibold text-white mb-2">Your portfolio is empty</h4>
+                                <p className="text-slate-500 text-center max-w-xs">Search for stocks or ETFs above to start building your portfolio.</p>
                             </motion.div>
                         ) : (
-                            assets.map((asset, index) => (
-                                <motion.div
-                                    key={asset.symbol}
-                                    layout
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className="group flex items-center justify-between p-4 rounded-xl glass-card hover:bg-white/5 transition-all"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg"
-                                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                        >
-                                            {asset.symbol.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-white text-lg">{asset.symbol}</div>
-                                            <div className="text-sm text-slate-400">{asset.description}</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => onRemoveAsset(asset.symbol)}
-                                        className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {assets.map((asset, index) => (
+                                    <motion.div
+                                        key={asset.symbol}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="group relative flex items-center justify-between p-5 rounded-2xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 hover:border-white/10 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
                                     >
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </motion.div>
-                            ))
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-inner"
+                                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                            >
+                                                {asset.symbol.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-white text-xl tracking-tight">{asset.symbol}</div>
+                                                <div className="text-xs text-slate-400 font-medium truncate max-w-[140px]">{asset.description}</div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => onRemoveAsset(asset.symbol)}
+                                            className="p-2.5 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                            title="Remove asset"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
                         )}
                     </AnimatePresence>
                 </div>
@@ -225,62 +244,70 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
             {/* Right Column: Live Allocation Preview (Span 1) */}
             <div className="lg:col-span-1">
-                <div className="sticky top-8 glass-panel rounded-2xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <PieIcon className="w-5 h-5 text-blue-400" />
-                        Allocation Preview
+                <div className="sticky top-8 glass-panel rounded-3xl p-8 border border-white/5 shadow-2xl bg-slate-900/40 backdrop-blur-md">
+                    <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+                            <PieIcon className="w-6 h-6" />
+                        </div>
+                        Target Allocation
                     </h3>
 
                     {assets.length > 0 ? (
-                        <div className="h-[300px] relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={allocationData}
-                                        innerRadius={60}
-                                        outerRadius={100}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {allocationData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
-                                        itemStyle={{ color: '#fff' }}
-                                        formatter={(value) => `${value.toFixed(1)}%`}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            {/* Center Text */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="text-3xl font-bold text-white">{assets.length}</span>
-                                <span className="text-xs text-slate-400 uppercase tracking-wider">Assets</span>
+                        <div className="relative">
+                            <div className="h-[280px] relative z-10">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={allocationData}
+                                            innerRadius={70}
+                                            outerRadius={100}
+                                            paddingAngle={4}
+                                            dataKey="value"
+                                            stroke="none"
+                                            cornerRadius={6}
+                                        >
+                                            {allocationData.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={entry.color}
+                                                    className="hover:opacity-80 transition-opacity cursor-pointer"
+                                                />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f8fafc', padding: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+                                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                            formatter={(value) => `${value.toFixed(1)}%`}
+                                            cursor={false}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                {/* Center Text */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-4xl font-bold text-white tracking-tighter">{assets.length}</span>
+                                    <span className="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Assets</span>
+                                </div>
+                            </div>
+
+                            {/* Legend */}
+                            <div className="mt-8 space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                                {allocationData.map((entry, index) => (
+                                    <div key={entry.name} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-white/5 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: entry.color }} />
+                                            <span className="text-slate-200 font-bold">{entry.name}</span>
+                                        </div>
+                                        <span className="text-slate-400 font-mono">{(100 / assets.length).toFixed(1)}%</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     ) : (
-                        <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-white/5 rounded-xl">
-                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                        <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
+                            <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
                                 <PieIcon className="w-8 h-8 text-slate-600" />
                             </div>
-                            <p className="text-slate-400 text-sm">Add assets to see your portfolio breakdown</p>
-                        </div>
-                    )}
-
-                    {/* Legend */}
-                    {assets.length > 0 && (
-                        <div className="mt-6 space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                            {allocationData.map((entry, index) => (
-                                <div key={entry.name} className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                                        <span className="text-slate-300 font-medium">{entry.name}</span>
-                                    </div>
-                                    <span className="text-slate-500">{(100 / assets.length).toFixed(1)}%</span>
-                                </div>
-                            ))}
+                            <p className="text-slate-400 text-sm font-medium">Add assets to visualize<br />your target allocation</p>
                         </div>
                     )}
                 </div>
