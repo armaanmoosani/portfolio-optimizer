@@ -57,6 +57,17 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
+// Sparkline Component
+const Sparkline = ({ data, dataKey, color }) => (
+    <div className="h-10 w-24">
+        <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+                <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
+            </LineChart>
+        </ResponsiveContainer>
+    </div>
+);
+
 export default function PortfolioResults({ data }) {
     const [activeTab, setActiveTab] = useState('assets');
     const [showAdvanced, setShowAdvanced] = useState(true);
@@ -138,17 +149,23 @@ export default function PortfolioResults({ data }) {
                                     <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Start Balance</div>
                                     <div className="text-xl font-bold text-white">{formatCurrency(data.metrics.startBalance)}</div>
                                 </div>
-                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
-                                    <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">End Balance</div>
-                                    <div className="text-xl font-bold text-emerald-400">{formatCurrency(data.metrics.endBalance)}</div>
+                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
+                                    <div>
+                                        <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">End Balance</div>
+                                        <div className="text-xl font-bold text-emerald-400">{formatCurrency(data.metrics.endBalance)}</div>
+                                    </div>
+                                    <Sparkline data={data.performance} dataKey="value" color="#34d399" />
                                 </div>
                                 <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
                                     <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">CAGR</div>
                                     <div className="text-xl font-bold text-blue-400">{formatPercent(data.metrics.expectedReturn)}</div>
                                 </div>
-                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
-                                    <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Max Drawdown</div>
-                                    <div className="text-xl font-bold text-rose-400">{formatPercent(data.metrics.maxDrawdown)}</div>
+                                <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
+                                    <div>
+                                        <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Max Drawdown</div>
+                                        <div className="text-xl font-bold text-rose-400">{formatPercent(data.metrics.maxDrawdown)}</div>
+                                    </div>
+                                    <Sparkline data={data.drawdown} dataKey="drawdown" color="#f43f5e" />
                                 </div>
                             </div>
 
