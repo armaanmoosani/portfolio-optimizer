@@ -48,12 +48,14 @@ export default function StockViewer() {
 
         if (savedData) {
             try {
-                const { stockData, news, aiSummary, timestamp } = JSON.parse(savedData);
+                const { stockData, news, aiSummary, chartData, timeRange, timestamp } = JSON.parse(savedData);
                 // Only use cached data if it's less than 1 hour old
                 if (Date.now() - timestamp < 3600000) {
                     setStockData(stockData);
                     setNews(news);
                     setAiSummary(aiSummary);
+                    if (chartData) setChartData(chartData);
+                    if (timeRange) setTimeRange(timeRange);
                     setTicker(stockData.symbol);
                     return;
                 }
@@ -76,17 +78,24 @@ export default function StockViewer() {
                 stockData,
                 news,
                 aiSummary,
+                chartData,
+                timeRange,
                 timestamp: Date.now()
             }));
         }
-    }, [stockData, news, aiSummary]);
+    }, [stockData, news, aiSummary, chartData, timeRange]);
 
     // Fetch chart data when time range or stock data changes
     useEffect(() => {
         const fetchChartData = async () => {
             if (!stockData?.symbol) return;
 
-            setChartLoading(true);
+            // Only show loading state if we don't have chart data or if the data doesn't match the current view
+            // This prevents the "regeneration" flash on reload
+            if (chartData.length === 0) {
+                setChartLoading(true);
+            }
+
             try {
                 const symbol = stockData.symbol;
                 const { period, interval } = TIME_RANGES[timeRange];
@@ -99,7 +108,10 @@ export default function StockViewer() {
                 setChartData(data);
             } catch (err) {
                 console.error("Chart fetch error:", err);
-                setChartData([]);
+                // Only clear chart data on error if we were loading from scratch
+                if (chartData.length === 0) {
+                    setChartData([]);
+                }
             } finally {
                 setChartLoading(false);
             }
