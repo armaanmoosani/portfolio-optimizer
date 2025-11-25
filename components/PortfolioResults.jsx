@@ -104,9 +104,14 @@ export default function PortfolioResults({ data }) {
 
     if (!data) return null;
 
-    const handleExportPDF = () => {
-        localStorage.setItem('portfolioReportData', JSON.stringify(data));
-        window.open('/portfolio/report', '_blank');
+    const handleExportPDF = async () => {
+        try {
+            const { generatePDFReport } = await import('@/utils/pdfExport');
+            await generatePDFReport(data);
+        } catch (error) {
+            console.error('PDF generation failed:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
     };
 
     return (
