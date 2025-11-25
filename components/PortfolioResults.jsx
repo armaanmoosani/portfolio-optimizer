@@ -105,8 +105,7 @@ export default function PortfolioResults({ data }) {
     if (!data) return null;
 
     const handleExportPDF = () => {
-        localStorage.setItem('portfolioReportData', JSON.stringify(data));
-        window.open('/portfolio/report?print=true', '_blank');
+        window.print();
     };
 
     return (
