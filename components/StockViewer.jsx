@@ -41,30 +41,53 @@ export default function StockViewer() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Load last viewed ticker on mount
+    // Load last viewed ticker and data on mount
     useEffect(() => {
         const savedTicker = localStorage.getItem('lastViewedTicker');
+        const savedData = localStorage.getItem('stockViewerData');
+
+        if (savedData) {
+            try {
+                const { stockData, news, aiSummary, timestamp } = JSON.parse(savedData);
+                // Only use cached data if it's less than 1 hour old
+                if (Date.now() - timestamp < 3600000) {
+                    setStockData(stockData);
+                    setNews(news);
+                    setAiSummary(aiSummary);
+                    setTicker(stockData.symbol);
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to parse saved stock data", e);
+            }
+        }
+
         if (savedTicker) {
             setTicker(savedTicker);
             handleSearch(savedTicker);
         }
     }, []);
 
+    // Save data to localStorage whenever it changes
+    useEffect(() => {
+        if (stockData && stockData.symbol) {
+            localStorage.setItem('lastViewedTicker', stockData.symbol);
+            localStorage.setItem('stockViewerData', JSON.stringify({
+                stockData,
+                news,
+                aiSummary,
+                timestamp: Date.now()
+            }));
+        }
+    }, [stockData, news, aiSummary]);
+
     // Fetch chart data when time range or stock data changes
     useEffect(() => {
         const fetchChartData = async () => {
-            if (!stockData?.name) return;
-
-            // Save to localStorage when we have valid stock data
-            if (stockData.symbol) {
-                localStorage.setItem('lastViewedTicker', stockData.symbol);
-            }
+            if (!stockData?.symbol) return;
 
             setChartLoading(true);
             try {
-                // Use the ticker from stockData (or the search ticker if available)
-                // We need the symbol. stockData doesn't explicitly store symbol but we can infer or pass it.
-                // Let's store symbol in stockData to be safe.
                 const symbol = stockData.symbol;
                 const { period, interval } = TIME_RANGES[timeRange];
 
@@ -144,10 +167,9 @@ export default function StockViewer() {
 
         setLoading(true);
         setError("");
-        setStockData(null);
-        setNews([]);
-        setAiSummary("");
-        setShowSuggestions(false); // Hide suggestions if open
+        // Don't clear data immediately to prevent flash if we have cached data
+        // setStockData(null); 
+        setShowSuggestions(false);
         setSelectedIndex(-1);
 
         try {
@@ -161,8 +183,8 @@ export default function StockViewer() {
 
             if (!quote.c) throw new Error("Invalid ticker or no data found");
 
-            setStockData({
-                symbol: searchTicker, // Store symbol for chart fetching
+            const newStockData = {
+                symbol: searchTicker,
                 price: quote.c,
                 changePercent: quote.c && quote.pc ? ((quote.c - quote.pc) / quote.pc) * 100 : 0,
                 name: meta.name || searchTicker,
@@ -171,7 +193,8 @@ export default function StockViewer() {
                 high: quote.h,
                 low: quote.l,
                 prevClose: quote.pc
-            });
+            };
+            setStockData(newStockData);
 
             // Fetch News
             const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
@@ -507,28 +530,28 @@ ${aggregatedNews.slice(0, 15000)}
                             {/* Key Statistics Grid */}
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-                                    <div className="bg-slate-900/50 p-6 hover:bg-white/5 transition-colors">
-                                        <p className="text-sm text-slate-500 mb-1 font-medium">Open</p>
-                                        <p className="text-xl font-bold text-white tracking-tight">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Open</p>
+                                        <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-900/50 p-6 hover:bg-white/5 transition-colors">
-                                        <p className="text-sm text-slate-500 mb-1 font-medium">High</p>
-                                        <p className="text-xl font-bold text-white tracking-tight">
+                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">High</p>
+                                        <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-900/50 p-6 hover:bg-white/5 transition-colors">
-                                        <p className="text-sm text-slate-500 mb-1 font-medium">Low</p>
-                                        <p className="text-xl font-bold text-white tracking-tight">
+                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Low</p>
+                                        <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-900/50 p-6 hover:bg-white/5 transition-colors">
-                                        <p className="text-sm text-slate-500 mb-1 font-medium">Prev Close</p>
-                                        <p className="text-xl font-bold text-white tracking-tight">
+                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Prev Close</p>
+                                        <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
@@ -547,7 +570,7 @@ ${aggregatedNews.slice(0, 15000)}
                                     </div>
                                     AI Analysis
                                 </h3>
-                                <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed relative z-10">
+                                <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed relative z-10 font-medium">
                                     {aiSummary || (
                                         <div className="flex flex-col gap-4">
                                             <div className="h-4 bg-white/5 rounded w-3/4 animate-pulse"></div>

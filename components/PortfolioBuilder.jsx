@@ -104,7 +104,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[600px]">
             {/* Left Column: Search & List (Span 2) */}
             <div className="lg:col-span-2 space-y-8">
                 {/* Header */}
@@ -213,23 +213,23 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        className="group relative flex items-center justify-between p-5 rounded-2xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 hover:border-white/10 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+                                        className="group relative flex items-center justify-between p-5 rounded-2xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 hover:border-white/10 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 pr-12"
                                     >
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-4 min-w-0">
                                             <div
-                                                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-inner"
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-inner flex-shrink-0"
                                                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                             >
                                                 {asset.symbol.charAt(0)}
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-white text-xl tracking-tight">{asset.symbol}</div>
+                                            <div className="min-w-0">
+                                                <div className="font-bold text-white text-xl tracking-tight truncate">{asset.symbol}</div>
                                                 <div className="text-xs text-slate-400 font-medium truncate max-w-[140px]">{asset.description}</div>
                                             </div>
                                         </div>
                                         <button
                                             onClick={() => onRemoveAsset(asset.symbol)}
-                                            className="p-2.5 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                                             title="Remove asset"
                                         >
                                             <X className="w-5 h-5" />
@@ -254,7 +254,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
                     {assets.length > 0 ? (
                         <div className="relative">
-                            <div className="h-[280px] relative z-10">
+                            <div className="h-[280px] w-full relative z-10">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie

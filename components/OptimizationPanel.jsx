@@ -553,7 +553,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                 disabled={isOptimizing || assets.length < 2}
                 className={`w-full py-5 rounded-2xl font-bold text-lg shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 ${isOptimizing || assets.length < 2
                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed shadow-none hover:scale-100 border border-slate-700'
-                    : 'bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 hover:from-blue-500 hover:to-blue-300 text-white shadow-blue-500/30 hover:shadow-blue-500/50'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40'
                     }`}
             >
                 {isOptimizing ? (
