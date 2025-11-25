@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, LineChart, Line
@@ -8,10 +8,12 @@ import {
 import {
     TrendingUp, TrendingDown, Activity, Target, Calendar, Download, Share2,
     DollarSign, Percent, ArrowUp, ArrowDown, FileText, Table as TableIcon,
-    Info, AlertTriangle, CheckCircle
+    Info, AlertTriangle, CheckCircle, Layers, PieChart as PieIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MetricTooltip from './MetricTooltip';
+import SortableTable from './SortableTable';
+import EfficientFrontier from './EfficientFrontier';
 
 // Helper functions
 const formatCurrency = (value) => {
@@ -30,9 +32,10 @@ const formatPercent = (value) => {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 export default function PortfolioResults({ data, config = { startYear: '2018', endYear: '2023' } }) {
-    const [activeTab, setActiveTab] = useState('performance');
+    // Set 'allocation' as the default tab per user request
+    const [activeTab, setActiveTab] = useState('allocation');
 
-    // Keyboard shortcut for Optimize (Ctrl+Enter) - kept from original
+    // Keyboard shortcut for Optimize (Ctrl+Enter)
     useEffect(() => {
         const handler = (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -50,8 +53,35 @@ export default function PortfolioResults({ data, config = { startYear: '2018', e
         window.print();
     };
 
-    // Prepare allocation data (handle both weights and allocation keys if necessary)
+    // Prepare allocation data
     const allocationData = data.weights || data.allocation || [];
+
+    // Prepare Asset Metrics for SortableTable
+    const assetMetricsTableData = useMemo(() => {
+        if (!data.asset_metrics) return [];
+        return Object.entries(data.asset_metrics).map(([ticker, metrics]) => ({
+            ticker,
+            weight: (allocationData.find(a => a.asset === ticker)?.weight || 0),
+            ...metrics
+        }));
+    }, [data.asset_metrics, allocationData]);
+
+    const assetColumns = [
+        { key: 'ticker', label: 'Asset' },
+        { key: 'weight', label: 'Weight', numeric: true, render: (val) => <span className="font-bold text-blue-400">{val.toFixed(2)}%</span> },
+        { key: 'annualized_return', label: 'Ann. Return', numeric: true, render: (val) => formatPercent(val * 100) },
+        { key: 'annualized_volatility', label: 'Volatility', numeric: true, render: (val) => formatPercent(val * 100) },
+        { key: 'max_drawdown', label: 'Max Drawdown', numeric: true, render: (val) => <span className="text-rose-400">{formatPercent(val * 100)}</span> },
+    ];
+
+    // Prepare Drawdowns for SortableTable
+    const drawdownColumns = [
+        { key: 'depth', label: 'Depth', numeric: true, render: (val) => <span className="text-rose-400 font-bold">{formatPercent(val * 100)}</span> },
+        { key: 'start', label: 'Start Date' },
+        { key: 'trough', label: 'Bottom' },
+        { key: 'end', label: 'Recovery' },
+        { key: 'recovery_days', label: 'Days to Recover', numeric: true },
+    ];
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -165,7 +195,7 @@ export default function PortfolioResults({ data, config = { startYear: '2018', e
             {/* Main Content Tabs */}
             <div className="space-y-6">
                 <div className="flex p-1 bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/5 w-fit">
-                    {['performance', 'allocation', 'risk', 'monthly'].map((tab) => (
+                    {['allocation', 'performance', 'risk', 'frontier', 'monthly'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -181,6 +211,69 @@ export default function PortfolioResults({ data, config = { startYear: '2018', e
 
                 <div className="min-h-[500px]">
                     <AnimatePresence mode="wait">
+                        {activeTab === 'allocation' && (
+                            <motion.div
+                                key="allocation"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.3 }}
+                                className="space-y-8"
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Allocation Pie Chart */}
+                                    <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm flex flex-col items-center justify-center min-h-[400px]">
+                                        <h3 className="text-xl font-bold text-white mb-8 self-start w-full flex items-center gap-2">
+                                            <PieIcon className="w-5 h-5 text-blue-400" />
+                                            Optimal Allocation
+                                        </h3>
+                                        <div className="h-[300px] w-full relative">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={allocationData}
+                                                        innerRadius={80}
+                                                        outerRadius={120}
+                                                        paddingAngle={4}
+                                                        dataKey="weight"
+                                                        nameKey="asset"
+                                                        stroke="none"
+                                                        cornerRadius={6}
+                                                    >
+                                                        {allocationData.map((entry, index) => (
+                                                            <Cell
+                                                                key={`cell-${index}`}
+                                                                fill={entry.color || COLORS[index % COLORS.length]}
+                                                                className="hover:opacity-80 transition-opacity cursor-pointer"
+                                                            />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip
+                                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f8fafc', padding: '12px' }}
+                                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                                        formatter={(value) => `${(value).toFixed(2)}%`}
+                                                    />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                <span className="text-4xl font-bold text-white tracking-tighter">100%</span>
+                                                <span className="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Total</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Asset Statistics Table */}
+                                    <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
+                                        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                            <TableIcon className="w-5 h-5 text-blue-400" />
+                                            Asset Statistics
+                                        </h3>
+                                        <SortableTable columns={assetColumns} data={assetMetricsTableData} />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
                         {activeTab === 'performance' && (
                             <motion.div
                                 key="performance"
@@ -249,138 +342,6 @@ export default function PortfolioResults({ data, config = { startYear: '2018', e
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
-
-                                {/* Drawdown Chart */}
-                                <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white mb-1">Drawdown Analysis</h3>
-                                            <p className="text-slate-400 text-sm">Historical decline from peak</p>
-                                        </div>
-                                    </div>
-                                    <div className="h-[300px] w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={data.drawdown} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                                <defs>
-                                                    <linearGradient id="colorDrawdown" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-                                                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.5} />
-                                                <XAxis
-                                                    dataKey="date"
-                                                    stroke="#94a3b8"
-                                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                    tickLine={false}
-                                                    axisLine={false}
-                                                    dy={10}
-                                                    minTickGap={50}
-                                                />
-                                                <YAxis
-                                                    stroke="#94a3b8"
-                                                    tickFormatter={(value) => `${value.toFixed(0)}%`}
-                                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                    tickLine={false}
-                                                    axisLine={false}
-                                                    dx={-10}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
-                                                    itemStyle={{ color: '#f43f5e', fontWeight: 'bold' }}
-                                                    formatter={(value) => `${value.toFixed(2)}%`}
-                                                    labelStyle={{ color: '#94a3b8', marginBottom: '0.5rem' }}
-                                                />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="drawdown"
-                                                    stroke="#f43f5e"
-                                                    strokeWidth={2}
-                                                    fillOpacity={1}
-                                                    fill="url(#colorDrawdown)"
-                                                />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {activeTab === 'allocation' && (
-                            <motion.div
-                                key="allocation"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.3 }}
-                                className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                            >
-                                {/* Allocation Pie Chart */}
-                                <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm flex flex-col items-center justify-center min-h-[400px]">
-                                    <h3 className="text-xl font-bold text-white mb-8 self-start w-full">Optimal Allocation</h3>
-                                    <div className="h-[300px] w-full relative">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={allocationData}
-                                                    innerRadius={80}
-                                                    outerRadius={120}
-                                                    paddingAngle={4}
-                                                    dataKey="weight"
-                                                    nameKey="asset"
-                                                    stroke="none"
-                                                    cornerRadius={6}
-                                                >
-                                                    {allocationData.map((entry, index) => (
-                                                        <Cell
-                                                            key={`cell-${index}`}
-                                                            fill={entry.color || COLORS[index % COLORS.length]}
-                                                            className="hover:opacity-80 transition-opacity cursor-pointer"
-                                                        />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f8fafc', padding: '12px' }}
-                                                    itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                                    formatter={(value) => `${(value).toFixed(2)}%`}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <span className="text-4xl font-bold text-white tracking-tighter">100%</span>
-                                            <span className="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Total</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Allocation Table */}
-                                <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
-                                    <h3 className="text-xl font-bold text-white mb-6">Asset Breakdown</h3>
-                                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {allocationData.map((asset, index) => (
-                                            <div key={asset.asset || index} className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
-                                                <div className="flex items-center gap-4">
-                                                    <div
-                                                        className="w-10 h-10 rounded-lg shadow-lg flex items-center justify-center font-bold text-white"
-                                                        style={{ backgroundColor: asset.color || COLORS[index % COLORS.length] }}
-                                                    >
-                                                        {(asset.asset || '?').charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-white text-lg">{asset.asset}</div>
-                                                        <div className="text-xs text-slate-400 font-medium">Weight</div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-xl font-bold text-white font-mono">{(asset.weight).toFixed(2)}%</div>
-                                                    <div className="text-xs text-slate-500">
-                                                        {formatCurrency(data.metrics.endBalance * (asset.weight / 100))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
                             </motion.div>
                         )}
 
@@ -391,97 +352,171 @@ export default function PortfolioResults({ data, config = { startYear: '2018', e
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+                                className="space-y-8"
                             >
-                                {/* Risk Metrics Table */}
-                                <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
-                                    <h3 className="text-xl font-bold text-white mb-6">Risk Analysis</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Sharpe Ratio
-                                                <MetricTooltip
-                                                    title="Sharpe Ratio"
-                                                    description="Measures risk-adjusted return by showing how much excess return you receive for the extra volatility endured. Higher is better. >1 is good, >2 is very good, >3 is excellent."
-                                                    formula="(Return - Risk-Free Rate) / Standard Deviation"
-                                                />
-                                            </span>
-                                            <span className="font-mono text-white font-bold text-lg">{data.metrics.sharpeRatio?.toFixed(2)} {data.metrics.sharpeRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Risk Metrics Table */}
+                                    <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
+                                        <h3 className="text-xl font-bold text-white mb-6">Risk Analysis</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Sharpe Ratio
+                                                    <MetricTooltip
+                                                        title="Sharpe Ratio"
+                                                        description="Measures risk-adjusted return by showing how much excess return you receive for the extra volatility endured. Higher is better. >1 is good, >2 is very good, >3 is excellent."
+                                                        formula="(Return - Risk-Free Rate) / Standard Deviation"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-white font-bold text-lg">{data.metrics.sharpeRatio?.toFixed(2)} {data.metrics.sharpeRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                            </div>
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Sortino Ratio
+                                                    <MetricTooltip
+                                                        title="Sortino Ratio"
+                                                        description="Similar to Sharpe, but only penalizes downside volatility. Better for strategies with high upside volatility. Higher is better."
+                                                        formula="(Return - MAR) / Downside Deviation"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-white font-bold text-lg">{data.metrics.sortinoRatio?.toFixed(2)} {data.metrics.sortinoRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                            </div>
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Beta
+                                                    <MetricTooltip
+                                                        title="Beta"
+                                                        description="Measure of volatility relative to the market. 1 = moves with market, >1 = more volatile, <1 = less volatile."
+                                                        formula="Covariance(Asset, Market) / Variance(Market)"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-white font-bold text-lg">{data.metrics.beta?.toFixed(2) || "N/A"}</span>
+                                            </div>
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Alpha
+                                                    <MetricTooltip
+                                                        title="Alpha"
+                                                        description="Excess return of an investment relative to the return of a benchmark index. Positive alpha indicates outperformance."
+                                                        formula="Return - (Risk-Free Rate + Beta * (Market Return - Risk-Free Rate))"
+                                                    />
+                                                </span>
+                                                <span className={`font-mono font-bold text-lg ${data.metrics.alpha > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{data.metrics.alpha ? formatPercent(data.metrics.alpha * 100) : "N/A"}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Sortino Ratio
-                                                <MetricTooltip
-                                                    title="Sortino Ratio"
-                                                    description="Similar to Sharpe, but only penalizes downside volatility. Better for strategies with high upside volatility. Higher is better."
-                                                    formula="(Return - MAR) / Downside Deviation"
-                                                />
-                                            </span>
-                                            <span className="font-mono text-white font-bold text-lg">{data.metrics.sortinoRatio?.toFixed(2)} {data.metrics.sortinoRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                        </div>
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Beta
-                                                <MetricTooltip
-                                                    title="Beta"
-                                                    description="Measure of volatility relative to the market. 1 = moves with market, >1 = more volatile, <1 = less volatile."
-                                                    formula="Covariance(Asset, Market) / Variance(Market)"
-                                                />
-                                            </span>
-                                            <span className="font-mono text-white font-bold text-lg">{data.metrics.beta?.toFixed(2) || "N/A"}</span>
-                                        </div>
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Alpha
-                                                <MetricTooltip
-                                                    title="Alpha"
-                                                    description="Excess return of an investment relative to the return of a benchmark index. Positive alpha indicates outperformance."
-                                                    formula="Return - (Risk-Free Rate + Beta * (Market Return - Risk-Free Rate))"
-                                                />
-                                            </span>
-                                            <span className={`font-mono font-bold text-lg ${data.metrics.alpha > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{data.metrics.alpha ? formatPercent(data.metrics.alpha * 100) : "N/A"}</span>
+                                    </div>
+
+                                    {/* Advanced Risk Metrics */}
+                                    <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
+                                        <h3 className="text-xl font-bold text-white mb-6">Advanced Metrics</h3>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Calmar Ratio
+                                                    <MetricTooltip
+                                                        title="Calmar Ratio"
+                                                        description="Return divided by maximum drawdown. Preferred by hedge funds as it shows return per unit of worst loss. Higher is better."
+                                                        formula="Annualized Return / |Max Drawdown|"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-white font-bold text-lg">{data.metrics.calmar_ratio?.toFixed(2)} {data.metrics.calmar_ratio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                            </div>
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Value at Risk (95%)
+                                                    <MetricTooltip
+                                                        title="Value at Risk (VaR)"
+                                                        description="Maximum potential loss over a specific time frame at a given confidence level (95%)."
+                                                        formula="Statistical measure of worst-case loss"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-rose-400 font-bold text-lg">{data.metrics.var_95 ? formatPercent(data.metrics.var_95 * 100) : "N/A"}</span>
+                                            </div>
+                                            <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <span className="text-slate-400 flex items-center gap-2 font-medium">
+                                                    Conditional VaR (95%)
+                                                    <MetricTooltip
+                                                        title="Conditional VaR (CVaR)"
+                                                        description="Expected loss if the VaR threshold is breached. Also known as Expected Shortfall. More conservative than VaR."
+                                                        formula="Average of losses exceeding VaR"
+                                                    />
+                                                </span>
+                                                <span className="font-mono text-rose-400 font-bold text-lg">{data.metrics.cvar_95 ? formatPercent(data.metrics.cvar_95 * 100) : "N/A"}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Advanced Risk Metrics */}
+                                {/* Worst Drawdowns Table */}
                                 <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
-                                    <h3 className="text-xl font-bold text-white mb-6">Advanced Metrics</h3>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Calmar Ratio
-                                                <MetricTooltip
-                                                    title="Calmar Ratio"
-                                                    description="Return divided by maximum drawdown. Preferred by hedge funds as it shows return per unit of worst loss. Higher is better."
-                                                    formula="Annualized Return / |Max Drawdown|"
-                                                />
-                                            </span>
-                                            <span className="font-mono text-white font-bold text-lg">{data.metrics.calmar_ratio?.toFixed(2)} {data.metrics.calmar_ratio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                        </div>
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Value at Risk (95%)
-                                                <MetricTooltip
-                                                    title="Value at Risk (VaR)"
-                                                    description="Maximum potential loss over a specific time frame at a given confidence level (95%)."
-                                                    formula="Statistical measure of worst-case loss"
-                                                />
-                                            </span>
-                                            <span className="font-mono text-rose-400 font-bold text-lg">{data.metrics.var_95 ? formatPercent(data.metrics.var_95 * 100) : "N/A"}</span>
-                                        </div>
-                                        <div className="flex justify-between py-3 border-b border-slate-700/50 hover:bg-white/5 px-2 rounded-lg transition-colors">
-                                            <span className="text-slate-400 flex items-center gap-2 font-medium">
-                                                Conditional VaR (95%)
-                                                <MetricTooltip
-                                                    title="Conditional VaR (CVaR)"
-                                                    description="Expected loss if the VaR threshold is breached. Also known as Expected Shortfall. More conservative than VaR."
-                                                    formula="Average of losses exceeding VaR"
-                                                />
-                                            </span>
-                                            <span className="font-mono text-rose-400 font-bold text-lg">{data.metrics.cvar_95 ? formatPercent(data.metrics.cvar_95 * 100) : "N/A"}</span>
-                                        </div>
-                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                        <TrendingDown className="w-5 h-5 text-rose-400" />
+                                        Worst Drawdowns
+                                    </h3>
+                                    <SortableTable columns={drawdownColumns} data={data.drawdowns} />
+                                </div>
+
+                                {/* Correlation Matrix */}
+                                <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm overflow-x-auto">
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                        <Layers className="w-5 h-5 text-blue-400" />
+                                        Correlation Matrix
+                                    </h3>
+                                    <table className="w-full text-sm border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th className="p-3 text-left font-bold text-slate-400">Asset</th>
+                                                {Object.keys(data.correlations).map(ticker => (
+                                                    <th key={ticker} className="p-3 text-center font-bold text-slate-400">{ticker}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(data.correlations).map(([ticker, values]) => (
+                                                <tr key={ticker} className="border-b border-slate-700/30 hover:bg-white/5 transition-colors">
+                                                    <td className="p-3 font-bold text-slate-300">{ticker}</td>
+                                                    {Object.keys(data.correlations).map(colTicker => {
+                                                        const val = values[colTicker];
+                                                        return (
+                                                            <td key={colTicker} className="p-2 text-center">
+                                                                <div
+                                                                    className="w-full h-full py-2 rounded-lg font-mono text-xs font-medium"
+                                                                    style={{
+                                                                        backgroundColor: `rgba(59, 130, 246, ${Math.abs(val)})`,
+                                                                        color: Math.abs(val) > 0.5 ? '#fff' : '#94a3b8'
+                                                                    }}
+                                                                >
+                                                                    {val.toFixed(2)}
+                                                                </div>
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'frontier' && (
+                            <motion.div
+                                key="frontier"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.3 }}
+                                className="space-y-8"
+                            >
+                                <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 shadow-xl backdrop-blur-sm">
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                        <Target className="w-5 h-5 text-emerald-400" />
+                                        Efficient Frontier
+                                    </h3>
+                                    <p className="text-slate-400 mb-6">
+                                        Visualizes the set of optimal portfolios that offer the highest expected return for a defined level of risk.
+                                    </p>
+                                    <EfficientFrontier data={data.efficient_frontier} />
                                 </div>
                             </motion.div>
                         )}
