@@ -21,6 +21,19 @@ export default function ReportPage() {
         }
     }, []);
 
+    // Auto-trigger print dialog if requested
+    useEffect(() => {
+        if (data && typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('print') === 'true') {
+                // Wait a bit for charts to render
+                setTimeout(() => {
+                    window.print();
+                }, 1000);
+            }
+        }
+    }, [data]);
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-900">

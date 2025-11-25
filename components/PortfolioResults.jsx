@@ -106,8 +106,19 @@ export default function PortfolioResults({ data }) {
 
     const handleExportPDF = async () => {
         try {
-            const { generatePDFReport } = await import('@/utils/pdfExport');
-            await generatePDFReport(data);
+            const { pdf } = await import('@react-pdf/renderer');
+            const { PDFDocument } = await import('@/components/PDFDocument');
+            const React = await import('react');
+
+            // Generate PDF blob
+            const blob = await pdf(React.createElement(PDFDocument, { data })).toBlob();
+
+            // Create blob URL and open in new tab
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+
+            // Clean up after a delay
+            setTimeout(() => URL.revokeObjectURL(url), 100);
         } catch (error) {
             console.error('PDF generation failed:', error);
             alert('Failed to generate PDF. Please try again.');
