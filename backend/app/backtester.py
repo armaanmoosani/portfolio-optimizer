@@ -1,7 +1,87 @@
 import pandas as pd
 import numpy as np
 
+def calculate_risk_contributions(weights: dict, asset_returns: pd.DataFrame, annualization_factor: int = 252):
+    """
+    Calculate detailed risk contributions (MCR, PCR, VaR Contribution).
+    
+    Args:
+        weights: Dictionary of asset weights
+        asset_returns: DataFrame of daily asset returns
+        annualization_factor: Annualization factor (default 252)
+        
+    Returns:
+        DataFrame with risk metrics for each asset
+    """
+    tickers = asset_returns.columns.tolist()
+    # Ensure weights match tickers order
+    w = np.array([weights.get(t, 0) for t in tickers])
+    
+    # Covariance Matrix (Annualized)
+    cov_matrix = asset_returns.cov() * annualization_factor
+    
+    # Portfolio Volatility (Annualized)
+    port_vol = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
+    
+    # Marginal Contribution to Risk (MCR)
+    # MCR = (Cov * w) / sigma
+    mcr = np.dot(cov_matrix, w) / port_vol
+    
+    # Absolute Contribution to Risk (ACR)
+    # ACR = w * MCR
+    acr = w * mcr
+    
+    # Percent Contribution to Risk (PCR)
+    # PCR = ACR / sigma
+    pcr = acr / port_vol
+    
+    # --- VaR/CVaR Contributions (Historical) ---
+    # Calculate portfolio daily returns
+    port_returns = asset_returns.dot(w)
+    
+    # Find VaR (95%) threshold
+    var_95 = np.percentile(port_returns, 5)
+    
+    # Identify tail events (days where return <= VaR)
+    # For "VaR Contribution", we look at returns AROUND the VaR threshold
+    # For "CVaR Contribution", we look at returns BELOW the VaR threshold
+    
+    # CVaR Contribution (Expected Shortfall Contribution)
+    tail_indices = port_returns <= var_95
+    if tail_indices.sum() > 0:
+        # Average return of each asset during tail events
+        avg_tail_returns = asset_returns[tail_indices].mean()
+        # Contribution = weight * avg_tail_return
+        cvar_contrib = w * avg_tail_returns
+        # Normalize to sum to Portfolio CVaR
+        port_cvar = port_returns[tail_indices].mean()
+        # Verify sum matches (it should mathematically)
+    else:
+        cvar_contrib = np.zeros(len(tickers))
+        port_cvar = 0
+        
+    # Parametric VaR Contribution (95%)
+    # VaR_param = z * sigma (assuming mean=0 for short horizon)
+    # Contrib = w * (z * MCR) = z * (w * MCR) = z * ACR
+    # But simpler: VaR Contribution is proportional to PCR
+    z_score = 1.645 # 95% confidence
+    var_param_contrib = acr * z_score
+    
+    # Create Result DataFrame
+    results = pd.DataFrame({
+        "Ticker": tickers,
+        "Weight": w,
+        "MCR": mcr,
+        "Contribution_to_Vol": acr,
+        "PCR": pcr,
+        "Parametric_VaR_Contrib": var_param_contrib,
+        "CVaR_Contrib": cvar_contrib
+    })
+    
+    return results.set_index("Ticker").to_dict(orient="index")
+
 def run_backtest_with_rebalancing(prices: pd.DataFrame, weights: dict, initial_capital: float = 10000.0, rebalance_frequency: str = "quarterly", transaction_cost_pct: float = 0.001):
+
     """
     Run backtest with periodic rebalancing.
     
@@ -393,6 +473,9 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             "drawdown": float(round(drawdown.loc[date] * 100, 2))
         })
 
+    # --- RISK CONTRIBUTIONS ---
+    risk_contributions = calculate_risk_contributions(weights, asset_returns, annualization_factor)
+
     result = {
         "metrics": {
             "total_return": float(total_return),
@@ -434,6 +517,7 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
             "down_capture": down_capture,
             "r_squared": r_squared,
         },
+        "risk_contributions": risk_contributions,
         "trailing_returns": trailing_returns,
         "monthly_returns": monthly_matrix,
         "drawdowns": top_drawdowns,
