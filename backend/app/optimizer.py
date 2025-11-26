@@ -254,8 +254,8 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     return {
         "weights": {k: float(v) for k, v in zip(tickers, optimal_weights)},
         "metrics": {
-            "expected_return": float(opt_return * 100),
-            "volatility": float(opt_vol * 100),
+            "expected_return": float(opt_return),
+            "volatility": float(opt_vol),
             "sharpe_ratio": float(opt_sharpe)
         },
         "success": bool(result.success),
@@ -297,8 +297,8 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         asset_vol = float(returns[ticker].std() * np.sqrt(annualization_factor))
         individual_assets.append({
             "name": ticker,
-            "return": asset_return * 100,
-            "volatility": asset_vol * 100
+            "return": asset_return,
+            "volatility": asset_vol
         })
     
     # Find minimum and maximum achievable returns
@@ -374,8 +374,8 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             weights_dict = {ticker: float(w) for ticker, w in zip(tickers, weights)}
             
             frontier_points.append({
-                "volatility": float(portfolio_vol * 100),
-                "return": float(portfolio_return * 100),
+                "volatility": float(portfolio_vol),
+                "return": float(portfolio_return),
                 "sharpe_ratio": float(portfolio_sharpe),
                 "weights": weights_dict
             })
@@ -412,8 +412,8 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             )
             weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
             optimal_portfolio = {
-                "volatility": float(opt_vol * 100),
-                "return": float(opt_ret * 100),
+                "volatility": float(opt_vol),
+                "return": float(opt_ret),
                 "sharpe_ratio": float(opt_sharpe),
                 "weights": weights_dict
             }
@@ -460,8 +460,8 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         sim_weights = {ticker: float(weights_sim[i][j]) for j, ticker in enumerate(tickers)}
         
         monte_carlo_points.append({
-            "volatility": float(vol_sim[i] * 100),
-            "return": float(ret_sim[i] * 100),
+            "volatility": float(vol_sim[i]),
+            "return": float(ret_sim[i]),
             "sharpe_ratio": float(sharpe_sim[i]),
             "weights": sim_weights
         })
@@ -473,7 +473,7 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         # Point 1: Risk Free Rate (0 volatility)
         cml_points.append({
             "volatility": 0.0,
-            "return": risk_free_rate * 100,
+            "return": risk_free_rate,
             "sharpe_ratio": 0.0
         })
         
@@ -487,7 +487,7 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         # Point 3: Extension (1.5x volatility of tangency)
         # y = mx + c => Return = Sharpe * Vol + RiskFree
         max_vol_cml = optimal_portfolio["volatility"] * 1.5
-        max_ret_cml = risk_free_rate * 100 + optimal_portfolio["sharpe_ratio"] * max_vol_cml
+        max_ret_cml = risk_free_rate + optimal_portfolio["sharpe_ratio"] * max_vol_cml
         
         cml_points.append({
             "volatility": max_vol_cml,

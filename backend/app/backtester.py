@@ -421,11 +421,11 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
         return None
 
     trailing_returns = {
-        "3M": get_trailing_return(63) * 100 if get_trailing_return(63) is not None else None,  # Approx 3 months
-        "1Y": get_trailing_return(252) * 100 if get_trailing_return(252) is not None else None,
-        "3Y": get_trailing_return(252 * 3) * 100 if get_trailing_return(252 * 3) is not None else None,
-        "5Y": get_trailing_return(252 * 5) * 100 if get_trailing_return(252 * 5) is not None else None,
-        "YTD": float((1 + portfolio_returns[portfolio_returns.index.year == portfolio_returns.index[-1].year]).prod() - 1) * 100 if not portfolio_returns.empty else 0.0
+        "3M": get_trailing_return(63),  # Approx 3 months
+        "1Y": get_trailing_return(252),
+        "3Y": get_trailing_return(252 * 3),
+        "5Y": get_trailing_return(252 * 5),
+        "YTD": float((1 + portfolio_returns[portfolio_returns.index.year == portfolio_returns.index[-1].year]).prod() - 1) if not portfolio_returns.empty else 0.0
     }
 
     # 3. Monthly Returns Matrix
@@ -436,7 +436,7 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
         month = date.month
         if year not in monthly_matrix:
             monthly_matrix[year] = {}
-        monthly_matrix[year][month] = float(value * 100)
+        monthly_matrix[year][month] = float(value)
 
     # 4. Top Drawdowns
     # Calculate drawdown series
@@ -465,7 +465,7 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
                 "start": start_date.strftime("%Y-%m-%d"),
                 "end": end_date.strftime("%Y-%m-%d"),
                 "trough": trough_date.strftime("%Y-%m-%d"),
-                "depth": float(max_dd_in_period * 100),
+                "depth": float(max_dd_in_period),
                 "recovery_days": (end_date - start_date).days
             })
     
@@ -483,9 +483,9 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
         ann_ret = (1 + ret.mean()) ** annualization_factor - 1
         ann_vol = ret.std() * np.sqrt(annualization_factor)
         asset_metrics[ticker] = {
-            "annualized_return": float(ann_ret * 100),
-            "annualized_volatility": float(ann_vol * 100),
-            "max_drawdown": float(((1 + ret).cumprod() / (1 + ret).cumprod().cummax() - 1).min() * 100)
+            "annualized_return": float(ann_ret),
+            "annualized_volatility": float(ann_vol),
+            "max_drawdown": float(((1 + ret).cumprod() / (1 + ret).cumprod().cummax() - 1).min())
         }
 
     # Prepare chart data
@@ -502,40 +502,40 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
 
     result = {
         "metrics": {
-            "total_return": float(total_return * 100),
-            "annualized_return": float(annualized_return * 100),
-            "annualized_volatility": float(annualized_volatility * 100),
+            "total_return": float(total_return),
+            "annualized_return": float(annualized_return),
+            "annualized_volatility": float(annualized_volatility),
             "sharpe_ratio": float(sharpe_ratio),
             "sortino_ratio": float(sortino_ratio),
-            "max_drawdown": float(max_drawdown * 100),
+            "max_drawdown": float(max_drawdown),
             "beta": float(beta),
-            "alpha": float(alpha * 100),
-            "best_year": best_year * 100,
-            "worst_year": worst_year * 100,
+            "alpha": float(alpha),
+            "best_year": best_year,
+            "worst_year": worst_year,
             # New comprehensive metrics
-            "arithmetic_mean_monthly": arithmetic_mean_monthly * 100,
-            "arithmetic_mean_annualized": arithmetic_mean_annualized * 100,
-            "geometric_mean_monthly": geometric_mean_monthly * 100,
-            "geometric_mean_annualized": geometric_mean_annualized * 100,
-            "std_dev_monthly": std_dev_monthly * 100,
-            "std_dev_annualized": std_dev_annualized * 100,
-            "downside_dev_monthly": downside_dev_monthly * 100,
+            "arithmetic_mean_monthly": arithmetic_mean_monthly,
+            "arithmetic_mean_annualized": arithmetic_mean_annualized,
+            "geometric_mean_monthly": geometric_mean_monthly,
+            "geometric_mean_annualized": geometric_mean_annualized,
+            "std_dev_monthly": std_dev_monthly,
+            "std_dev_annualized": std_dev_annualized,
+            "downside_dev_monthly": downside_dev_monthly,
             "benchmark_correlation": benchmark_correlation,
             "treynor_ratio": treynor_ratio,
             # Critical risk metrics (Phase 1)
             "calmar_ratio": calmar_ratio,
-            "var_95_daily":  var_95_daily * 100,
-            "var_99_daily": var_99_daily * 100,
-            "var_95_annual": var_95_annual * 100,
-            "var_99_annual": var_99_annual * 100,
-            "cvar_95_daily": cvar_95_daily * 100,
-            "cvar_99_daily": cvar_99_daily * 100,
-            "cvar_95_annual": cvar_95_annual * 100,
-            "cvar_99_annual": cvar_99_annual * 100,
+            "var_95_daily":  var_95_daily,
+            "var_99_daily": var_99_daily,
+            "var_95_annual": var_95_annual,
+            "var_99_annual": var_99_annual,
+            "cvar_95_daily": cvar_95_daily,
+            "cvar_99_daily": cvar_99_daily,
+            "cvar_95_annual": cvar_95_annual,
+            "cvar_99_annual": cvar_99_annual,
             "skewness": return_skewness,
             "kurtosis": return_kurtosis,
             # Enhanced benchmark metrics (Phase 3)
-            "tracking_error": tracking_error * 100,
+            "tracking_error": tracking_error,
             "information_ratio": information_ratio,
             "up_capture": up_capture,
             "down_capture": down_capture,
