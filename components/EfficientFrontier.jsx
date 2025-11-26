@@ -9,6 +9,14 @@ export default function EfficientFrontier({ data }) {
         );
     }
 
+    // DEBUG: Log actual backend data to diagnose coordinate mismatch
+    console.log('=== EFFICIENT FRONTIER DEBUG ===');
+    console.log('First frontier point (raw from backend):', data.frontier_points[0]);
+    if (data.individual_assets && data.individual_assets[0]) {
+        console.log('First asset (raw from backend):', data.individual_assets[0]);
+    }
+    console.log('================================');
+
     // ================================================================
     // CRITICAL: Data transformation - Backend sends decimals (0.15)
     // We convert to percentages (15.0) for display
