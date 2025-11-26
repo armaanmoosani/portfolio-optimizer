@@ -12,6 +12,7 @@ import PortfolioReport from './PortfolioReport';
 
 // Helper to format currency
 const formatCurrency = (value) => {
+    if (value === null || value === undefined || isNaN(value)) return '$0';
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
@@ -21,7 +22,8 @@ const formatCurrency = (value) => {
 
 // Helper to format percent
 const formatPercent = (value) => {
-    return `${(value).toFixed(2)}%`;
+    if (value === null || value === undefined || isNaN(value)) return '0.00%';
+    return `${(Number(value) * 100).toFixed(2)}%`;
 };
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
