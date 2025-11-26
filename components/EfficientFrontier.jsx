@@ -45,12 +45,28 @@ export default function EfficientFrontier({ data }) {
     } : null;
 
     // CML (Capital Market Line) points for visualization
-    const cmlPoints = data.cml_points && data.cml_points.length > 0 ?
-        data.cml_points.map(p => ({
+    // Try to use backend CML points, or generate from optimal portfolio if not available
+    let cmlPoints = [];
+    if (data.cml_points && data.cml_points.length > 0) {
+        cmlPoints = data.cml_points.map(p => ({
             volatility: p.volatility * 100,
             return: p.return * 100,
             type: 'CML'
-        })).sort((a, b) => a.volatility - b.volatility) : [];
+        })).sort((a, b) => a.volatility - b.volatility);
+    } else if (riskFreeAsset && optimalPortfolio) {
+        // Generate CML from risk-free rate through optimal portfolio
+        const rfRate = riskFreeAsset.return;
+        const optVol = optimalPortfolio.volatility;
+        const optRet = optimalPortfolio.return;
+        const slope = (optRet - rfRate) / optVol; // Sharpe ratio
+
+        // Create 3 points: risk-free, optimal, and extension (1.5x leverage)
+        cmlPoints = [
+            { volatility: 0, return: rfRate, type: 'CML' },
+            { volatility: optVol, return: optRet, type: 'CML' },
+            { volatility: optVol * 1.5, return: rfRate + slope * (optVol * 1.5), type: 'CML' }
+        ];
+    }
 
     // Calculate dynamic axis ranges (include MVP and risk-free if they exist)
     const allPoints = [
@@ -247,15 +263,35 @@ export default function EfficientFrontier({ data }) {
 
                         {/* Capital Market Line (CML) */}
                         {cmlPoints.length > 1 && (
-                            <Scatter
-                                name="Capital Market Line"
-                                data={cmlPoints}
-                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '6 4' }}
-                                lineType="monotone"
-                                fill="none"
-                                shape={() => null}
-                                isAnimationActive={false}
-                            />
+                            <>
+                                <Scatter
+                                    name="Capital Market Line"
+                                    data={cmlPoints}
+                                    line={{ stroke: '#94a3b8', strokeWidth: 2.5, strokeDasharray: '8 4' }}
+                                    lineType="monotone"
+                                    fill="none"
+                                    shape={() => null}
+                                    isAnimationActive={false}
+                                />
+                                {/* CML Label */}
+                                {cmlPoints[cmlPoints.length - 1] && (
+                                    <ReferenceDot
+                                        x={cmlPoints[cmlPoints.length - 1].volatility}
+                                        y={cmlPoints[cmlPoints.length - 1].return}
+                                        r={0}
+                                        isFront={true}
+                                    >
+                                        <Label
+                                            value="CML"
+                                            position="right"
+                                            fill="#94a3b8"
+                                            fontSize={10}
+                                            fontWeight="600"
+                                            offset={10}
+                                        />
+                                    </ReferenceDot>
+                                )}
+                            </>
                         )}
 
                         {/* Efficient Frontier Curve & Points */}

@@ -821,96 +821,106 @@ export default function PortfolioResults({ data }) {
                                             <h3 className="font-semibold text-white">Asset Allocation</h3>
                                         </div>
                                         <div className="p-6">
-                                            {/* Pie Chart */}
-                                            <div className="h-[300px] flex items-center justify-center mb-4">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <defs>
-                                                            {data.weights.map((item, index) => (
-                                                                <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                                                                    <stop offset="0%" stopColor={item.color} stopOpacity={1} />
-                                                                    <stop offset="100%" stopColor={item.color} stopOpacity={0.7} />
-                                                                </linearGradient>
-                                                            ))}
-                                                        </defs>
-                                                        <Pie
-                                                            data={data.weights}
-                                                            cx="50%"
-                                                            cy="50%"
-                                                            labelLine={{
-                                                                stroke: '#64748b',
-                                                                strokeWidth: 1
-                                                            }}
-                                                            label={({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
-                                                            outerRadius={100}
-                                                            innerRadius={50}
-                                                            paddingAngle={2}
-                                                            dataKey="weight"
-                                                            animationBegin={0}
-                                                            animationDuration={800}
-                                                        >
-                                                            {data.weights.map((entry, index) => (
-                                                                <Cell
-                                                                    key={`cell-${index}`}
-                                                                    fill={`url(#gradient-${index})`}
-                                                                    stroke="#1e293b"
-                                                                    strokeWidth={2}
-                                                                    className="transition-all hover:opacity-80 cursor-pointer"
-                                                                />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip
-                                                            content={({ active, payload }) => {
-                                                                if (active && payload && payload.length) {
-                                                                    const data = payload[0].payload;
-                                                                    return (
-                                                                        <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                                                                            <div className="flex items-center gap-2 mb-1">
-                                                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: data.color }} />
-                                                                                <p className="text-white font-semibold">{data.asset}</p>
-                                                                            </div>
-                                                                            <p className="text-blue-400 font-mono text-lg">{data.weight.toFixed(2)}%</p>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            }}
-                                                        />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
+                                            {(() => {
+                                                // Filter out zero or near-zero allocations (< 0.1%)
+                                                const filteredWeights = data.weights.filter(item => item.weight >= 0.1);
+                                                const hasMany = filteredWeights.length > 8;
 
-                                            {/* Legend/List */}
-                                            <div className="space-y-2">
-                                                {data.weights.map((item, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 transition-all group"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div
-                                                                className="w-4 h-4 rounded-full ring-2 ring-slate-700 group-hover:ring-slate-500 transition-all"
-                                                                style={{ backgroundColor: item.color }}
-                                                            />
-                                                            <span className="font-medium text-white">{item.asset}</span>
+                                                return (
+                                                    <>
+                                                        {/* Pie Chart */}
+                                                        <div className="h-[300px] flex items-center justify-center mb-4">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <PieChart>
+                                                                    <defs>
+                                                                        {filteredWeights.map((item, index) => (
+                                                                            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                                                                <stop offset="0%" stopColor={item.color} stopOpacity={1} />
+                                                                                <stop offset="100%" stopColor={item.color} stopOpacity={0.7} />
+                                                                            </linearGradient>
+                                                                        ))}
+                                                                    </defs>
+                                                                    <Pie
+                                                                        data={filteredWeights}
+                                                                        cx="50%"
+                                                                        cy="50%"
+                                                                        labelLine={hasMany ? false : {
+                                                                            stroke: '#64748b',
+                                                                            strokeWidth: 1
+                                                                        }}
+                                                                        label={hasMany ? false : ({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
+                                                                        outerRadius={100}
+                                                                        innerRadius={50}
+                                                                        paddingAngle={2}
+                                                                        dataKey="weight"
+                                                                        animationBegin={0}
+                                                                        animationDuration={800}
+                                                                    >
+                                                                        {filteredWeights.map((entry, index) => (
+                                                                            <Cell
+                                                                                key={`cell-${index}`}
+                                                                                fill={`url(#gradient-${index})`}
+                                                                                stroke="#1e293b"
+                                                                                strokeWidth={2}
+                                                                                className="transition-all hover:opacity-80 cursor-pointer"
+                                                                            />
+                                                                        ))}
+                                                                    </Pie>
+                                                                    <Tooltip
+                                                                        content={({ active, payload }) => {
+                                                                            if (active && payload && payload.length) {
+                                                                                const data = payload[0].payload;
+                                                                                return (
+                                                                                    <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: data.color }} />
+                                                                                            <p className="text-white font-semibold">{data.asset}</p>
+                                                                                        </div>
+                                                                                        <p className="text-blue-400 font-mono text-lg">{data.weight.toFixed(2)}%</p>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        }}
+                                                                    />
+                                                                </PieChart>
+                                                            </ResponsiveContainer>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-32 h-2 bg-slate-800 rounded-full overflow-hidden">
+
+                                                        {/* Legend/List */}
+                                                        <div className="space-y-2">
+                                                            {filteredWeights.map((item, index) => (
                                                                 <div
-                                                                    className="h-full rounded-full transition-all duration-500"
-                                                                    style={{
-                                                                        width: `${item.weight}%`,
-                                                                        backgroundColor: item.color
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="font-mono font-bold text-blue-400 w-16 text-right">
-                                                                {item.weight.toFixed(2)}%
-                                                            </span>
+                                                                    key={index}
+                                                                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 transition-all group"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div
+                                                                            className="w-4 h-4 rounded-full ring-2 ring-slate-700 group-hover:ring-slate-500 transition-all"
+                                                                            style={{ backgroundColor: item.color }}
+                                                                        />
+                                                                        <span className="font-medium text-white">{item.asset}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-32 h-2 bg-slate-800 rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className="h-full rounded-full transition-all duration-500"
+                                                                                style={{
+                                                                                    width: `${item.weight}%`,
+                                                                                    backgroundColor: item.color
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                        <span className="font-mono font-bold text-blue-400 w-16 text-right">
+                                                                            {item.weight.toFixed(2)}%
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
