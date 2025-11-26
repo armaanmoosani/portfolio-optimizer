@@ -17,9 +17,9 @@ export const useToast = () => {
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
 
-    const addToast = (message, type = "info", duration = 4000) => {
+    const addToast = (message, type = "info", duration = 4000, onClick = null) => {
         const id = Date.now();
-        setToasts((prev) => [...prev, { id, message, type, duration }]);
+        setToasts((prev) => [...prev, { id, message, type, duration, onClick }]);
 
         if (duration > 0) {
             setTimeout(() => {
@@ -33,10 +33,10 @@ export function ToastProvider({ children }) {
     };
 
     const toast = {
-        success: (message, duration) => addToast(message, "success", duration),
-        error: (message, duration) => addToast(message, "error", duration),
-        info: (message, duration) => addToast(message, "info", duration),
-        warning: (message, duration) => addToast(message, "warning", duration),
+        success: (message, duration, onClick) => addToast(message, "success", duration, onClick),
+        error: (message, duration, onClick) => addToast(message, "error", duration, onClick),
+        info: (message, duration, onClick) => addToast(message, "info", duration, onClick),
+        warning: (message, duration, onClick) => addToast(message, "warning", duration, onClick),
     };
 
     return (
@@ -57,7 +57,7 @@ export function ToastProvider({ children }) {
     );
 }
 
-function Toast({ id, message, type, onClose }) {
+function Toast({ id, message, type, onClose, onClick }) {
     const config = {
         success: {
             icon: CheckCircle,
@@ -89,12 +89,16 @@ function Toast({ id, message, type, onClose }) {
             animate={{ opacity: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className={`pointer-events-auto flex items-center gap-3 p-4 rounded-xl border backdrop-blur-md shadow-lg ${className} min-w-[300px] max-w-md`}
+            onClick={onClick}
+            className={`pointer-events-auto flex items-center gap-3 p-4 rounded-xl border backdrop-blur-md shadow-lg ${className} min-w-[300px] max-w-md ${onClick ? 'cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all' : ''}`}
         >
             <Icon className={`w-5 h-5 flex-shrink-0 ${iconColor}`} />
             <p className="flex-1 text-sm font-medium text-white">{message}</p>
             <button
-                onClick={onClose}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                }}
                 className="p-1 rounded-lg hover:bg-white/10 transition-colors"
                 aria-label="Close"
             >

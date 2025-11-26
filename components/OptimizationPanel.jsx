@@ -207,7 +207,9 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
             };
 
             onOptimizationComplete(results);
-            showToast("Portfolio optimized successfully!", "success");
+            showToast("Portfolio optimized successfully! Click to view results.", "success", 4000, () => {
+                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+            });
         } catch (error) {
             console.error("Optimization error:", error);
             showToast(error.message || "Failed to optimize portfolio", "error");

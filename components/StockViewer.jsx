@@ -191,6 +191,16 @@ export default function StockViewer() {
                 chartData: []
             });
 
+            // Show success toast with click-to-scroll
+            toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
+                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // Auto-scroll to results
+            setTimeout(() => {
+                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+
             // Fetch News
             const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
             const newsData = await newsRes.json();
@@ -216,10 +226,11 @@ Robinhood shares rise ahead of Q3 earnings report after market close today, fuel
 
 Now, based on the recent headlines and the latest price change for ${companyName}, generate a summary with these rules:
 - Exactly 3 concise bullet points explaining the main drivers of the stock's movement
+- Use the "•" character for bullet points (do not use asterisks)
 - 1-line "Why this matters" conclusion
 - Plain-language, easy to understand for investors of all experience levels
 - Include important metrics or context if available
-- Do not use Markdown, bold, or other formatting
+- Do not use Markdown formatting (no bold, italics, etc.)
 - Output ready to display directly on a web page
 - Only summarize the provided news content; do not add unrelated information
 
@@ -444,9 +455,8 @@ ${aggregatedNews.slice(0, 15000)}
                     {error && <p className="text-rose-400 bg-rose-500/10 px-4 py-2 rounded-lg border border-rose-500/20 text-sm font-medium animate-in fade-in slide-in-from-top-2 mt-4">{error}</p>}
                 </div>
             </div>
-
             {!loading && stockData && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 -mt-12">
+                <div id="stock-results" className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 -mt-12">
 
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
@@ -659,7 +669,8 @@ ${aggregatedNews.slice(0, 15000)}
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }
