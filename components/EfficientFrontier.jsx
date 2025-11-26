@@ -83,9 +83,9 @@ export default function EfficientFrontier({ data }) {
             const isCML = point.type === 'cml';
 
             return (
-                <div className="bg-slate-900/98 border-2 border-slate-600/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden" style={{ minWidth: '220px' }}>
+                <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden" style={{ minWidth: '220px' }}>
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2 border-b border-slate-600/50">
+                    <div className="bg-slate-800 px-4 py-2 border-b border-slate-700">
                         <p className="text-white font-bold text-sm tracking-wide">
                             {point.name}
                         </p>
@@ -132,12 +132,12 @@ export default function EfficientFrontier({ data }) {
     };
 
     return (
-        <div className="rounded-2xl border border-slate-700/40 overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-800/20 shadow-xl">
+        <div className="rounded-2xl border border-slate-700/40 overflow-hidden bg-slate-900/40 shadow-lg">
             {/* Header */}
-            <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/60 px-6 py-5 border-b border-slate-600/30 backdrop-blur-sm flex justify-between items-center">
+            <div className="bg-slate-800/40 px-6 py-5 border-b border-slate-700/30 backdrop-blur-sm flex justify-between items-center">
                 <div>
                     <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier Analysis</h3>
-                    <p className="text-sm text-slate-300 mt-1.5">
+                    <p className="text-sm text-slate-400 mt-1.5">
                         Risk-Return profile with Capital Market Line & Feasible Set
                     </p>
                 </div>
