@@ -456,10 +456,14 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     sharpe_sim = (ret_sim - risk_free_rate) / vol_sim
     
     for i in range(num_simulations):
+        # Create weights dict for this simulation
+        sim_weights = {ticker: float(weights_sim[i][j]) for j, ticker in enumerate(tickers)}
+        
         monte_carlo_points.append({
             "volatility": float(vol_sim[i]),
             "return": float(ret_sim[i]),
-            "sharpe_ratio": float(sharpe_sim[i])
+            "sharpe_ratio": float(sharpe_sim[i]),
+            "weights": sim_weights
         })
         
     # --- NEW: Capital Market Line (CML) ---

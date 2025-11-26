@@ -41,17 +41,29 @@ export default function EfficientFrontier({ data }) {
         type: 'asset'
     }));
 
-    const optimalPortfolio = data.optimal_portfolio ? {
-        volatility: data.optimal_portfolio.volatility * 100,
-        return: data.optimal_portfolio.return * 100,
-        sharpe_ratio: data.optimal_portfolio.sharpe_ratio || 0,
-        weights: data.optimal_portfolio.weights || {},
-        name: 'Max Sharpe Portfolio',
-        type: 'optimal'
-    } : null;
+    // Find special points directly from the frontier data to ensure perfect consistency
+    // This guarantees that the colored points are exactly on the line and have the correct data
+    let maxSharpePoint = null;
+    let minVolPoint = null;
+
+    if (frontierPoints.length > 0) {
+        // Find Max Sharpe
+        maxSharpePoint = frontierPoints.reduce((prev, current) =>
+            (prev.sharpe_ratio > current.sharpe_ratio) ? prev : current
+        );
+
+        // Find Min Volatility
+        minVolPoint = frontierPoints.reduce((prev, current) =>
+            (prev.volatility < current.volatility) ? prev : current
+        );
+
+        // Clone and override names/types for the special display
+        maxSharpePoint = { ...maxSharpePoint, name: 'Max Sharpe Portfolio', type: 'optimal' };
+        minVolPoint = { ...minVolPoint, name: 'Min Variance Portfolio', type: 'min_variance' };
+    }
 
     // Calculate dynamic axis ranges
-    const allPoints = [...frontierPoints, ...assetPoints, ...cmlPoints, ...(optimalPortfolio ? [optimalPortfolio] : [])];
+    const allPoints = [...frontierPoints, ...assetPoints, ...cmlPoints];
     // Don't include all Monte Carlo points in range calculation to avoid outliers skewing the view too much,
     // but include a sample to ensure most are visible
 
@@ -227,10 +239,10 @@ export default function EfficientFrontier({ data }) {
                         </Scatter>
 
                         {/* 5. Optimal Portfolio (Interactive Point) */}
-                        {optimalPortfolio && (
+                        {maxSharpePoint && (
                             <Scatter
                                 name="Max Sharpe Portfolio"
-                                data={[optimalPortfolio]}
+                                data={[maxSharpePoint]}
                                 fill="#10b981"
                                 shape="star"
                                 zAxisId={0}
@@ -240,17 +252,10 @@ export default function EfficientFrontier({ data }) {
                         )}
 
                         {/* 6. Min Variance Portfolio (Interactive Point) */}
-                        {data.min_variance_portfolio && (
+                        {minVolPoint && (
                             <Scatter
                                 name="Min Variance Portfolio"
-                                data={[{
-                                    volatility: data.min_variance_portfolio.volatility * 100,
-                                    return: data.min_variance_portfolio.return * 100,
-                                    sharpe_ratio: data.min_variance_portfolio.sharpe_ratio || 0,
-                                    weights: data.min_variance_portfolio.weights || {},
-                                    name: 'Min Variance Portfolio',
-                                    type: 'min_variance'
-                                }]}
+                                data={[minVolPoint]}
                                 fill="#f59e0b" // Amber/Yellow
                                 shape="diamond"
                                 zAxisId={0}
@@ -258,10 +263,10 @@ export default function EfficientFrontier({ data }) {
                         )}
 
                         {/* 7. Optimal Portfolio Label (Visual Only) */}
-                        {optimalPortfolio && (
+                        {maxSharpePoint && (
                             <ReferenceDot
-                                x={optimalPortfolio.volatility}
-                                y={optimalPortfolio.return}
+                                x={maxSharpePoint.volatility}
+                                y={maxSharpePoint.return}
                                 r={6}
                                 fill="#10b981"
                                 stroke="#fff"
@@ -281,10 +286,10 @@ export default function EfficientFrontier({ data }) {
                         )}
 
                         {/* 8. Min Variance Label (Visual Only) */}
-                        {data.min_variance_portfolio && (
+                        {minVolPoint && (
                             <ReferenceDot
-                                x={data.min_variance_portfolio.volatility * 100}
-                                y={data.min_variance_portfolio.return * 100}
+                                x={minVolPoint.volatility}
+                                y={minVolPoint.return}
                                 r={5}
                                 fill="#f59e0b"
                                 stroke="#fff"
