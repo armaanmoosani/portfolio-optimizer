@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
@@ -21,6 +22,7 @@ export default function StockViewer() {
     const { stockViewerState, updateStockState } = useGlobalState();
     const { ticker, stockData, news, aiSummary, loading, chartData, timeRange } = stockViewerState;
     const toast = useToast();
+    const router = useRouter();
 
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -253,7 +255,12 @@ ${aggregatedNews.slice(0, 15000)}
 
             // Show success toast with click-to-scroll AFTER all data is loaded
             toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
-                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+                // Navigate to stocks page first
+                router.push('/stocks');
+                // Then scroll after a short delay to ensure page has loaded
+                setTimeout(() => {
+                    document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+                }, 300);
             });
 
             // Auto-scroll to results AFTER all data is loaded

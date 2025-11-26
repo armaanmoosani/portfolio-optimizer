@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, Shield, Target, PieChart, Sliders, Info, Calendar, ChevronDown, ChevronUp, Loader2, Activity } from "lucide-react";
 import { useToast } from "@/components/Toast";
@@ -52,6 +53,7 @@ const optimizationMethods = [
 
 export default function OptimizationPanel({ assets = [], onOptimizationComplete, onOptimizationStart }) {
     const toast = useToast();
+    const router = useRouter();
 
     const showToast = (message, type = "info") => {
         if (toast[type]) {
@@ -211,7 +213,12 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
             // Show toast after results section is rendered
             setTimeout(() => {
                 showToast("Portfolio optimized successfully! Click to view results.", "success", 4000, () => {
-                    document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+                    // Navigate to portfolio page first
+                    router.push('/portfolio');
+                    // Then scroll after a short delay to ensure page has loaded
+                    setTimeout(() => {
+                        document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
                 });
             }, 100);
         } catch (error) {
