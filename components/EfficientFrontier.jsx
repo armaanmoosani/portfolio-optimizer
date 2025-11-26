@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, Legend, LabelList, ErrorBar } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -15,59 +15,46 @@ export default function EfficientFrontier({ data }) {
         return: p.return * 100,
         sharpe_ratio: p.sharpe_ratio || 0,
         weights: p.weights || {},
-        name: 'Efficient Frontier',
-        type: 'frontier'
+        type: 'Efficient Frontier'
     }));
 
     const monteCarloPoints = (data.monte_carlo_points || []).map(p => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
         sharpe_ratio: p.sharpe_ratio || 0,
-        name: 'Feasible Set (Random Portfolios)',
-        type: 'monte_carlo'
+        weights: p.weights || {},
+        type: 'Feasible Set'
     }));
 
     const cmlPoints = (data.cml_points || []).map(p => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
-        name: 'Capital Market Line',
-        type: 'cml'
+        type: 'Capital Market Line'
     }));
 
     const assetPoints = (data.individual_assets || []).map(p => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
         name: p.name,
-        type: 'asset'
+        type: 'Individual Asset'
     }));
 
-    // Find special points directly from the frontier data to ensure perfect consistency
-    // This guarantees that the colored points are exactly on the line and have the correct data
+    // Find special points directly from frontier data
     let maxSharpePoint = null;
     let minVolPoint = null;
 
     if (frontierPoints.length > 0) {
-        // Find Max Sharpe
         maxSharpePoint = frontierPoints.reduce((prev, current) =>
             (prev.sharpe_ratio > current.sharpe_ratio) ? prev : current
         );
-
-        // Find Min Volatility
         minVolPoint = frontierPoints.reduce((prev, current) =>
             (prev.volatility < current.volatility) ? prev : current
         );
-
-        // Clone and override names/types for the special display
-        maxSharpePoint = { ...maxSharpePoint, name: 'Max Sharpe Portfolio', type: 'optimal' };
-        minVolPoint = { ...minVolPoint, name: 'Min Variance Portfolio', type: 'min_variance' };
     }
 
     // Calculate dynamic axis ranges
     const allPoints = [...frontierPoints, ...assetPoints, ...cmlPoints];
-    // Don't include all Monte Carlo points in range calculation to avoid outliers skewing the view too much,
-    // but include a sample to ensure most are visible
-
-    const minVol = Math.min(...allPoints.map(p => p.volatility), 0); // Always include 0 for CML
+    const minVol = Math.min(...allPoints.map(p => p.volatility), 0);
     const maxVol = Math.max(...allPoints.map(p => p.volatility));
     const minRet = Math.min(...allPoints.map(p => p.return));
     const maxRet = Math.max(...allPoints.map(p => p.return));
@@ -81,62 +68,78 @@ export default function EfficientFrontier({ data }) {
     ];
 
     const retDomain = [
-        Math.floor((minRet - retPadding) / 5) * 5,
-        Math.ceil((maxRet + retPadding) / 5) * 5
+        Math.floor((minRet - retPadding) / 10) * 10,
+        Math.ceil((maxRet + retPadding) / 10) * 10
     ];
 
     // Enhanced professional tooltip
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length > 0) {
-            // Handle multiple points (e.g. overlapping lines)
             const point = payload[0].payload;
-            const isAsset = point.type === 'asset';
-            const isMonteCarlo = point.type === 'monte_carlo';
-            const isCML = point.type === 'cml';
+
+            const hasWeights = point.weights && Object.keys(point.weights).length > 0;
+            const topAllocations = hasWeights
+                ? Object.entries(point.weights)
+                    .filter(([_, weight]) => weight > 0.001)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                : [];
 
             return (
-                <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden" style={{ minWidth: '220px' }}>
+                <div className="bg-slate-900/98 border-2 border-slate-600/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden" style={{ minWidth: '260px', maxWidth: '320px' }}>
                     {/* Header */}
-                    <div className="bg-slate-800 px-4 py-2 border-b border-slate-700">
+                    <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-3 border-b border-slate-600/50">
                         <p className="text-white font-bold text-sm tracking-wide">
-                            {point.name}
+                            {point.name || point.type || 'Portfolio'}
                         </p>
                     </div>
 
                     {/* Metrics */}
-                    <div className="p-4 space-y-2">
-                        <div className="flex justify-between items-center gap-4">
-                            <span className="text-slate-300 text-xs font-medium">Return</span>
+                    <div className="p-4 space-y-2.5">
+                        <div className="flex justify-between items-center">
+                            <span className="text-slate-300 text-xs font-medium">Expected Return</span>
                             <span className="text-emerald-400 font-mono font-bold text-sm">{point.return.toFixed(2)}%</span>
                         </div>
-                        <div className="flex justify-between items-center gap-4">
-                            <span className="text-slate-300 text-xs font-medium">Risk (Vol)</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-slate-300 text-xs font-medium">Std. Deviation</span>
                             <span className="text-sky-400 font-mono font-bold text-sm">{point.volatility.toFixed(2)}%</span>
                         </div>
-                        {!isCML && point.sharpe_ratio !== undefined && (
-                            <div className="flex justify-between items-center gap-4">
-                                <span className="text-slate-300 text-xs font-medium">Sharpe</span>
-                                <span className="text-amber-400 font-mono font-bold text-sm">{point.sharpe_ratio.toFixed(2)}</span>
+                        {point.sharpe_ratio !== undefined && (
+                            <div className="flex justify-between items-center">
+                                <span className="text-slate-300 text-xs font-medium">Sharpe Ratio</span>
+                                <span className="text-amber-400 font-mono font-bold text-sm">{point.sharpe_ratio.toFixed(3)}</span>
                             </div>
                         )}
 
-                        {/* Show weights if available */}
-                        {point.weights && Object.keys(point.weights).length > 0 && (
-                            <div className="pt-2 mt-2 border-t border-slate-700">
-                                <p className="text-xs text-slate-400 mb-1">Portfolio Weights:</p>
-                                <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                                    {Object.entries(point.weights)
-                                        .sort((a, b) => b[1] - a[1])
-                                        .filter(([_, weight]) => weight > 0.001) // Only show weights > 0.1%
-                                        .map(([ticker, weight]) => (
-                                            <div key={ticker} className="flex justify-between text-xs py-0.5">
-                                                <span className="text-slate-300">{ticker}</span>
-                                                <span className="text-slate-200 font-mono">{(weight * 100).toFixed(1)}%</span>
+                        {/* Allocations */}
+                        {topAllocations.length > 0 && (
+                            <>
+                                <div className="border-t border-slate-700/50 my-3" />
+                                <div>
+                                    <p className="text-slate-400 font-semibold mb-2.5 text-xs uppercase tracking-wider">Top Allocations</p>
+                                    <div className="space-y-2">
+                                        {topAllocations.map(([ticker, weight]) => (
+                                            <div key={ticker} className="flex items-center gap-2.5">
+                                                <span className="text-slate-200 font-semibold text-xs w-12">{ticker}</span>
+                                                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all"
+                                                        style={{ width: `${(weight * 100).toFixed(1)}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-blue-400 font-mono text-xs font-bold w-12 text-right">
+                                                    {(weight * 100).toFixed(1)}%
+                                                </span>
                                             </div>
-                                        ))
-                                    }
+                                        ))}
+                                    </div>
+                                    {Object.keys(point.weights).length > 5 && (
+                                        <p className="text-slate-500 text-xs mt-2 italic">
+                                            +{Object.keys(point.weights).length - 5} more assets
+                                        </p>
+                                    )}
                                 </div>
-                            </div>
+                            </>
                         )}
                     </div>
                 </div>
@@ -172,10 +175,10 @@ export default function EfficientFrontier({ data }) {
             </div>
 
             {/* Chart */}
-            <div className="p-6">
+            <div className="p-8">
                 <ResponsiveContainer width="100%" height={500}>
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                    <ScatterChart margin={{ top: 10, right: 80, bottom: 60, left: 60 }}>
+                        <CartesianGrid strokeDasharray="4 4" stroke="#475569" opacity={0.25} />
                         <XAxis
                             type="number"
                             dataKey="volatility"
@@ -184,8 +187,15 @@ export default function EfficientFrontier({ data }) {
                             stroke="#94a3b8"
                             tick={{ fill: '#cbd5e1', fontSize: 11 }}
                             domain={volDomain}
-                            tickCount={8}
-                            label={{ value: 'Risk (Annualized Volatility %)', position: 'bottom', offset: 0, fill: '#94a3b8', fontSize: 12 }}
+                            tickCount={10}
+                            label={{
+                                value: 'Risk (Annualized Volatility %)',
+                                position: 'bottom',
+                                offset: 40,
+                                fill: '#e2e8f0',
+                                fontSize: 13,
+                                fontWeight: 600
+                            }}
                         />
                         <YAxis
                             type="number"
@@ -196,103 +206,101 @@ export default function EfficientFrontier({ data }) {
                             tick={{ fill: '#cbd5e1', fontSize: 11 }}
                             domain={retDomain}
                             tickCount={8}
-                            label={{ value: 'Expected Return (Annualized %)', angle: -90, position: 'left', offset: 0, fill: '#94a3b8', fontSize: 12 }}
+                            label={{
+                                value: 'Expected Return (Annualized %)',
+                                angle: -90,
+                                position: 'left',
+                                offset: 40,
+                                fill: '#e2e8f0',
+                                fontSize: 13,
+                                fontWeight: 600
+                            }}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
 
-                        {/* 1. Feasible Set (Monte Carlo Cloud) - Background */}
-                        <Scatter
-                            name="Feasible Set"
-                            data={monteCarloPoints}
-                            fill="#64748b"
-                            opacity={0.15}
-                            shape="circle"
-                        />
+                        {/* 1. Feasible Set (Monte Carlo Cloud) */}
+                        {monteCarloPoints.length > 0 && (
+                            <Scatter
+                                name="Feasible Set"
+                                data={monteCarloPoints}
+                                fill="#64748b"
+                                opacity={0.15}
+                                shape="circle"
+                                isAnimationActive={false}
+                            />
+                        )}
 
-                        {/* 2. Capital Market Line (CML) */}
-                        <Scatter
-                            name="Capital Market Line"
-                            data={cmlPoints}
-                            line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
-                            shape={() => null} // No dots, just line
-                            legendType="none"
-                        />
+                        {/* 2. Capital Market Line */}
+                        {cmlPoints.length > 0 && (
+                            <Scatter
+                                name="Capital Market Line"
+                                data={cmlPoints}
+                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
+                                shape={() => null}
+                                isAnimationActive={false}
+                            />
+                        )}
 
-                        {/* 3. Efficient Frontier Curve with Special Points Highlighted */}
+                        {/* 3. Efficient Frontier Curve with colored special points */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
-                            line={{ stroke: '#3b82f6', strokeWidth: 3 }}
+                            line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
                             lineType="monotone"
+                            isAnimationActive={true}
+                            animationDuration={1000}
+                            animationEasing="ease-out"
                         >
-                            {frontierPoints.map((point, index) => {
-                                // Check if this is the max sharpe point
+                            {frontierPoints.map((entry, index) => {
+                                // Check if this is max sharpe or min vol point
                                 const isMaxSharpe = maxSharpePoint &&
-                                    Math.abs(point.volatility - maxSharpePoint.volatility) < 0.01 &&
-                                    Math.abs(point.return - maxSharpePoint.return) < 0.01;
-
-                                // Check if this is the min vol point
+                                    Math.abs(entry.volatility - maxSharpePoint.volatility) < 0.01 &&
+                                    Math.abs(entry.return - maxSharpePoint.return) < 0.01;
                                 const isMinVol = minVolPoint &&
-                                    Math.abs(point.volatility - minVolPoint.volatility) < 0.01 &&
-                                    Math.abs(point.return - minVolPoint.return) < 0.01;
+                                    Math.abs(entry.volatility - minVolPoint.volatility) < 0.01 &&
+                                    Math.abs(entry.return - minVolPoint.return) < 0.01;
 
-                                if (isMaxSharpe) {
-                                    return (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill="#10b981"
-                                            stroke="#fff"
-                                            strokeWidth={2}
-                                            r={8}
-                                        />
-                                    );
-                                } else if (isMinVol) {
-                                    return (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill="#f59e0b"
-                                            stroke="#fff"
-                                            strokeWidth={2}
-                                            r={7}
-                                        />
-                                    );
-                                } else {
-                                    // Regular frontier points - make them very small or hidden
-                                    return <Cell key={`cell-${index}`} fill="#3b82f6" r={0} />;
-                                }
+                                return (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={isMaxSharpe ? '#10b981' : isMinVol ? '#f59e0b' : '#3b82f6'}
+                                        stroke={isMaxSharpe || isMinVol ? '#fff' : 'none'}
+                                        strokeWidth={isMaxSharpe || isMinVol ? 2 : 0}
+                                        r={isMaxSharpe ? 8 : isMinVol ? 7 : 3}
+                                    />
+                                );
                             })}
                         </Scatter>
 
                         {/* 4. Individual Assets */}
-                        <Scatter
-                            name="Individual Assets"
-                            data={assetPoints}
-                            fill="#c084fc" // Purple
-                            shape="circle"
-                        >
-                            {assetPoints.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill="#c084fc" stroke="#fff" strokeWidth={1} />
-                            ))}
-                            <LabelList dataKey="name" position="top" style={{ fill: '#e2e8f0', fontSize: '10px' }} />
-                        </Scatter>
+                        {assetPoints.length > 0 && (
+                            <Scatter
+                                name="Individual Assets"
+                                data={assetPoints}
+                                fill="#c084fc"
+                                shape="circle"
+                            >
+                                {assetPoints.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill="#c084fc" stroke="#fff" strokeWidth={1} />
+                                ))}
+                            </Scatter>
+                        )}
 
-                        {/* 5. Labels for Special Points */}
+                        {/* Labels for special points */}
                         {maxSharpePoint && (
                             <ReferenceDot
                                 x={maxSharpePoint.volatility}
                                 y={maxSharpePoint.return}
                                 r={0}
-                                fill="none"
                                 isFront={true}
-                                style={{ pointerEvents: 'none' }}
                             >
                                 <Label
                                     value="Max Sharpe"
                                     position="top"
-                                    offset={10}
                                     fill="#10b981"
                                     fontSize={12}
                                     fontWeight="bold"
+                                    offset={15}
                                 />
                             </ReferenceDot>
                         )}
@@ -302,17 +310,15 @@ export default function EfficientFrontier({ data }) {
                                 x={minVolPoint.volatility}
                                 y={minVolPoint.return}
                                 r={0}
-                                fill="none"
                                 isFront={true}
-                                style={{ pointerEvents: 'none' }}
                             >
                                 <Label
                                     value="Min Vol"
                                     position="bottom"
-                                    offset={10}
                                     fill="#f59e0b"
                                     fontSize={11}
                                     fontWeight="bold"
+                                    offset={15}
                                 />
                             </ReferenceDot>
                         )}
@@ -320,14 +326,19 @@ export default function EfficientFrontier({ data }) {
                 </ResponsiveContainer>
 
                 {/* Info Note */}
-                <div className="mt-4 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 flex gap-4 text-xs text-slate-400">
-                    <div className="flex-1">
-                        <strong className="text-slate-200 block mb-1">Capital Market Line (CML)</strong>
-                        Represents the best possible return for a given level of risk when combining the risk-free asset with the optimal risky portfolio.
-                    </div>
-                    <div className="flex-1">
-                        <strong className="text-slate-200 block mb-1">Feasible Set</strong>
-                        The gray cloud shows thousands of possible portfolios. The Efficient Frontier (blue line) represents the upper boundary (best possible portfolios).
+                <div className="mt-6 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40">
+                    <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                            <p className="font-semibold text-white text-sm">How to Use</p>
+                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Hover over any point to see the portfolio allocation, expected return, risk, and Sharpe ratio.
+                                The <span className="text-emerald-400 font-semibold">green point</span> marks maximum Sharpe ratio (best risk-adjusted returns).
+                                The <span className="text-amber-400 font-semibold">yellow point</span> marks minimum volatility (lowest risk).
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
