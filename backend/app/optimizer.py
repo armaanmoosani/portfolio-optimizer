@@ -329,18 +329,14 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     min_return = float(np.sum(mean_returns * min_ret_result.x) * annualization_factor)
     max_return = float(np.sum(mean_returns * max_ret_result.x) * annualization_factor)
 
-    # Calculate Min Variance Portfolio details
+    # Calculate Min Variance Portfolio details (Initial estimate for range)
     min_var_weights = min_ret_result.x
     min_var_ret, min_var_vol, min_var_sharpe = calculate_portfolio_performance(
         min_var_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
     )
     
-    min_variance_portfolio = {
-        "volatility": float(min_var_vol),
-        "return": float(min_var_ret),
-        "sharpe_ratio": float(min_var_sharpe),
-        "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
-    }
+    # We will define the final min_variance_portfolio object AFTER generating the frontier
+    # to ensure it matches one of the points on the curve exactly.
     
     # Generate target returns
     target_returns = np.linspace(min_return, max_return, num_portfolios)
@@ -389,33 +385,57 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
     # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
     # used slightly different parameters or didn't use shrinkage when this function does.
-    sharpe_result = minimize(
-        negative_sharpe,
-        initial_guess,
-        args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
-        method='SLSQP',
-        bounds=bounds,
-        constraints=constraints
-    )
+    # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
+    # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
+    # used slightly different parameters or didn't use shrinkage when this function does.
     
-    if sharpe_result.success:
-        opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
-            sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
-        )
-        weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
-        optimal_portfolio = {
-            "volatility": float(opt_vol),
-            "return": float(opt_ret),
-            "sharpe_ratio": float(opt_sharpe),
-            "weights": weights_dict
-        }
+    # FORCE CONSISTENCY: Instead of running a separate minimization which might find a point slightly
+    # off the discrete curve due to numerical precision, we simply pick the point from our
+    # generated frontier that has the highest Sharpe Ratio. This guarantees the "Green Star"
+    # is exactly on the "Blue Line".
+    if frontier_points:
+        optimal_portfolio = max(frontier_points, key=lambda x: x['sharpe_ratio'])
     else:
-        optimal_portfolio = None
+        # Fallback if frontier generation failed (unlikely)
+        sharpe_result = minimize(
+            negative_sharpe,
+            initial_guess,
+            args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints
+        )
+        
+        if sharpe_result.success:
+            opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
+                sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            )
+            weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
+            optimal_portfolio = {
+                "volatility": float(opt_vol),
+                "return": float(opt_ret),
+                "sharpe_ratio": float(opt_sharpe),
+                "weights": weights_dict
+            }
+        else:
+            optimal_portfolio = None
     
     # --- NEW: Monte Carlo Simulation (Feasible Set) ---
     # Generate random portfolios to show the "cloud" of possible outcomes
     num_simulations = 2000
-    monte_carlo_points = []
+    
+    # FORCE CONSISTENCY: Select Min Variance Portfolio from the generated frontier points
+    # This ensures the "Yellow Diamond" is exactly on the "Blue Line".
+    if frontier_points:
+        min_variance_portfolio = min(frontier_points, key=lambda x: x['volatility'])
+    else:
+        # Fallback
+        min_variance_portfolio = {
+            "volatility": float(min_var_vol),
+            "return": float(min_var_ret),
+            "sharpe_ratio": float(min_var_sharpe),
+            "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
+        }monte_carlo_points = []
     
     # Vectorized Monte Carlo for speed
     # Generate random weights
