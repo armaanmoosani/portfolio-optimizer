@@ -262,7 +262,7 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
         "message": str(result.message)
     }
 
-def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = None, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 50):
+def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = None, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 100):
     """
     Calculate the efficient frontier by optimizing portfolios across a range of target returns.
     
@@ -412,8 +412,67 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         else:
             optimal_portfolio = None
     
+    # --- NEW: Monte Carlo Simulation (Feasible Set) ---
+    # Generate random portfolios to show the "cloud" of possible outcomes
+    num_simulations = 2000
+    monte_carlo_points = []
+    
+    # Vectorized Monte Carlo for speed
+    # Generate random weights
+    weights_sim = np.random.random((num_simulations, num_assets))
+    weights_sim = weights_sim / np.sum(weights_sim, axis=1)[:, np.newaxis]
+    
+    # Calculate returns and volatilities
+    ret_sim = np.sum(weights_sim * mean_returns.values, axis=1) * annualization_factor
+    
+    # Diagonalize covariance calculation for speed: w * Cov * w.T
+    # (N_sim, N_assets) @ (N_assets, N_assets) -> (N_sim, N_assets)
+    # Then element-wise mult with weights and sum
+    # This is faster than a loop
+    vol_sim = np.sqrt(np.sum((weights_sim @ cov_matrix.values) * weights_sim, axis=1) * annualization_factor)
+    
+    sharpe_sim = (ret_sim - risk_free_rate) / vol_sim
+    
+    for i in range(num_simulations):
+        monte_carlo_points.append({
+            "volatility": float(vol_sim[i]),
+            "return": float(ret_sim[i]),
+            "sharpe_ratio": float(sharpe_sim[i])
+        })
+        
+    # --- NEW: Capital Market Line (CML) ---
+    # Line from Risk-Free Rate tangent to the Max Sharpe portfolio
+    cml_points = []
+    if optimal_portfolio:
+        # Point 1: Risk Free Rate (0 volatility)
+        cml_points.append({
+            "volatility": 0.0,
+            "return": risk_free_rate,
+            "sharpe_ratio": 0.0
+        })
+        
+        # Point 2: Tangency Portfolio (Max Sharpe)
+        cml_points.append({
+            "volatility": optimal_portfolio["volatility"],
+            "return": optimal_portfolio["return"],
+            "sharpe_ratio": optimal_portfolio["sharpe_ratio"]
+        })
+        
+        # Point 3: Extension (1.5x volatility of tangency)
+        # y = mx + c => Return = Sharpe * Vol + RiskFree
+        max_vol_cml = optimal_portfolio["volatility"] * 1.5
+        max_ret_cml = risk_free_rate + optimal_portfolio["sharpe_ratio"] * max_vol_cml
+        
+        cml_points.append({
+            "volatility": max_vol_cml,
+            "return": max_ret_cml,
+            "sharpe_ratio": optimal_portfolio["sharpe_ratio"]
+        })
+
     return {
         "frontier_points": frontier_points,
         "individual_assets": individual_assets,
-        "optimal_portfolio": optimal_portfolio
+        "optimal_portfolio": optimal_portfolio,
+        "monte_carlo_points": monte_carlo_points,
+        "cml_points": cml_points
     }
