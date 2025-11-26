@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, X, PlusCircle, PieChart as PieIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useToast } from "./Toast";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
 
@@ -14,6 +15,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const searchContainerRef = useRef(null);
     const inputRef = useRef(null);
+    const toast = useToast();
 
     // Calculate equal weights for preview
     const allocationData = assets.map((asset, index) => ({
@@ -48,6 +50,9 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         try {
             const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(value)}`);
             if (res.ok) {
+                // Prevent race condition: only update if input still matches the query
+                if (inputRef.current && inputRef.current.value.toUpperCase() !== value) return;
+
                 const data = await res.json();
                 setSuggestions(data.result || []);
                 setShowSuggestions(true);
@@ -73,12 +78,21 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                 // Add from selected suggestion
                 handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             } else if (ticker.trim()) {
-                // Add ticker directly if valid text is entered (uppercase for consistency)
+                // Only add if ticker exists in suggestions (valid ticker)
                 const tickerSymbol = ticker.trim().toUpperCase();
-                // Try to find a matching suggestion for the company name
                 const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
-                const description = matchingSuggestion ? matchingSuggestion.description : tickerSymbol;
-                handleAdd(tickerSymbol, description);
+
+                if (matchingSuggestion) {
+                    // Valid ticker found in suggestions
+                    handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
+                } else if (suggestions.length > 0) {
+                    // If user typed something but no exact match, don't add anything
+                    // Just keep the dropdown open so they can select from suggestions
+                    return;
+                } else {
+                    // Invalid ticker
+                    toast.error("Invalid ticker. Please select a valid stock from the suggestions.");
+                }
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -96,10 +110,15 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const handleAddClick = () => {
         if (ticker.trim()) {
             const tickerSymbol = ticker.trim().toUpperCase();
-            // Try to find a matching suggestion for the company name
+            // Only add if ticker exists in suggestions (valid ticker)
             const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
-            const description = matchingSuggestion ? matchingSuggestion.description : tickerSymbol;
-            handleAdd(tickerSymbol, description);
+
+            if (matchingSuggestion) {
+                // Valid ticker found in suggestions
+                handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
+            } else {
+                toast.error("Invalid ticker. Please select a valid stock from the suggestions.");
+            }
         }
     };
 
