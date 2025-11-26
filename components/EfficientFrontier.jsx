@@ -96,8 +96,14 @@ export default function EfficientFrontier({ data }) {
     // Enhanced professional tooltip
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length > 0) {
-            // Prioritize the Max Sharpe point if it's in the payload (handling overlapping points)
-            const maxSharpePoint = payload.find(p => p.name === "Max Sharpe Portfolio");
+            // Don't show tooltip for Risk-Free Asset or CML line itself
+            if (payload[0].payload.name === "Risk-Free Asset" || payload[0].payload.type === "CML") {
+                return null;
+            }
+
+            // Prioritize the Optimal Portfolio point if it's in the payload (handling overlapping points)
+            // This ensures we show the EXACT Max Sharpe metrics from the star, not the approximate point on the line
+            const maxSharpePoint = payload.find(p => p.name === "Optimal Portfolio");
             const point = maxSharpePoint ? maxSharpePoint.payload : payload[0].payload;
 
             const hasWeights = point.weights && Object.keys(point.weights).length > 0;
@@ -261,8 +267,20 @@ export default function EfficientFrontier({ data }) {
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
 
-                        {/* Capital Market Line (CML) */}
-
+                        {/* Capital Market Line (CML) - Rendered FIRST to be behind */}
+                        {cmlPoints.length > 1 && (
+                            <Scatter
+                                name="Capital Market Line"
+                                data={cmlPoints}
+                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
+                                lineType="linear"
+                                fill="none"
+                                shape={() => null}
+                                isAnimationActive={false}
+                                legendType="none"
+                                tooltipType="none"
+                            />
+                        )}
 
                         {/* Efficient Frontier Curve & Points */}
                         <Scatter
@@ -351,37 +369,23 @@ export default function EfficientFrontier({ data }) {
                             </>
                         )}
 
-                        {/* Capital Market Line (CML) - Rendered LAST to be on top */}
-                        {cmlPoints.length > 1 && (
-                            <>
-                                <Scatter
-                                    name="Capital Market Line"
-                                    data={cmlPoints}
-                                    line={{ stroke: '#94a3b8', strokeWidth: 2.5, strokeDasharray: '8 4' }}
-                                    lineType="monotone"
-                                    fill="none"
-                                    shape={() => null}
-                                    isAnimationActive={false}
+                        {/* CML Label - Rendered separately */}
+                        {cmlPoints.length > 1 && cmlPoints[cmlPoints.length - 1] && (
+                            <ReferenceDot
+                                x={cmlPoints[cmlPoints.length - 1].volatility}
+                                y={cmlPoints[cmlPoints.length - 1].return}
+                                r={0}
+                                isFront={true}
+                            >
+                                <Label
+                                    value="CML"
+                                    position="right"
+                                    fill="#94a3b8"
+                                    fontSize={10}
+                                    fontWeight="600"
+                                    offset={10}
                                 />
-                                {/* CML Label */}
-                                {cmlPoints[cmlPoints.length - 1] && (
-                                    <ReferenceDot
-                                        x={cmlPoints[cmlPoints.length - 1].volatility}
-                                        y={cmlPoints[cmlPoints.length - 1].return}
-                                        r={0}
-                                        isFront={true}
-                                    >
-                                        <Label
-                                            value="CML"
-                                            position="right"
-                                            fill="#94a3b8"
-                                            fontSize={10}
-                                            fontWeight="600"
-                                            offset={10}
-                                        />
-                                    </ReferenceDot>
-                                )}
-                            </>
+                            </ReferenceDot>
                         )}
                     </ScatterChart>
                 </ResponsiveContainer>
