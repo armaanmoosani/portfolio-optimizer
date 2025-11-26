@@ -325,8 +325,22 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         constraints=constraints
     )
     
+    
     min_return = float(np.sum(mean_returns * min_ret_result.x) * annualization_factor)
     max_return = float(np.sum(mean_returns * max_ret_result.x) * annualization_factor)
+
+    # Calculate Min Variance Portfolio details
+    min_var_weights = min_ret_result.x
+    min_var_ret, min_var_vol, min_var_sharpe = calculate_portfolio_performance(
+        min_var_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+    )
+    
+    min_variance_portfolio = {
+        "volatility": float(min_var_vol),
+        "return": float(min_var_ret),
+        "sharpe_ratio": float(min_var_sharpe),
+        "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
+    }
     
     # Generate target returns
     target_returns = np.linspace(min_return, max_return, num_portfolios)
@@ -473,6 +487,7 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         "frontier_points": frontier_points,
         "individual_assets": individual_assets,
         "optimal_portfolio": optimal_portfolio,
+        "min_variance_portfolio": min_variance_portfolio,
         "monte_carlo_points": monte_carlo_points,
         "cml_points": cml_points
     }

@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, Legend, LabelList } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, Legend, LabelList, ErrorBar } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -108,11 +108,11 @@ export default function EfficientFrontier({ data }) {
                             </div>
                         )}
 
-                        {/* Show weights for optimal portfolio */}
-                        {point.type === 'optimal' && point.weights && (
+                        {/* Show weights if available */}
+                        {(point.type === 'optimal' || point.type === 'min_variance' || point.weights) && (
                             <div className="pt-2 mt-2 border-t border-slate-700">
                                 <p className="text-xs text-slate-400 mb-1">Top Holdings:</p>
-                                {Object.entries(point.weights)
+                                {Object.entries(point.weights || {})
                                     .sort((a, b) => b[1] - a[1])
                                     .slice(0, 3)
                                     .map(([ticker, weight]) => (
@@ -226,7 +226,38 @@ export default function EfficientFrontier({ data }) {
                             <LabelList dataKey="name" position="top" style={{ fill: '#e2e8f0', fontSize: '10px' }} />
                         </Scatter>
 
-                        {/* 5. Optimal Portfolio (Star) */}
+                        {/* 5. Optimal Portfolio (Interactive Point) */}
+                        {optimalPortfolio && (
+                            <Scatter
+                                name="Max Sharpe Portfolio"
+                                data={[optimalPortfolio]}
+                                fill="#10b981"
+                                shape="star"
+                                zAxisId={0}
+                            >
+                                <ErrorBar dataKey="error" width={0} strokeWidth={0} />
+                            </Scatter>
+                        )}
+
+                        {/* 6. Min Variance Portfolio (Interactive Point) */}
+                        {data.min_variance_portfolio && (
+                            <Scatter
+                                name="Min Variance Portfolio"
+                                data={[{
+                                    volatility: data.min_variance_portfolio.volatility * 100,
+                                    return: data.min_variance_portfolio.return * 100,
+                                    sharpe_ratio: data.min_variance_portfolio.sharpe_ratio || 0,
+                                    weights: data.min_variance_portfolio.weights || {},
+                                    name: 'Min Variance Portfolio',
+                                    type: 'min_variance'
+                                }]}
+                                fill="#f59e0b" // Amber/Yellow
+                                shape="diamond"
+                                zAxisId={0}
+                            />
+                        )}
+
+                        {/* 7. Optimal Portfolio Label (Visual Only) */}
                         {optimalPortfolio && (
                             <ReferenceDot
                                 x={optimalPortfolio.volatility}
@@ -236,6 +267,7 @@ export default function EfficientFrontier({ data }) {
                                 stroke="#fff"
                                 strokeWidth={2}
                                 isFront={true}
+                                style={{ pointerEvents: 'none' }}
                             >
                                 <Label
                                     value="Max Sharpe"
@@ -243,6 +275,29 @@ export default function EfficientFrontier({ data }) {
                                     offset={10}
                                     fill="#10b981"
                                     fontSize={12}
+                                    fontWeight="bold"
+                                />
+                            </ReferenceDot>
+                        )}
+
+                        {/* 8. Min Variance Label (Visual Only) */}
+                        {data.min_variance_portfolio && (
+                            <ReferenceDot
+                                x={data.min_variance_portfolio.volatility * 100}
+                                y={data.min_variance_portfolio.return * 100}
+                                r={5}
+                                fill="#f59e0b"
+                                stroke="#fff"
+                                strokeWidth={2}
+                                isFront={true}
+                                style={{ pointerEvents: 'none' }}
+                            >
+                                <Label
+                                    value="Min Vol"
+                                    position="bottom"
+                                    offset={10}
+                                    fill="#f59e0b"
+                                    fontSize={11}
                                     fontWeight="bold"
                                 />
                             </ReferenceDot>
