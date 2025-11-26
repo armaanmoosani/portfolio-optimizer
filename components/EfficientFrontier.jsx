@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, ReferenceLine } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -9,14 +9,34 @@ export default function EfficientFrontier({ data }) {
         );
     }
 
-    // Transform all data to percentages
+    // 1. Identify Special Indices first
+    let maxSharpeIdx = -1;
+    let minVolIdx = -1;
+    let maxSharpeVal = -Infinity;
+    let minVolVal = Infinity;
+
+    data.frontier_points.forEach((p, idx) => {
+        if ((p.sharpe_ratio || 0) > maxSharpeVal) {
+            maxSharpeVal = p.sharpe_ratio || 0;
+            maxSharpeIdx = idx;
+        }
+        // Using volatility for min vol
+        if ((p.volatility || 0) < minVolVal) {
+            minVolVal = p.volatility || 0;
+            minVolIdx = idx;
+        }
+    });
+
+    // 2. Transform Data with Flags
     const frontierPoints = data.frontier_points.map((p, idx) => ({
         x: p.volatility * 100,
         y: p.return * 100,
         sharpe: p.sharpe_ratio || 0,
         weights: p.weights || {},
         type: 'frontier',
-        id: idx
+        id: idx,
+        isMaxSharpe: idx === maxSharpeIdx,
+        isMinVol: idx === minVolIdx
     }));
 
     const monteCarloPoints = (data.monte_carlo_points || []).map((p, idx) => ({
@@ -43,17 +63,12 @@ export default function EfficientFrontier({ data }) {
         id: idx
     })).sort((a, b) => a.x - b.x);
 
-    // Sort frontier for line drawing
+    // 3. Sort for Line Drawing (Single Dataset)
     const frontierSorted = [...frontierPoints].sort((a, b) => a.x - b.x);
 
-    // Identify special points
-    let maxSharpe = null;
-    let minVol = null;
-
-    if (frontierPoints.length > 0) {
-        maxSharpe = frontierPoints.reduce((max, p) => p.sharpe > max.sharpe ? p : max);
-        minVol = frontierPoints.reduce((min, p) => p.x < min.x ? p : min);
-    }
+    // 4. Extract Special Points for Overlay
+    const maxSharpe = frontierPoints.find(p => p.isMaxSharpe);
+    const minVol = frontierPoints.find(p => p.isMinVol);
 
     // Calculate domains
     const allVisible = [...frontierPoints, ...assetPoints];
@@ -80,7 +95,14 @@ export default function EfficientFrontier({ data }) {
         let title = 'Portfolio';
         let color = '#3b82f6';
 
-        if (point.type === 'asset') {
+        // Priority Checks using Flags
+        if (point.isMaxSharpe) {
+            title = 'Maximum Sharpe Ratio';
+            color = '#10b981';
+        } else if (point.isMinVol) {
+            title = 'Minimum Volatility';
+            color = '#f59e0b';
+        } else if (point.type === 'asset') {
             title = point.name;
             color = '#c084fc';
         } else if (point.type === 'monte_carlo') {
@@ -89,12 +111,6 @@ export default function EfficientFrontier({ data }) {
         } else if (point.type === 'cml') {
             title = 'Capital Market Line';
             color = '#94a3b8';
-        } else if (maxSharpe && point.id === maxSharpe.id) {
-            title = 'Maximum Sharpe Ratio';
-            color = '#10b981';
-        } else if (minVol && point.id === minVol.id) {
-            title = 'Minimum Volatility';
-            color = '#f59e0b';
         } else if (point.type === 'frontier') {
             title = 'Efficient Portfolio';
         }
@@ -249,22 +265,26 @@ export default function EfficientFrontier({ data }) {
 
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }} />
 
-                        {/* CML Line */}
-                        {cmlPoints.length > 0 && (
-                            <Scatter
-                                data={cmlPoints}
-                                line={{ stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '6 4' }}
-                                shape={() => null}
-                                isAnimationActive={false}
+                        {/* CML Line - Rendered as ReferenceLine */}
+                        {cmlPoints.length > 1 && (
+                            <ReferenceLine
+                                segment={[
+                                    { x: cmlPoints[0].x, y: cmlPoints[0].y },
+                                    { x: cmlPoints[cmlPoints.length - 1].x, y: cmlPoints[cmlPoints.length - 1].y }
+                                ]}
+                                stroke="#94a3b8"
+                                strokeWidth={1.5}
+                                strokeDasharray="6 4"
                             />
                         )}
 
-                        {/* Efficient Frontier Line */}
+                        {/* Efficient Frontier (Single Scatter for Line + Dots) */}
                         <Scatter
                             data={frontierSorted}
                             line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
                             lineType="monotone"
-                            shape={() => null}
+                            fill="#3b82f6"
+                            shape="circle"
                             isAnimationActive={true}
                         />
 
@@ -280,14 +300,6 @@ export default function EfficientFrontier({ data }) {
                             />
                         )}
 
-                        {/* Frontier Points */}
-                        <Scatter
-                            data={frontierPoints}
-                            fill="#3b82f6"
-                            shape="circle"
-                            r={2}
-                        />
-
                         {/* Individual Assets */}
                         {assetPoints.length > 0 && (
                             <Scatter
@@ -300,7 +312,7 @@ export default function EfficientFrontier({ data }) {
                             />
                         )}
 
-                        {/* Max Sharpe */}
+                        {/* Max Sharpe Overlay */}
                         {maxSharpe && (
                             <>
                                 <Scatter
@@ -331,7 +343,7 @@ export default function EfficientFrontier({ data }) {
                             </>
                         )}
 
-                        {/* Min Vol */}
+                        {/* Min Vol Overlay */}
                         {minVol && (
                             <>
                                 <Scatter
