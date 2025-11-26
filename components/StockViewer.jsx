@@ -402,9 +402,14 @@ ${aggregatedNews.slice(0, 15000)}
                             />
                             <button
                                 onClick={() => handleSearch()}
-                                className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95"
+                                disabled={loading}
+                                className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Search className="w-5 h-5" />
+                                {loading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <Search className="w-5 h-5" />
+                                )}
                             </button>
                         </div>
 
@@ -441,7 +446,7 @@ ${aggregatedNews.slice(0, 15000)}
             </div>
 
             {!loading && stockData && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 -mt-12">
 
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">

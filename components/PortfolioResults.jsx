@@ -843,16 +843,17 @@ export default function PortfolioResults({ data }) {
                                                                         cy="50%"
                                                                         innerRadius={60}
                                                                         outerRadius={80}
-                                                                        paddingAngle={5}
+                                                                        startAngle={90}
+                                                                        endAngle={-270}
+                                                                        paddingAngle={pieData.length > 1 ? 5 : 0}
                                                                         dataKey="weight"
                                                                         stroke="none"
                                                                         label={hasMany ? false : ({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
-                                                                        animationBegin={0}
-                                                                        animationDuration={800}
+                                                                        isAnimationActive={false}
                                                                     >
                                                                         {pieData.map((item, index) => (
                                                                             <Cell
-                                                                                key={`cell-${index}`}
+                                                                                key={`cell-${item.asset}-${index}`}
                                                                                 fill={item.color}
                                                                                 className="transition-all hover:opacity-80 cursor-pointer"
                                                                             />
