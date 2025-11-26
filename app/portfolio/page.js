@@ -13,9 +13,11 @@ export default function PortfolioPage() {
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load assets from localStorage on mount
+    // Load assets and results from localStorage on mount
     useEffect(() => {
         const savedAssets = localStorage.getItem('portfolioAssets');
+        const savedResults = localStorage.getItem('portfolioResults');
+
         if (savedAssets) {
             try {
                 setAssets(JSON.parse(savedAssets));
@@ -23,6 +25,15 @@ export default function PortfolioPage() {
                 console.error("Failed to parse saved assets", e);
             }
         }
+
+        if (savedResults) {
+            try {
+                setOptimizationResults(JSON.parse(savedResults));
+            } catch (e) {
+                console.error("Failed to parse saved results", e);
+            }
+        }
+
         setIsLoaded(true);
     }, []);
 
@@ -32,6 +43,13 @@ export default function PortfolioPage() {
             localStorage.setItem('portfolioAssets', JSON.stringify(assets));
         }
     }, [assets, isLoaded]);
+
+    // Save results to localStorage whenever they change
+    useEffect(() => {
+        if (isLoaded && optimizationResults) {
+            localStorage.setItem('portfolioResults', JSON.stringify(optimizationResults));
+        }
+    }, [optimizationResults, isLoaded]);
 
     const handleAddAsset = (symbol, description) => {
         if (!assets.find(asset => asset.symbol === symbol)) {
