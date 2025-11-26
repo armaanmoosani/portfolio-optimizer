@@ -212,7 +212,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
 
             // Show toast after results section is rendered
             setTimeout(() => {
-                showToast("Portfolio optimized successfully! Click to view results.", "success", 4000, () => {
+                toast.success("Portfolio optimized successfully! Click to view results.", 4000, () => {
                     // Navigate to portfolio page first
                     router.push('/portfolio');
                     // Then scroll after a short delay to ensure page has loaded
