@@ -44,6 +44,14 @@ export default function EfficientFrontier({ data }) {
         type: 'Risk-Free Asset'
     } : null;
 
+    // CML (Capital Market Line) points for visualization
+    const cmlPoints = data.cml_points && data.cml_points.length > 0 ?
+        data.cml_points.map(p => ({
+            volatility: p.volatility * 100,
+            return: p.return * 100,
+            type: 'CML'
+        })).sort((a, b) => a.volatility - b.volatility) : [];
+
     // Calculate dynamic axis ranges (include MVP and risk-free if they exist)
     const allPoints = [
         ...frontierPoints,
@@ -155,10 +163,42 @@ export default function EfficientFrontier({ data }) {
         <div className="rounded-2xl border border-slate-700/40 overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-800/20 shadow-xl">
             {/* Header */}
             <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/60 px-6 py-5 border-b border-slate-600/30 backdrop-blur-sm">
-                <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier</h3>
-                <p className="text-sm text-slate-300 mt-1.5">
-                    Portfolio optimization curve with {frontierPoints.length} optimal allocations
-                </p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier</h3>
+                        <p className="text-sm text-slate-300 mt-1.5">
+                            Portfolio optimization curve with {frontierPoints.length} optimal allocations
+                        </p>
+                    </div>
+
+                    {/* Key Statistics Display */}
+                    {(optimalPortfolio || minVariancePortfolio) && (
+                        <div className="flex gap-6">
+                            {optimalPortfolio && (
+                                <div className="text-right">
+                                    <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">Max Sharpe Ratio</div>
+                                    <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
+                                        {optimalPortfolio.sharpe_ratio.toFixed(3)}
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">
+                                        {optimalPortfolio.return.toFixed(1)}% return, {optimalPortfolio.volatility.toFixed(1)}% risk
+                                    </div>
+                                </div>
+                            )}
+                            {minVariancePortfolio && (
+                                <div className="text-right">
+                                    <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">Min Volatility</div>
+                                    <div className="text-2xl font-bold text-amber-400 font-mono mt-1">
+                                        {minVariancePortfolio.volatility.toFixed(2)}%
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-0.5">
+                                        {minVariancePortfolio.return.toFixed(1)}% return, {minVariancePortfolio.sharpe_ratio.toFixed(3)} sharpe
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Chart */}
@@ -204,6 +244,19 @@ export default function EfficientFrontier({ data }) {
                             }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
+
+                        {/* Capital Market Line (CML) */}
+                        {cmlPoints.length > 1 && (
+                            <Scatter
+                                name="Capital Market Line"
+                                data={cmlPoints}
+                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '6 4' }}
+                                lineType="monotone"
+                                fill="none"
+                                shape={() => null}
+                                isAnimationActive={false}
+                            />
+                        )}
 
                         {/* Efficient Frontier Curve & Points */}
                         <Scatter
