@@ -406,6 +406,18 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             bounds=bounds,
             constraints=constraints
         )
+        
+        if sharpe_result.success:
+            opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
+                sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            )
+            optimal_portfolio = {
+                "volatility": float(opt_vol),
+                "return": float(opt_ret),
+                "sharpe_ratio": float(opt_sharpe),
+                "weights": {k: float(v) for k, v in zip(tickers, sharpe_result.x)}
+            }
+        else:
             optimal_portfolio = None
     
     # --- NEW: Monte Carlo Simulation (Feasible Set) ---
