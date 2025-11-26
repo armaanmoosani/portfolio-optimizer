@@ -386,45 +386,31 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     
     # Use the provided optimal portfolio weights (already calculated in main optimization)
     # This ensures the Max Sharpe point matches exactly with the Assets tab
-    if optimal_weights:
-        # Convert dict to array in same order as tickers
-        weights_array = np.array([optimal_weights.get(ticker, 0.0) for ticker in tickers])
-        
-        # Calculate performance using the provided weights
+    # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
+    # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
+    # used slightly different parameters or didn't use shrinkage when this function does.
+    sharpe_result = minimize(
+        negative_sharpe,
+        initial_guess,
+        args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints
+    )
+    
+    if sharpe_result.success:
         opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
-            weights_array, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
         )
-        
+        weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
         optimal_portfolio = {
             "volatility": float(opt_vol),
             "return": float(opt_ret),
             "sharpe_ratio": float(opt_sharpe),
-            "weights": {ticker: float(optimal_weights.get(ticker, 0.0)) for ticker in tickers}
+            "weights": weights_dict
         }
     else:
-        # Fallback: calculate max Sharpe if weights not provided
-        sharpe_result = minimize(
-            negative_sharpe,
-            initial_guess,
-            args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
-            method='SLSQP',
-            bounds=bounds,
-            constraints=constraints
-        )
-        
-        if sharpe_result.success:
-            opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
-                sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
-            )
-            weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
-            optimal_portfolio = {
-                "volatility": float(opt_vol),
-                "return": float(opt_ret),
-                "sharpe_ratio": float(opt_sharpe),
-                "weights": weights_dict
-            }
-        else:
-            optimal_portfolio = None
+        optimal_portfolio = None
     
     # --- NEW: Monte Carlo Simulation (Feasible Set) ---
     # Generate random portfolios to show the "cloud" of possible outcomes
