@@ -121,19 +121,21 @@ export default function EfficientFrontier({ data }) {
                         )}
 
                         {/* Show weights if available */}
-                        {(point.type === 'optimal' || point.type === 'min_variance' || point.weights) && (
+                        {point.weights && Object.keys(point.weights).length > 0 && (
                             <div className="pt-2 mt-2 border-t border-slate-700">
-                                <p className="text-xs text-slate-400 mb-1">Top Holdings:</p>
-                                {Object.entries(point.weights || {})
-                                    .sort((a, b) => b[1] - a[1])
-                                    .slice(0, 3)
-                                    .map(([ticker, weight]) => (
-                                        <div key={ticker} className="flex justify-between text-xs">
-                                            <span className="text-slate-300">{ticker}</span>
-                                            <span className="text-slate-200 font-mono">{(weight * 100).toFixed(1)}%</span>
-                                        </div>
-                                    ))
-                                }
+                                <p className="text-xs text-slate-400 mb-1">Portfolio Weights:</p>
+                                <div className="max-h-32 overflow-y-auto custom-scrollbar">
+                                    {Object.entries(point.weights)
+                                        .sort((a, b) => b[1] - a[1])
+                                        .filter(([_, weight]) => weight > 0.001) // Only show weights > 0.1%
+                                        .map(([ticker, weight]) => (
+                                            <div key={ticker} className="flex justify-between text-xs py-0.5">
+                                                <span className="text-slate-300">{ticker}</span>
+                                                <span className="text-slate-200 font-mono">{(weight * 100).toFixed(1)}%</span>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
                             </div>
                         )}
                     </div>
@@ -216,14 +218,50 @@ export default function EfficientFrontier({ data }) {
                             legendType="none"
                         />
 
-                        {/* 3. Efficient Frontier Curve */}
+                        {/* 3. Efficient Frontier Curve with Special Points Highlighted */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
                             line={{ stroke: '#3b82f6', strokeWidth: 3 }}
                             lineType="monotone"
-                            shape={() => null} // No dots on the line itself for cleaner look
-                        />
+                        >
+                            {frontierPoints.map((point, index) => {
+                                // Check if this is the max sharpe point
+                                const isMaxSharpe = maxSharpePoint &&
+                                    Math.abs(point.volatility - maxSharpePoint.volatility) < 0.01 &&
+                                    Math.abs(point.return - maxSharpePoint.return) < 0.01;
+
+                                // Check if this is the min vol point
+                                const isMinVol = minVolPoint &&
+                                    Math.abs(point.volatility - minVolPoint.volatility) < 0.01 &&
+                                    Math.abs(point.return - minVolPoint.return) < 0.01;
+
+                                if (isMaxSharpe) {
+                                    return (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill="#10b981"
+                                            stroke="#fff"
+                                            strokeWidth={2}
+                                            r={8}
+                                        />
+                                    );
+                                } else if (isMinVol) {
+                                    return (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill="#f59e0b"
+                                            stroke="#fff"
+                                            strokeWidth={2}
+                                            r={7}
+                                        />
+                                    );
+                                } else {
+                                    // Regular frontier points - make them very small or hidden
+                                    return <Cell key={`cell-${index}`} fill="#3b82f6" r={0} />;
+                                }
+                            })}
+                        </Scatter>
 
                         {/* 4. Individual Assets */}
                         <Scatter
@@ -238,39 +276,13 @@ export default function EfficientFrontier({ data }) {
                             <LabelList dataKey="name" position="top" style={{ fill: '#e2e8f0', fontSize: '10px' }} />
                         </Scatter>
 
-                        {/* 5. Optimal Portfolio (Interactive Point) */}
-                        {maxSharpePoint && (
-                            <Scatter
-                                name="Max Sharpe Portfolio"
-                                data={[maxSharpePoint]}
-                                fill="#10b981"
-                                shape="star"
-                                zAxisId={0}
-                            >
-                                <ErrorBar dataKey="error" width={0} strokeWidth={0} />
-                            </Scatter>
-                        )}
-
-                        {/* 6. Min Variance Portfolio (Interactive Point) */}
-                        {minVolPoint && (
-                            <Scatter
-                                name="Min Variance Portfolio"
-                                data={[minVolPoint]}
-                                fill="#f59e0b" // Amber/Yellow
-                                shape="diamond"
-                                zAxisId={0}
-                            />
-                        )}
-
-                        {/* 7. Optimal Portfolio Label (Visual Only) */}
+                        {/* 5. Labels for Special Points */}
                         {maxSharpePoint && (
                             <ReferenceDot
                                 x={maxSharpePoint.volatility}
                                 y={maxSharpePoint.return}
-                                r={6}
-                                fill="#10b981"
-                                stroke="#fff"
-                                strokeWidth={2}
+                                r={0}
+                                fill="none"
                                 isFront={true}
                                 style={{ pointerEvents: 'none' }}
                             >
@@ -285,15 +297,12 @@ export default function EfficientFrontier({ data }) {
                             </ReferenceDot>
                         )}
 
-                        {/* 8. Min Variance Label (Visual Only) */}
                         {minVolPoint && (
                             <ReferenceDot
                                 x={minVolPoint.volatility}
                                 y={minVolPoint.return}
-                                r={5}
-                                fill="#f59e0b"
-                                stroke="#fff"
-                                strokeWidth={2}
+                                r={0}
+                                fill="none"
                                 isFront={true}
                                 style={{ pointerEvents: 'none' }}
                             >
