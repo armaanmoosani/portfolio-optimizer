@@ -259,6 +259,7 @@ export default function EfficientFrontier({ data }) {
                                 strokeWidth={1.5}
                                 strokeDasharray="6 4"
                                 fill="none"
+                                fillOpacity={0}
                                 dot={false}
                                 isAnimationActive={false}
                             />
@@ -272,6 +273,7 @@ export default function EfficientFrontier({ data }) {
                             stroke="#3b82f6"
                             strokeWidth={2.5}
                             fill="none"
+                            fillOpacity={0}
                             dot={false}
                             isAnimationActive={true}
                             animationDuration={800}
@@ -320,16 +322,23 @@ export default function EfficientFrontier({ data }) {
                                     shape="star"
                                     r={8}
                                 />
-                                <text
+                                <ReferenceDot
                                     x={maxSharpe.x}
-                                    y={maxSharpe.y - 15}
-                                    textAnchor="middle"
-                                    fill="#10b981"
-                                    fontSize="11"
-                                    fontWeight="600"
+                                    y={maxSharpe.y}
+                                    r={0}
+                                    stroke="none"
+                                    fill="none"
+                                    ifOverflow="extendDomain"
                                 >
-                                    Max Sharpe
-                                </text>
+                                    <Label
+                                        value="Max Sharpe"
+                                        position="top"
+                                        fill="#10b981"
+                                        fontSize={11}
+                                        fontWeight="600"
+                                        offset={10}
+                                    />
+                                </ReferenceDot>
                             </>
                         )}
 
@@ -344,16 +353,23 @@ export default function EfficientFrontier({ data }) {
                                     shape="diamond"
                                     r={7}
                                 />
-                                <text
+                                <ReferenceDot
                                     x={minVol.x}
-                                    y={minVol.y + 20}
-                                    textAnchor="middle"
-                                    fill="#f59e0b"
-                                    fontSize="10"
-                                    fontWeight="600"
+                                    y={minVol.y}
+                                    r={0}
+                                    stroke="none"
+                                    fill="none"
+                                    ifOverflow="extendDomain"
                                 >
-                                    Min Vol
-                                </text>
+                                    <Label
+                                        value="Min Vol"
+                                        position="bottom"
+                                        fill="#f59e0b"
+                                        fontSize={10}
+                                        fontWeight="600"
+                                        offset={10}
+                                    />
+                                </ReferenceDot>
                             </>
                         )}
                     </ComposedChart>
