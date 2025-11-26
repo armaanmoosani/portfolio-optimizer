@@ -832,25 +832,10 @@ export default function PortfolioResults({ data }) {
                                                         <div className="h-[300px] flex items-center justify-center mb-4">
                                                             <ResponsiveContainer width="100%" height="100%">
                                                                 <PieChart>
-                                                                    <defs>
-                                                                        {filteredWeights.map((item, index) => (
-                                                                            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                                                                                <stop offset="0%" stopColor={item.color} stopOpacity={1} />
-                                                                                <stop offset="100%" stopColor={item.color} stopOpacity={0.7} />
-                                                                            </linearGradient>
-                                                                        ))}
-                                                                    </defs>
                                                                     <Pie
                                                                         data={filteredWeights}
                                                                         cx="50%"
                                                                         cy="50%"
-                                                                        labelLine={hasMany ? false : {
-                                                                            stroke: '#64748b',
-                                                                            strokeWidth: 1
-                                                                        }}
-                                                                        label={hasMany ? false : ({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
-                                                                        outerRadius={100}
-                                                                        innerRadius={50}
                                                                         paddingAngle={2}
                                                                         dataKey="weight"
                                                                         animationBegin={0}

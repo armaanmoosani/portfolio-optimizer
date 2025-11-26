@@ -150,7 +150,7 @@ export default function EfficientFrontier({ data }) {
                                                 </span>
                                                 <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all"
+                                                        className="h-full bg-blue-500 rounded-full transition-all"
                                                         style={{ width: `${(weight * 100).toFixed(1)}%` }}
                                                     />
                                                 </div>
@@ -262,37 +262,7 @@ export default function EfficientFrontier({ data }) {
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5 }} />
 
                         {/* Capital Market Line (CML) */}
-                        {cmlPoints.length > 1 && (
-                            <>
-                                <Scatter
-                                    name="Capital Market Line"
-                                    data={cmlPoints}
-                                    line={{ stroke: '#94a3b8', strokeWidth: 2.5, strokeDasharray: '8 4' }}
-                                    lineType="monotone"
-                                    fill="none"
-                                    shape={() => null}
-                                    isAnimationActive={false}
-                                />
-                                {/* CML Label */}
-                                {cmlPoints[cmlPoints.length - 1] && (
-                                    <ReferenceDot
-                                        x={cmlPoints[cmlPoints.length - 1].volatility}
-                                        y={cmlPoints[cmlPoints.length - 1].return}
-                                        r={0}
-                                        isFront={true}
-                                    >
-                                        <Label
-                                            value="CML"
-                                            position="right"
-                                            fill="#94a3b8"
-                                            fontSize={10}
-                                            fontWeight="600"
-                                            offset={10}
-                                        />
-                                    </ReferenceDot>
-                                )}
-                            </>
-                        )}
+
 
                         {/* Efficient Frontier Curve & Points */}
                         <Scatter
@@ -361,6 +331,7 @@ export default function EfficientFrontier({ data }) {
                                     stroke="#fff"
                                     strokeWidth={1.5}
                                     shape="square"
+                                    isAnimationActive={false}
                                 />
                                 <ReferenceDot
                                     x={0}
@@ -370,13 +341,46 @@ export default function EfficientFrontier({ data }) {
                                 >
                                     <Label
                                         value="Rf"
-                                        position="right"
+                                        position="left"
                                         fill="#94a3b8"
                                         fontSize={11}
                                         fontWeight="bold"
                                         offset={10}
                                     />
                                 </ReferenceDot>
+                            </>
+                        )}
+
+                        {/* Capital Market Line (CML) - Rendered LAST to be on top */}
+                        {cmlPoints.length > 1 && (
+                            <>
+                                <Scatter
+                                    name="Capital Market Line"
+                                    data={cmlPoints}
+                                    line={{ stroke: '#94a3b8', strokeWidth: 2.5, strokeDasharray: '8 4' }}
+                                    lineType="monotone"
+                                    fill="none"
+                                    shape={() => null}
+                                    isAnimationActive={false}
+                                />
+                                {/* CML Label */}
+                                {cmlPoints[cmlPoints.length - 1] && (
+                                    <ReferenceDot
+                                        x={cmlPoints[cmlPoints.length - 1].volatility}
+                                        y={cmlPoints[cmlPoints.length - 1].return}
+                                        r={0}
+                                        isFront={true}
+                                    >
+                                        <Label
+                                            value="CML"
+                                            position="right"
+                                            fill="#94a3b8"
+                                            fontSize={10}
+                                            fontWeight="600"
+                                            offset={10}
+                                        />
+                                    </ReferenceDot>
+                                )}
                             </>
                         )}
                     </ScatterChart>
