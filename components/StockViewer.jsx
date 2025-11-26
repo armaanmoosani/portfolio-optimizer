@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
+import { useToast } from "@/components/Toast";
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -19,6 +20,7 @@ const TIME_RANGES = {
 export default function StockViewer() {
     const { stockViewerState, updateStockState } = useGlobalState();
     const { ticker, stockData, news, aiSummary, loading, chartData, timeRange } = stockViewerState;
+    const toast = useToast();
 
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
