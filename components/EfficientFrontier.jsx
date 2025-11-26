@@ -27,8 +27,30 @@ export default function EfficientFrontier({ data }) {
         type: 'Optimal Portfolio'
     } : null;
 
-    // Calculate dynamic axis ranges
-    const allPoints = optimalPortfolio ? [...frontierPoints, optimalPortfolio] : frontierPoints;
+    const minVariancePortfolio = data.min_variance_portfolio ? {
+        volatility: data.min_variance_portfolio.volatility * 100,
+        return: data.min_variance_portfolio.return * 100,
+        sharpe_ratio: data.min_variance_portfolio.sharpe_ratio || 0,
+        weights: data.min_variance_portfolio.weights || {},
+        name: 'Minimum Variance Portfolio',
+        type: 'Minimum Variance Portfolio'
+    } : null;
+
+    // Risk-free asset from CML data (first point)
+    const riskFreeAsset = data.cml_points && data.cml_points.length > 0 ? {
+        volatility: 0,
+        return: data.cml_points[0].return * 100,
+        name: 'Risk-Free Rate',
+        type: 'Risk-Free Asset'
+    } : null;
+
+    // Calculate dynamic axis ranges (include MVP and risk-free if they exist)
+    const allPoints = [
+        ...frontierPoints,
+        ...(optimalPortfolio ? [optimalPortfolio] : []),
+        ...(minVariancePortfolio ? [minVariancePortfolio] : []),
+        ...(riskFreeAsset ? [riskFreeAsset] : [])
+    ];
     const minVol = Math.min(...allPoints.map(p => p.volatility));
     const maxVol = Math.max(...allPoints.map(p => p.volatility));
     const minRet = Math.min(...allPoints.map(p => p.return));
@@ -97,7 +119,11 @@ export default function EfficientFrontier({ data }) {
                                     <div className="space-y-2">
                                         {topAllocations.map(([ticker, weight]) => (
                                             <div key={ticker} className="flex items-center gap-2.5">
-                                                <span className="text-slate-200 font-semibold text-xs w-12">{ticker}</span>
+                                                <span className="text-slate-200 font-semibold text-xs w-12">
+                                                    {ticker}
+                                                    {weight < 0 && <span className="text-red-400 ml-1 text-xs">(Short)</span>}
+                                                    {weight > 1 && <span className="text-yellow-400 ml-1 text-xs">(Lev)</span>}
+                                                </span>
                                                 <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all"
@@ -212,9 +238,57 @@ export default function EfficientFrontier({ data }) {
                                     fill="#10b981"
                                     fontSize={12}
                                     fontWeight="bold"
-                                    offset={25} // Increased offset to prevent overlap with points
+                                    offset={25}
                                 />
                             </ReferenceDot>
+                        )}
+
+                        {/* Label for Minimum Variance Portfolio (MVP) */}
+                        {minVariancePortfolio && (
+                            <ReferenceDot
+                                x={minVariancePortfolio.volatility}
+                                y={minVariancePortfolio.return}
+                                r={0}
+                                isFront={true}
+                            >
+                                <Label
+                                    value="MVP (Min Variance)"
+                                    position="left"
+                                    fill="#f59e0b"
+                                    fontSize={11}
+                                    fontWeight="bold"
+                                    offset={15}
+                                />
+                            </ReferenceDot>
+                        )}
+
+                        {/* Risk-Free Asset Marker */}
+                        {riskFreeAsset && (
+                            <>
+                                <Scatter
+                                    name="Risk-Free Asset"
+                                    data={[riskFreeAsset]}
+                                    fill="#94a3b8"
+                                    stroke="#fff"
+                                    strokeWidth={1.5}
+                                    shape="square"
+                                />
+                                <ReferenceDot
+                                    x={0}
+                                    y={riskFreeAsset.return}
+                                    r={0}
+                                    isFront={true}
+                                >
+                                    <Label
+                                        value="Rf"
+                                        position="right"
+                                        fill="#94a3b8"
+                                        fontSize={11}
+                                        fontWeight="bold"
+                                        offset={10}
+                                    />
+                                </ReferenceDot>
+                            </>
                         )}
                     </ScatterChart>
                 </ResponsiveContainer>
