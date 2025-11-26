@@ -71,6 +71,38 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         setSelectedIndex(-1);
     };
 
+    const [isValidating, setIsValidating] = useState(false);
+
+    const validateAndAdd = async (tickerSymbol) => {
+        if (isValidating) return;
+        setIsValidating(true);
+
+        try {
+            // Strict validation: Check against API
+            const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(tickerSymbol)}`);
+            if (res.ok) {
+                const data = await res.json();
+                const results = data.result || [];
+
+                // Check for exact match
+                const match = results.find(s => s.symbol.toUpperCase() === tickerSymbol);
+
+                if (match) {
+                    handleAdd(match.symbol, match.description);
+                } else {
+                    toast.error(`Invalid ticker "${tickerSymbol}". Please select a valid stock.`);
+                }
+            } else {
+                toast.error("Validation failed. Please try again.");
+            }
+        } catch (err) {
+            console.error("Validation error:", err);
+            toast.error("Validation error. Please check your connection.");
+        } finally {
+            setIsValidating(false);
+        }
+    };
+
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -78,20 +110,15 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                 // Add from selected suggestion
                 handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             } else if (ticker.trim()) {
-                // Only add if ticker exists in suggestions (valid ticker)
                 const tickerSymbol = ticker.trim().toUpperCase();
                 const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
 
                 if (matchingSuggestion) {
                     // Valid ticker found in suggestions
                     handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
-                } else if (suggestions.length > 0) {
-                    // If user typed something but no exact match, don't add anything
-                    // Just keep the dropdown open so they can select from suggestions
-                    return;
                 } else {
-                    // Invalid ticker
-                    toast.error("Invalid ticker. Please select a valid stock from the suggestions.");
+                    // Fast typing case: Validate asynchronously
+                    validateAndAdd(tickerSymbol);
                 }
             }
         } else if (e.key === "ArrowDown") {
@@ -117,7 +144,8 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                 // Valid ticker found in suggestions
                 handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
             } else {
-                toast.error("Invalid ticker. Please select a valid stock from the suggestions.");
+                // Fast typing case: Validate asynchronously
+                validateAndAdd(tickerSymbol);
             }
         }
     };
