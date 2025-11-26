@@ -20,10 +20,10 @@ export default function PortfolioPage() {
 
     const handleOptimizationComplete = (results) => {
         completeOptimization(results);
-        // Scroll to results
+        // Scroll to results after animation completes
         setTimeout(() => {
             document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+        }, 800);
     };
 
     return (

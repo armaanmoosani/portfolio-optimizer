@@ -193,16 +193,6 @@ export default function StockViewer() {
                 chartData: []
             });
 
-            // Show success toast with click-to-scroll
-            toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
-                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-            });
-
-            // Auto-scroll to results
-            setTimeout(() => {
-                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-            }, 500);
-
             // Fetch News
             const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
             const newsData = await newsRes.json();
@@ -222,7 +212,7 @@ export default function StockViewer() {
                 const companyName = meta.name ? `${meta.name} (${searchTicker})` : searchTicker;
 
                 const prompt = `
-You are an AI assistant that writes investor summaries. Here’s an example:
+You are an AI assistant that writes investor summaries. Here's an example:
 
 Robinhood shares rise ahead of Q3 earnings report after market close today, fueled by strong growth expectations. Analysts expect EPS of $0.54 versus $0.17 a year ago, and revenues rising 88% to $1.21 billion. Options traders anticipate a 9.45% price swing. Product expansion and crypto trading growth are driving revenue diversification. Why this matters: Investors are weighing growth potential against valuation risks.
 
@@ -260,6 +250,16 @@ ${aggregatedNews.slice(0, 15000)}
 
                 updateStockState({ aiSummary: newAiSummary });
             }
+
+            // Show success toast with click-to-scroll AFTER all data is loaded
+            toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
+                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // Auto-scroll to results AFTER all data is loaded
+            setTimeout(() => {
+                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
 
         } catch (err) {
             setError("Failed to fetch stock data. Please check the ticker and try again.");

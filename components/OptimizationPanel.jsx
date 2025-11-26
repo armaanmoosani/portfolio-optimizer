@@ -207,9 +207,13 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
             };
 
             onOptimizationComplete(results);
-            showToast("Portfolio optimized successfully! Click to view results.", "success", 4000, () => {
-                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
-            });
+
+            // Show toast after results section is rendered
+            setTimeout(() => {
+                showToast("Portfolio optimized successfully! Click to view results.", "success", 4000, () => {
+                    document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+                });
+            }, 100);
         } catch (error) {
             console.error("Optimization error:", error);
             showToast(error.message || "Failed to optimize portfolio", "error");
