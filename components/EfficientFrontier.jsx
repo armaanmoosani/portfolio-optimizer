@@ -268,11 +268,11 @@ export default function EfficientFrontier({ data }) {
                         {/* Efficient Frontier Line */}
                         <Line
                             data={frontierSorted}
-                            type="monotone"
+                            type="monotoneX"
                             dataKey="y"
                             stroke="#3b82f6"
                             strokeWidth={2.5}
-                            fill="none"
+                            fill="transparent"
                             fillOpacity={0}
                             dot={false}
                             isAnimationActive={true}
@@ -336,7 +336,7 @@ export default function EfficientFrontier({ data }) {
                                         fill="#10b981"
                                         fontSize={11}
                                         fontWeight="600"
-                                        offset={10}
+                                        offset={15}
                                     />
                                 </ReferenceDot>
                             </>
@@ -363,11 +363,11 @@ export default function EfficientFrontier({ data }) {
                                 >
                                     <Label
                                         value="Min Vol"
-                                        position="bottom"
+                                        position="left"
                                         fill="#f59e0b"
                                         fontSize={10}
                                         fontWeight="600"
-                                        offset={10}
+                                        offset={15}
                                     />
                                 </ReferenceDot>
                             </>
