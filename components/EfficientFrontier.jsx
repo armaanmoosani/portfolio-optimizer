@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart, ReferenceDot, Label } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -205,7 +205,7 @@ export default function EfficientFrontier({ data }) {
 
             <div className="p-6">
                 <ResponsiveContainer width="100%" height={520}>
-                    <ComposedChart margin={{ top: 20, right: 30, bottom: 55, left: 65 }}>
+                    <ScatterChart margin={{ top: 20, right: 30, bottom: 55, left: 65 }}>
                         <CartesianGrid strokeDasharray="2 4" stroke="#334155" opacity={0.25} strokeWidth={0.5} />
 
                         <XAxis
@@ -251,32 +251,21 @@ export default function EfficientFrontier({ data }) {
 
                         {/* CML Line */}
                         {cmlPoints.length > 0 && (
-                            <Line
+                            <Scatter
                                 data={cmlPoints}
-                                type="linear"
-                                dataKey="y"
-                                stroke="#94a3b8"
-                                strokeWidth={1.5}
-                                strokeDasharray="6 4"
-                                fill="none"
-                                fillOpacity={0}
-                                dot={false}
+                                line={{ stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '6 4' }}
+                                shape={() => null}
                                 isAnimationActive={false}
                             />
                         )}
 
                         {/* Efficient Frontier Line */}
-                        <Line
+                        <Scatter
                             data={frontierSorted}
-                            type="monotoneX"
-                            dataKey="y"
-                            stroke="#3b82f6"
-                            strokeWidth={2.5}
-                            fill="transparent"
-                            fillOpacity={0}
-                            dot={false}
+                            line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
+                            lineType="monotone"
+                            shape={() => null}
                             isAnimationActive={true}
-                            animationDuration={800}
                         />
 
                         {/* Monte Carlo Cloud */}
@@ -363,7 +352,7 @@ export default function EfficientFrontier({ data }) {
                                 >
                                     <Label
                                         value="Min Vol"
-                                        position="left"
+                                        position="bottom"
                                         fill="#f59e0b"
                                         fontSize={10}
                                         fontWeight="600"
@@ -372,7 +361,7 @@ export default function EfficientFrontier({ data }) {
                                 </ReferenceDot>
                             </>
                         )}
-                    </ComposedChart>
+                    </ScatterChart>
                 </ResponsiveContainer>
 
                 {/* Legend */}
