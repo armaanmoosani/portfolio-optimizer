@@ -34,7 +34,10 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         if data.index.tz is not None:
             data.index = data.index.tz_localize(None)
             
-        # Handle missing data
+        # Handle missing data with professional-grade forward/backward fill
+        # This approach is standard in institutional risk systems (Bloomberg, FactSet)
+        initial_missing = data.isna().sum().sum()
+        
         # 1. Forward fill (propagate last valid observation forward)
         data = data.ffill()
         # 2. Backward fill (use next valid observation to fill gaps at start)
@@ -42,8 +45,25 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         # 3. Drop any remaining rows with NaNs (e.g., if a stock didn't exist yet)
         data = data.dropna()
         
+        # Log data quality warnings for audit trails
+        if initial_missing > 0:
+            missing_pct = initial_missing / (len(data) * len(data.columns)) * 100
+            print(f"INFO: Filled {initial_missing} missing values ({missing_pct:.2f}%) using forward/backward fill")
+        
         if data.empty:
             raise ValueError("No data available after cleaning.")
+        
+        # Validate data quality
+        validation = validate_price_data(data)
+        if not validation["valid"]:
+            raise ValueError(f"Data validation failed: {validation['warnings']}")
+        
+        # Log warnings for quality issues (non-fatal)
+        if validation["warnings"]:
+            print("\n=== DATA QUALITY WARNINGS ===")
+            for warning in validation["warnings"]:
+                print(f"  ⚠️  {warning}")
+            print("=== END WARNINGS ===\n")
             
         return data
     except Exception as e:

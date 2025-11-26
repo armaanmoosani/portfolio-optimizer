@@ -356,10 +356,30 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
     # --- CRITICAL RISK METRICS ---
     
     # 1. Value at Risk (VaR) - 95% and 99% confidence
-    # Represents the maximum loss not exceeded with X% confidence over 1 day
+    # 
+    # METHODOLOGY:
+    # - Historical Simulation (Non-Parametric): Uses 5th and 1st percentiles of empirical return distribution
+    # - No assumption of normality, captures actual tail events including fat tails and skewness
+    # - Industry standard for risk reporting (Basel Committee, FINRA Rule 4524)
+    # 
+    # ANNUALIZATION METHODOLOGY:
+    # - Uses square-root-of-time rule: VaR_annual = VaR_daily * sqrt(T)
+    # - ASSUMPTION: Returns are i.i.d. (independent and identically distributed)
+    # - This is a standard approximation used by Bloomberg, FactSet, and most risk systems
+    # - Alternative: Time-aggregated historical VaR (computationally intensive, requires full path simulation)
+    # 
+    # INTERPRETATION:
+    # - VaR(95%) daily: "We expect losses to exceed this value on 5% of trading days"
+    # - VaR(95%) annual: "Approximate worst-case loss over 1 year at 95% confidence"
+    # 
+    # REGULATORY CONTEXT:
+    # - SEC/FINRA: Requires VaR disclosure for complex portfolios
+    # - Basel III: Banks use 99% VaR for market risk capital
+    # - CFA Institute: Recommends VaR alongside CVaR for comprehensive risk assessment
     var_95_daily = float(np.percentile(portfolio_returns, 5))
     var_99_daily = float(np.percentile(portfolio_returns, 1))
-    # Annualize using square root of time (assumes normal distribution)
+    
+    # Annualize using square root of time (assumes i.i.d. returns)
     var_95_annual = var_95_daily * np.sqrt(annualization_factor)
     var_99_annual = var_99_daily * np.sqrt(annualization_factor)
     
