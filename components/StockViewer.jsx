@@ -375,96 +375,93 @@ ${aggregatedNews.slice(0, 15000)}
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
             {/* Search Section */}
-            <div className="flex flex-col items-center gap-6 relative z-20 pt-8">
-                <div className="text-center space-y-2 mb-4">
+            <div className="flex flex-col items-center relative z-20 min-h-[80vh]">
+                {/* Title Section - At the top */}
+                <div className="text-center space-y-2 mb-8 pt-4">
                     <h1 className="text-4xl font-bold text-white tracking-tight">Market Intelligence</h1>
                     <p className="text-slate-400 text-lg">Real-time data, AI analysis, and institutional-grade charts.</p>
                 </div>
 
-                <div className="relative w-full max-w-2xl" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
-                    <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-10 group-hover:opacity-25 transition duration-500 blur-sm"></div>
-                        <input
-                            type="text"
-                            value={ticker}
-                            onChange={handleInputChange}
-                            onKeyDown={handleKeyDown}
-                            onFocus={() => ticker && setShowSuggestions(true)}
-                            placeholder="Search for stocks, ETFs & more..."
-                            className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-lg font-medium"
-                        />
-                        <button
-                            onClick={() => handleSearch()}
-                            className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95"
-                        >
-                            <Search className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Autocomplete Suggestions */}
-                    {showSuggestions && suggestions.length > 0 && (
-                        <ul className="absolute w-full mt-3 bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[350px] overflow-y-auto backdrop-blur-xl custom-scrollbar ring-1 ring-white/5">
-                            {suggestions.slice(0, 8).map((item, index) => (
-                                <li
-                                    key={index}
-                                    onClick={() => handleSuggestionClick(item.symbol)}
-                                    className={`px-6 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none group ${index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'}`}
-                                >
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                                                {item.symbol.substring(0, 2)}
-                                            </div>
-                                            <div>
-                                                <span className="font-bold text-white block">{item.symbol}</span>
-                                                <span className="text-sm text-slate-400 truncate block max-w-[200px]">{item.description}</span>
-                                            </div>
-                                        </div>
-                                        <span className="text-xs font-semibold text-slate-500 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 group-hover:border-white/10 transition-colors">
-                                            {item.type || 'STOCK'}
-                                        </span>
+                {/* Centered Content Group */}
+                <div className="flex-1 flex flex-col justify-center items-center w-full max-w-2xl -mt-32">
+                    <div className="w-full" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
+                        {/* Start Your Analysis & Popular Tickers - Moved Above Search */}
+                        {!stockData && !loading && (
+                            <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div className="flex items-center gap-4 mb-3">
+                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/5 ring-1 ring-white/10">
+                                        <TrendingUp className="w-6 h-6 text-slate-400" />
                                     </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-                {error && <p className="text-rose-400 bg-rose-500/10 px-4 py-2 rounded-lg border border-rose-500/20 text-sm font-medium animate-in fade-in slide-in-from-top-2">{error}</p>}
-            </div>
+                                    <h3 className="text-2xl font-bold text-white">Start Your Analysis</h3>
+                                </div>
+                                <p className="text-slate-500 text-sm max-w-md mx-auto text-center mb-6">
+                                    Search for any global stock, ETF, or index to view real-time price action.
+                                </p>
 
-            {loading && (
-                <div className="flex flex-col items-center justify-center py-32 space-y-6">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-10 animate-pulse"></div>
-                        <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
-                    </div>
-                    <p className="text-slate-400 animate-pulse font-medium tracking-wide">Analyzing market data...</p>
-                </div>
-            )}
+                                <div className="flex flex-wrap justify-center items-center gap-3">
+                                    {['AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'GOOGL'].map(sym => (
+                                        <button
+                                            key={sym}
+                                            onClick={() => handleSearch(sym)}
+                                            className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-slate-400 hover:text-white transition-all text-sm font-medium"
+                                        >
+                                            {sym}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-            {!loading && !stockData && (
-                <div className="text-center py-20 animate-in fade-in zoom-in-95 duration-700">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 mb-6 ring-1 ring-white/10">
-                        <TrendingUp className="w-10 h-10 text-slate-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">Start Your Analysis</h3>
-                    <p className="text-slate-500 max-w-md mx-auto">
-                        Search for any global stock, ETF, or index to view real-time price action, AI-driven insights, and institutional metrics.
-                    </p>
-
-                    <div className="flex flex-wrap justify-center gap-3 mt-8">
-                        {['AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'GOOGL'].map(sym => (
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-10 group-hover:opacity-25 transition duration-500 blur-sm"></div>
+                            <input
+                                type="text"
+                                value={ticker}
+                                onChange={handleInputChange}
+                                onKeyDown={handleKeyDown}
+                                onFocus={() => ticker && setShowSuggestions(true)}
+                                placeholder="Search for stocks, ETFs & more..."
+                                className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-lg font-medium"
+                            />
                             <button
-                                key={sym}
-                                onClick={() => handleSearch(sym)}
-                                className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-slate-400 hover:text-white transition-all text-sm font-medium"
+                                onClick={() => handleSearch()}
+                                className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95"
                             >
-                                {sym}
+                                <Search className="w-5 h-5" />
                             </button>
-                        ))}
+                        </div>
+
+                        {/* Autocomplete Suggestions */}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <ul className="absolute w-full mt-3 bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[350px] overflow-y-auto backdrop-blur-xl custom-scrollbar ring-1 ring-white/5">
+                                {suggestions.slice(0, 8).map((item, index) => (
+                                    <li
+                                        key={index}
+                                        onClick={() => handleSuggestionClick(item.symbol)}
+                                        className={`px-6 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none group ${index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                                    {item.symbol.substring(0, 2)}
+                                                </div>
+                                                <div>
+                                                    <span className="font-bold text-white block">{item.symbol}</span>
+                                                    <span className="text-sm text-slate-400 truncate block max-w-[200px]">{item.description}</span>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-semibold text-slate-500 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 group-hover:border-white/10 transition-colors">
+                                                {item.type || 'STOCK'}
+                                            </span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
+                    {error && <p className="text-rose-400 bg-rose-500/10 px-4 py-2 rounded-lg border border-rose-500/20 text-sm font-medium animate-in fade-in slide-in-from-top-2 mt-4">{error}</p>}
                 </div>
-            )}
+            </div>
 
             {!loading && stockData && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
