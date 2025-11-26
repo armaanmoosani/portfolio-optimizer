@@ -118,19 +118,6 @@ async def optimize(request: PortfolioRequest):
             num_portfolios=150
         )
         
-        # FORCE CONSISTENCY: If the user selected Max Sharpe, ensure the chart shows 
-        # EXACTLY the same metrics and weights as the Assets tab
-        if is_sharpe:
-            print("Forcing Max Sharpe consistency with main optimization results")
-            efficient_frontier_data["optimal_portfolio"] = {
-                "return": optimization_result["metrics"]["expected_return"],
-                "volatility": optimization_result["metrics"]["volatility"],
-                "sharpe_ratio": optimization_result["metrics"]["sharpe_ratio"],
-                "weights": optimization_result["weights"]
-            }
-        else:
-            print(f"Objective is {request.objective}, skipping Max Sharpe override")
-            
         # 4. Run Backtest
         print("Running backtest...")
         benchmark_data = fetch_benchmark_data(request.start_date, request.end_date, request.benchmark)
