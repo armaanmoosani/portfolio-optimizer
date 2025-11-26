@@ -8,226 +8,260 @@ const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-US', { 
 export default function PortfolioReport({ data }) {
     if (!data) return null;
 
-    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+    const COLORS = ['#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0', '#f1f5f9'];
+    const ACCENT_COLOR = '#0f172a';
+
+    const PageHeader = () => (
+        <div className="flex justify-between items-center border-b border-slate-200 pb-2 mb-8 text-xs text-slate-400 uppercase tracking-widest">
+            <span>Portfolio Analytics Report</span>
+            <span>{new Date().toLocaleDateString()}</span>
+        </div>
+    );
+
+    const PageFooter = ({ pageNum }) => (
+        <div className="mt-auto pt-4 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-400">
+            <span>Confidential & Proprietary</span>
+            <span>Page {pageNum}</span>
+        </div>
+    );
 
     return (
-        <div className="hidden print:block bg-white text-slate-900 p-8 max-w-[210mm] mx-auto">
-            {/* Page 1: Executive Summary */}
-            <div className="min-h-[297mm] relative flex flex-col">
-                <div className="border-b-4 border-slate-900 pb-6 mb-8">
-                    <h1 className="text-4xl font-bold text-slate-900">Portfolio Analytics Report</h1>
-                    <p className="text-slate-500 mt-2 text-lg">Generated on {new Date().toLocaleDateString()}</p>
-                </div>
+        <div className="hidden print:block bg-white text-slate-900 font-serif">
 
-                <div className="grid grid-cols-2 gap-8 mb-12">
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2">Performance Summary</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-sm text-slate-500">Annualized Return</p>
-                                <p className="text-2xl font-bold text-slate-900">{formatPercent(data.metrics.expectedReturn)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Volatility</p>
-                                <p className="text-2xl font-bold text-slate-900">{formatPercent(data.metrics.volatility)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Sharpe Ratio</p>
-                                <p className="text-2xl font-bold text-slate-900">{data.metrics.sharpeRatio.toFixed(2)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Max Drawdown</p>
-                                <p className="text-2xl font-bold text-rose-600">{formatPercent(data.metrics.maxDrawdown)}</p>
-                            </div>
-                        </div>
+            {/* COVER PAGE */}
+            <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative page-break-after-always">
+                <div className="flex-1 flex flex-col justify-center items-center text-center">
+                    <div className="w-24 h-24 bg-slate-900 text-white flex items-center justify-center rounded-full mb-8">
+                        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
                     </div>
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2">Portfolio Details</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-sm text-slate-500">Start Balance</p>
-                                <p className="text-lg font-mono">{formatCurrency(data.metrics.startBalance)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">End Balance</p>
-                                <p className="text-lg font-mono">{formatCurrency(data.metrics.endBalance)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">Start Date</p>
-                                <p className="text-sm">{data.performance[0]?.date}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500">End Date</p>
-                                <p className="text-sm">{data.performance[data.performance.length - 1]?.date}</p>
-                            </div>
+                    <h1 className="text-5xl font-bold text-slate-900 mb-4 tracking-tight">Portfolio Optimization</h1>
+                    <h2 className="text-2xl text-slate-500 font-light mb-12">Comprehensive Analysis Report</h2>
+
+                    <div className="w-24 h-1 bg-slate-900 mb-12"></div>
+
+                    <div className="text-left space-y-4 text-sm border p-8 rounded-lg border-slate-200 min-w-[300px]">
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 uppercase tracking-wider text-xs font-sans">Date Generated</span>
+                            <span className="font-semibold font-sans">{new Date().toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 uppercase tracking-wider text-xs font-sans">Strategy</span>
+                            <span className="font-semibold font-sans">Max Sharpe Ratio</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 uppercase tracking-wider text-xs font-sans">Assets</span>
+                            <span className="font-semibold font-sans">{data.assets.length} Securities</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500 uppercase tracking-wider text-xs font-sans">Period</span>
+                            <span className="font-semibold font-sans">{data.performance[0]?.date.slice(0, 4)} - {data.performance[data.performance.length - 1]?.date.slice(0, 4)}</span>
                         </div>
                     </div>
                 </div>
+                <div className="text-center text-xs text-slate-400 uppercase tracking-widest mb-8">
+                    Institutional Grade Analytics
+                </div>
+            </div>
 
+            {/* PAGE 1: EXECUTIVE SUMMARY */}
+            <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative page-break-after-always">
+                <PageHeader />
+
+                <h2 className="text-2xl font-bold text-slate-900 mb-6 font-sans border-l-4 border-slate-900 pl-4">Executive Summary</h2>
+
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-4 gap-6 mb-12">
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded">
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-sans mb-1">Annual Return</div>
+                        <div className="text-2xl font-bold text-slate-900 font-sans">{formatPercent(data.metrics.expectedReturn)}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded">
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-sans mb-1">Volatility</div>
+                        <div className="text-2xl font-bold text-slate-900 font-sans">{formatPercent(data.metrics.volatility)}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded">
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-sans mb-1">Sharpe Ratio</div>
+                        <div className="text-2xl font-bold text-slate-900 font-sans">{data.metrics.sharpeRatio.toFixed(2)}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded">
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-sans mb-1">Max Drawdown</div>
+                        <div className="text-2xl font-bold text-rose-700 font-sans">{formatPercent(data.metrics.maxDrawdown)}</div>
+                    </div>
+                </div>
+
+                {/* Performance Chart */}
                 <div className="mb-12">
-                    <h2 className="text-xl font-bold text-slate-800 mb-4">Cumulative Performance</h2>
-                    <div className="h-[300px] border border-slate-200 rounded p-4">
-                        {/* Fixed dimensions for print */}
+                    <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Cumulative Performance</h3>
+                    <div className="h-[300px] border border-slate-100 rounded p-4 bg-slate-50/50">
                         <LineChart width={700} height={280} data={data.performance}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(val) => val.slice(0, 4)} />
-                            <YAxis tick={{ fontSize: 10 }} domain={['auto', 'auto']} tickFormatter={(val) => `$${val / 1000}k`} />
+                            <XAxis
+                                dataKey="date"
+                                tick={{ fontSize: 10, fontFamily: 'sans-serif' }}
+                                tickFormatter={(val) => val.slice(0, 4)}
+                                axisLine={false}
+                                tickLine={false}
+                                dy={10}
+                            />
+                            <YAxis
+                                tick={{ fontSize: 10, fontFamily: 'sans-serif' }}
+                                domain={['auto', 'auto']}
+                                tickFormatter={(val) => `$${val / 1000}k`}
+                                axisLine={false}
+                                tickLine={false}
+                            />
                             <Line type="monotone" dataKey="value" stroke="#0f172a" strokeWidth={2} dot={false} />
                         </LineChart>
                     </div>
                 </div>
 
-                <div className="mt-auto pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-                    <p>Professional Portfolio Analytics • Confidential • Page 1</p>
-                </div>
-            </div>
-
-            <div className="break-before-page"></div>
-
-            {/* Page 2: Risk Analysis */}
-            <div className="min-h-[297mm] relative flex flex-col pt-8">
-                <h2 className="text-2xl font-bold text-slate-900 mb-8 border-b border-slate-200 pb-4">Risk Analysis</h2>
-
-                <div className="mb-8">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Risk Contribution (PCR)</h3>
-                    <table className="w-full text-sm text-left border-collapse">
-                        <thead className="bg-slate-100 text-slate-600 uppercase text-xs">
-                            <tr>
-                                <th className="px-4 py-2 border border-slate-200">Asset</th>
-                                <th className="px-4 py-2 border border-slate-200 text-right">Weight</th>
-                                <th className="px-4 py-2 border border-slate-200 text-right">MCR</th>
-                                <th className="px-4 py-2 border border-slate-200 text-right">PCR</th>
-                                <th className="px-4 py-2 border border-slate-200 text-right">VaR Contrib</th>
-                                <th className="px-4 py-2 border border-slate-200 text-right">CVaR Contrib</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Object.entries(data.risk_contributions || {}).map(([ticker, metrics]) => ({ Ticker: ticker, ...metrics })).sort((a, b) => b.PCR - a.PCR).map((asset, i) => (
-                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                                    <td className="px-4 py-2 border border-slate-200 font-medium">{asset.Ticker}</td>
-                                    <td className="px-4 py-2 border border-slate-200 text-right">{formatPercent(asset.Weight)}</td>
-                                    <td className="px-4 py-2 border border-slate-200 text-right">{asset.MCR.toFixed(4)}</td>
-                                    <td className={`px-4 py-2 border border-slate-200 text-right font-bold ${asset.PCR > asset.Weight ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                        {formatPercent(asset.PCR)}
-                                    </td>
-                                    <td className="px-4 py-2 border border-slate-200 text-right">{formatPercent(asset.Parametric_VaR_Contrib)}</td>
-                                    <td className="px-4 py-2 border border-slate-200 text-right">{formatPercent(asset.CVaR_Contrib)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="grid grid-cols-2 gap-8 mb-8">
+                {/* Asset Allocation */}
+                <div className="grid grid-cols-2 gap-12">
                     <div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Advanced Risk Metrics</h3>
-                        <table className="w-full text-sm border-collapse">
-                            <tbody>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">VaR (95% Daily)</td><td className="py-2 text-right font-mono">{formatPercent(data.metrics.var_95_daily * 100)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">CVaR (95% Daily)</td><td className="py-2 text-right font-mono">{formatPercent(data.metrics.cvar_95_daily * 100)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Skewness</td><td className="py-2 text-right font-mono">{data.metrics.skewness.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Kurtosis</td><td className="py-2 text-right font-mono">{data.metrics.kurtosis.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Calmar Ratio</td><td className="py-2 text-right font-mono">{data.metrics.calmar_ratio.toFixed(2)}</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Benchmark Comparison</h3>
-                        <table className="w-full text-sm border-collapse">
-                            <tbody>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Beta</td><td className="py-2 text-right font-mono">{data.metrics.beta.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Alpha</td><td className="py-2 text-right font-mono">{formatPercent(data.metrics.alpha)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Tracking Error</td><td className="py-2 text-right font-mono">{formatPercent(data.metrics.tracking_error * 100)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">Information Ratio</td><td className="py-2 text-right font-mono">{data.metrics.information_ratio.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-200"><td className="py-2 text-slate-600">R-Squared</td><td className="py-2 text-right font-mono">{data.metrics.r_squared ? data.metrics.r_squared.toFixed(2) : '-'}</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div className="mt-auto pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-                    <p>Professional Portfolio Analytics • Confidential • Page 2</p>
-                </div>
-            </div>
-
-            <div className="break-before-page"></div>
-
-            {/* Page 3: Drawdowns & Allocation */}
-            <div className="min-h-[297mm] relative flex flex-col pt-8">
-                <h2 className="text-2xl font-bold text-slate-900 mb-8 border-b border-slate-200 pb-4">Drawdowns & Allocation</h2>
-
-                <div className="mb-12">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Top 5 Drawdowns</h3>
-                    <table className="w-full text-sm text-left border-collapse">
-                        <thead className="bg-slate-100 text-slate-600 uppercase text-xs">
-                            <tr>
-                                <th className="px-4 py-2 border border-slate-200">Depth</th>
-                                <th className="px-4 py-2 border border-slate-200">Start</th>
-                                <th className="px-4 py-2 border border-slate-200">Trough</th>
-                                <th className="px-4 py-2 border border-slate-200">End</th>
-                                <th className="px-4 py-2 border border-slate-200">Recovery</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.drawdowns.map((dd, i) => (
-                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                                    <td className="px-4 py-2 border border-slate-200 font-bold text-rose-600">{formatPercent(dd.depth * 100)}</td>
-                                    <td className="px-4 py-2 border border-slate-200">{dd.start}</td>
-                                    <td className="px-4 py-2 border border-slate-200">{dd.trough}</td>
-                                    <td className="px-4 py-2 border border-slate-200">{dd.end}</td>
-                                    <td className="px-4 py-2 border border-slate-200">{dd.recovery_days} days</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="grid grid-cols-2 gap-8">
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Asset Allocation</h3>
-                        <table className="w-full text-sm border-collapse">
-                            <thead className="bg-slate-100 text-slate-600 uppercase text-xs">
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Asset Allocation</h3>
+                        <table className="w-full text-sm border-collapse font-sans">
+                            <thead className="border-b border-slate-200">
                                 <tr>
-                                    <th className="px-4 py-2 border border-slate-200 text-left">Asset</th>
-                                    <th className="px-4 py-2 border border-slate-200 text-right">Weight</th>
+                                    <th className="text-left py-2 text-xs text-slate-500 font-medium">Asset</th>
+                                    <th className="text-right py-2 text-xs text-slate-500 font-medium">Weight</th>
+                                    <th className="text-right py-2 text-xs text-slate-500 font-medium">Value</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {data.assets.map((asset, i) => (
-                                    <tr key={i} className="border-b border-slate-200">
-                                        <td className="px-4 py-2 font-medium">{asset}</td>
-                                        <td className="px-4 py-2 text-right font-mono">{formatPercent(data.weights[asset])}</td>
+                                    <tr key={i} className="border-b border-slate-100">
+                                        <td className="py-2 font-medium text-slate-700">{asset}</td>
+                                        <td className="py-2 text-right">{formatPercent(data.weights[asset])}</td>
+                                        <td className="py-2 text-right text-slate-500">{formatCurrency(data.metrics.endBalance * data.weights[asset])}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                     <div className="flex items-center justify-center">
-                        <PieChart width={300} height={300}>
+                        <PieChart width={250} height={250}>
                             <Pie
                                 data={data.assets.map((asset, i) => ({ name: asset, value: data.weights[asset] }))}
                                 cx="50%"
                                 cy="50%"
                                 innerRadius={60}
-                                outerRadius={100}
-                                fill="#8884d8"
+                                outerRadius={80}
                                 paddingAngle={2}
                                 dataKey="value"
                             >
                                 {data.assets.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                                 ))}
                             </Pie>
-                            <Legend layout="vertical" verticalAlign="middle" align="right" />
                         </PieChart>
                     </div>
                 </div>
 
-                <div className="mt-auto pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-                    <p>Professional Portfolio Analytics • Confidential • Page 3</p>
-                    <p className="mt-2 italic">Disclaimer: Past performance is not indicative of future results. This report is for informational purposes only.</p>
-                </div>
+                <PageFooter pageNum={1} />
             </div>
+
+            {/* PAGE 2: RISK ANALYSIS */}
+            <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative page-break-after-always">
+                <PageHeader />
+
+                <h2 className="text-2xl font-bold text-slate-900 mb-6 font-sans border-l-4 border-slate-900 pl-4">Risk Analysis</h2>
+
+                <div className="mb-12">
+                    <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Risk Contribution</h3>
+                    <table className="w-full text-sm text-left border-collapse font-sans">
+                        <thead className="bg-slate-50 text-slate-500 uppercase text-[10px]">
+                            <tr>
+                                <th className="px-4 py-3 border-b border-slate-200 font-medium">Asset</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-right font-medium">Weight</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-right font-medium">Marginal Risk</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-right font-medium">Total Risk Contrib</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-right font-medium">% of Risk</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(data.risk_contributions || {}).map(([ticker, metrics]) => ({ Ticker: ticker, ...metrics })).sort((a, b) => b.PCR - a.PCR).map((asset, i) => (
+                                <tr key={i} className="border-b border-slate-100">
+                                    <td className="px-4 py-2 font-semibold text-slate-700">{asset.Ticker}</td>
+                                    <td className="px-4 py-2 text-right text-slate-600">{formatPercent(asset.Weight)}</td>
+                                    <td className="px-4 py-2 text-right text-slate-600">{asset.MCR.toFixed(4)}</td>
+                                    <td className="px-4 py-2 text-right text-slate-600">{asset.TRC.toFixed(4)}</td>
+                                    <td className="px-4 py-2 text-right font-bold text-slate-800">{formatPercent(asset.PCR)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="grid grid-cols-2 gap-12 mb-12">
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Advanced Risk Metrics</h3>
+                        <table className="w-full text-sm border-collapse font-sans">
+                            <tbody>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">VaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.var_95_daily * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">CVaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.cvar_95_daily * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Skewness</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.skewness.toFixed(2)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Kurtosis</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.kurtosis.toFixed(2)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Calmar Ratio</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.calmar_ratio.toFixed(2)}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Benchmark Comparison</h3>
+                        <table className="w-full text-sm border-collapse font-sans">
+                            <tbody>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Beta</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.beta.toFixed(2)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Alpha</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.alpha)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Tracking Error</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.tracking_error * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Information Ratio</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.information_ratio.toFixed(2)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">R-Squared</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.r_squared ? data.metrics.r_squared.toFixed(2) : '-'}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="mt-auto">
+                    <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Top 5 Drawdowns</h3>
+                    <table className="w-full text-xs text-left border-collapse font-sans">
+                        <thead className="bg-slate-50 text-slate-500 uppercase">
+                            <tr>
+                                <th className="px-2 py-2 border-b border-slate-200">Depth</th>
+                                <th className="px-2 py-2 border-b border-slate-200">Start</th>
+                                <th className="px-2 py-2 border-b border-slate-200">Trough</th>
+                                <th className="px-2 py-2 border-b border-slate-200">End</th>
+                                <th className="px-2 py-2 border-b border-slate-200">Recovery</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.drawdowns.slice(0, 5).map((dd, i) => (
+                                <tr key={i} className="border-b border-slate-100">
+                                    <td className="px-2 py-2 font-bold text-rose-700">{formatPercent(dd.depth * 100)}</td>
+                                    <td className="px-2 py-2 text-slate-600">{dd.start}</td>
+                                    <td className="px-2 py-2 text-slate-600">{dd.trough}</td>
+                                    <td className="px-2 py-2 text-slate-600">{dd.end}</td>
+                                    <td className="px-2 py-2 text-slate-600">{dd.recovery_days} days</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <PageFooter pageNum={2} />
+            </div>
+
+            {/* DISCLAIMER PAGE */}
+            <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative">
+                <PageHeader />
+                <div className="flex-1 flex flex-col justify-end pb-20">
+                    <h4 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Important Disclaimer</h4>
+                    <p className="text-xs text-slate-500 leading-relaxed text-justify">
+                        This report is generated for informational purposes only and does not constitute financial advice, an offer to sell, or a solicitation of an offer to buy any securities. The performance data quoted represents past performance and is no guarantee of future results. Investment return and principal value of an investment will fluctuate so that an investor's shares, when redeemed, may be worth more or less than their original cost. Current performance may be lower or higher than the performance data quoted. All investments involve risk, including the loss of principal. The analysis provided herein is based on data believed to be reliable, but no representation or warranty is made as to its accuracy or completeness.
+                    </p>
+                </div>
+                <PageFooter pageNum={3} />
+            </div>
+
         </div>
     );
 }
