@@ -380,20 +380,21 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
                 "weights": weights_dict
             })
     
-    # Use the provided optimal portfolio weights (already calculated in main optimization)
-    # This ensures the Max Sharpe point matches exactly with the Assets tab
-    # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
-    # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
-    # used slightly different parameters or didn't use shrinkage when this function does.
-    # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
-    # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
-    # used slightly different parameters or didn't use shrinkage when this function does.
-    
-    # FORCE CONSISTENCY: Instead of running a separate minimization which might find a point slightly
-    # off the discrete curve due to numerical precision, we simply pick the point from our
-    # generated frontier that has the highest Sharpe Ratio. This guarantees the "Green Star"
-    # is exactly on the "Blue Line".
-    if frontier_points:
+    # Use the provided optimal portfolio weights if available (from main optimization)
+    # This ensures the Max Sharpe point matches exactly with the Summary tab
+    if optimal_weights is not None:
+        opt_weights_array = np.array([optimal_weights.get(t, 0.0) for t in tickers])
+        opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
+            opt_weights_array, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+        )
+        optimal_portfolio = {
+            "volatility": float(opt_vol),
+            "return": float(opt_ret),
+            "sharpe_ratio": float(opt_sharpe),
+            "weights": optimal_weights
+        }
+    elif frontier_points:
+        # Fallback: Pick best point from the generated frontier
         optimal_portfolio = max(frontier_points, key=lambda x: x['sharpe_ratio'])
     else:
         # Fallback if frontier generation failed (unlikely)
@@ -405,19 +406,6 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             bounds=bounds,
             constraints=constraints
         )
-        
-        if sharpe_result.success:
-            opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
-                sharpe_result.x, mean_returns, cov_matrix, risk_free_rate, annualization_factor
-            )
-            weights_dict = {ticker: float(w) for ticker, w in zip(tickers, sharpe_result.x)}
-            optimal_portfolio = {
-                "volatility": float(opt_vol),
-                "return": float(opt_ret),
-                "sharpe_ratio": float(opt_sharpe),
-                "weights": weights_dict
-            }
-        else:
             optimal_portfolio = None
     
     # --- NEW: Monte Carlo Simulation (Feasible Set) ---
