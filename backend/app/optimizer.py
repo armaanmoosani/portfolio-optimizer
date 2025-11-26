@@ -435,7 +435,9 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             "return": float(min_var_ret),
             "sharpe_ratio": float(min_var_sharpe),
             "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
-        }monte_carlo_points = []
+        }
+    
+    monte_carlo_points = []
     
     # Vectorized Monte Carlo for speed
     # Generate random weights
