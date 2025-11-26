@@ -97,14 +97,9 @@ export default function EfficientFrontier({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Smart Payload Scanning: Prioritize specific overlays over generic points
-        // This fixes the issue where hovering a stack of points (e.g. Star on top of Line)
-        // might accidentally show the generic line point data instead of the Star data.
-        let point = payload.find(p => p.payload.type === 'max_sharpe_overlay')?.payload;
-        if (!point) point = payload.find(p => p.payload.type === 'min_vol_overlay')?.payload;
-        if (!point) point = payload.find(p => p.payload.type === 'asset')?.payload;
-        if (!point) point = payload.find(p => p.payload.type === 'cml')?.payload;
-        if (!point) point = payload[0].payload; // Fallback
+        // Use the first point in the payload. 
+        // We set shared={false} on the Tooltip component to ensure we only get the exact hovered point.
+        const point = payload[0].payload;
 
         let title = 'Portfolio';
         let color = '#3b82f6';
@@ -286,7 +281,11 @@ export default function EfficientFrontier({ data }) {
                             }}
                         />
 
-                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }} />
+                        <Tooltip
+                            content={<CustomTooltip />}
+                            cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }}
+                            shared={false}
+                        />
 
                         {/* CML Line */}
                         {cmlPoints.length > 1 && (
@@ -300,6 +299,18 @@ export default function EfficientFrontier({ data }) {
                                 strokeDasharray="6 4"
                             />
                         )}
+
+                        {/* Invisible Hit Layer for Improved UX (Sticky Tooltip) */}
+                        <Scatter
+                            name="HitLayer"
+                            data={frontierSorted}
+                            fill="transparent"
+                            stroke="none"
+                            shape="circle"
+                            r={25} // Large hit radius for easier hovering
+                            isAnimationActive={false}
+                            style={{ cursor: 'crosshair' }}
+                        />
 
                         {/* Efficient Frontier (Main Line) */}
                         <Scatter
