@@ -100,11 +100,11 @@ export default function PortfolioResults({ data }) {
         rows.push(['Metric', 'Value']);
         rows.push(['Annualized Return', formatPercent(data.metrics.expectedReturn)]);
         rows.push(['Volatility', formatPercent(data.metrics.volatility)]);
-        rows.push(['Sharpe Ratio', data.metrics.sharpeRatio.toFixed(4)]);
+        rows.push(['Sharpe Ratio', typeof data.metrics.sharpeRatio === 'number' ? data.metrics.sharpeRatio.toFixed(4) : '-']);
         rows.push(['Max Drawdown', formatPercent(data.metrics.maxDrawdown)]);
         rows.push(['Start Balance', formatCurrency(data.metrics.startBalance)]);
         rows.push(['End Balance', formatCurrency(data.metrics.endBalance)]);
-        rows.push(['Beta', data.metrics.beta.toFixed(4)]);
+        rows.push(['Beta', typeof data.metrics.beta === 'number' ? data.metrics.beta.toFixed(4) : '-']);
         rows.push(['Alpha', formatPercent(data.metrics.alpha)]);
         rows.push([]);
 
