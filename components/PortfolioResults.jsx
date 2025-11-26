@@ -833,12 +833,12 @@ export default function PortfolioResults({ data }) {
 
                                                                 return (
                                                                     <td key={month} className={`px-2 py-3 font-mono text-xs ${colorClass}`} style={bgStyle}>
-                                                                        {val >= 0 ? '+' : ''}{(val * 100).toFixed(1)}%
+                                                                        {val >= 0 ? '+' : ''}{val.toFixed(1)}%
                                                                     </td>
                                                                 );
                                                             })}
                                                             <td className={`px-4 py-3 font-bold font-mono ${annualReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                {annualReturn >= 0 ? '+' : ''}{(annualReturn * 100).toFixed(1)}%
+                                                                {annualReturn >= 0 ? '+' : ''}{annualReturn.toFixed(1)}%
                                                             </td>
                                                         </tr>
                                                     );
@@ -862,7 +862,7 @@ export default function PortfolioResults({ data }) {
                                                 key: 'depth',
                                                 label: 'Max Drawdown',
                                                 numeric: true,
-                                                render: (val) => <span className="font-bold text-rose-400 font-mono">{(val * 100).toFixed(2)}%</span>
+                                                render: (val) => <span className="font-bold text-rose-400 font-mono">{val.toFixed(2)}%</span>
                                             },
                                             {
                                                 key: 'recovery_days',
