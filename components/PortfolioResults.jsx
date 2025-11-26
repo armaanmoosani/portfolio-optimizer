@@ -822,9 +822,14 @@ export default function PortfolioResults({ data }) {
                                         </div>
                                         <div className="p-6">
                                             {(() => {
-                                                // Filter out zero or near-zero allocations (< 0.1%)
-                                                const filteredWeights = data.weights.filter(item => item.weight >= 0.1);
-                                                const hasMany = filteredWeights.length > 8;
+                                                // Filter out zero or near-zero allocations (< 0.1%) for the PIE CHART ONLY
+                                                // This prevents visual glitches with tiny slices
+                                                const pieData = data.weights.filter(item => item.weight >= 0.1);
+
+                                                // Use ALL data for the list below so users can see 0% allocations
+                                                const displayData = data.weights;
+
+                                                const hasMany = pieData.length > 8;
 
                                                 return (
                                                     <>
@@ -833,20 +838,22 @@ export default function PortfolioResults({ data }) {
                                                             <ResponsiveContainer width="100%" height="100%">
                                                                 <PieChart>
                                                                     <Pie
-                                                                        data={filteredWeights}
+                                                                        data={pieData}
                                                                         cx="50%"
                                                                         cy="50%"
-                                                                        paddingAngle={2}
+                                                                        innerRadius={60}
+                                                                        outerRadius={80}
+                                                                        paddingAngle={5}
                                                                         dataKey="weight"
+                                                                        stroke="none"
+                                                                        label={hasMany ? false : ({ asset, weight }) => `${asset} (${weight.toFixed(1)}%)`}
                                                                         animationBegin={0}
                                                                         animationDuration={800}
                                                                     >
-                                                                        {filteredWeights.map((entry, index) => (
+                                                                        {pieData.map((item, index) => (
                                                                             <Cell
                                                                                 key={`cell-${index}`}
-                                                                                fill={`url(#gradient-${index})`}
-                                                                                stroke="#1e293b"
-                                                                                strokeWidth={2}
+                                                                                fill={item.color}
                                                                                 className="transition-all hover:opacity-80 cursor-pointer"
                                                                             />
                                                                         ))}
@@ -872,9 +879,9 @@ export default function PortfolioResults({ data }) {
                                                             </ResponsiveContainer>
                                                         </div>
 
-                                                        {/* Legend/List */}
+                                                        {/* Legend/List - Shows ALL assets including 0% */}
                                                         <div className="space-y-2">
-                                                            {filteredWeights.map((item, index) => (
+                                                            {displayData.map((item, index) => (
                                                                 <div
                                                                     key={index}
                                                                     className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 transition-all group"

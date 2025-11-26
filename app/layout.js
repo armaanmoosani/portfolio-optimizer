@@ -12,17 +12,21 @@ export const metadata = {
     description: "Advanced portfolio optimization and AI stock analysis",
 };
 
+import { GlobalStateProvider } from "@/app/context/GlobalState";
+
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
             <body className={`${inter.className} bg-slate-950 min-h-screen flex flex-col`}>
-                <ToastProvider>
-                    <NavBar />
-                    <main className="flex-1 pt-16">
-                        {children}
-                    </main>
-                    <Footer />
-                </ToastProvider>
+                <GlobalStateProvider>
+                    <ToastProvider>
+                        <NavBar />
+                        <main className="flex-1 pt-16">
+                            {children}
+                        </main>
+                        <Footer />
+                    </ToastProvider>
+                </GlobalStateProvider>
                 <Analytics />
             </body>
         </html>

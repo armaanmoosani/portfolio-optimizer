@@ -1,78 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PortfolioBuilder from "@/components/PortfolioBuilder";
 import OptimizationPanel from "@/components/OptimizationPanel";
 import PortfolioResults from "@/components/PortfolioResults";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
+import { useGlobalState } from "@/app/context/GlobalState";
 
 export default function PortfolioPage() {
-    const [assets, setAssets] = useState([]);
-    const [optimizationResults, setOptimizationResults] = useState(null);
-    const [isOptimizing, setIsOptimizing] = useState(false);
-    const [isLoaded, setIsLoaded] = useState(false);
-
-    // Load assets and results from localStorage on mount
-    useEffect(() => {
-        const savedAssets = localStorage.getItem('portfolioAssets');
-        const savedResults = localStorage.getItem('portfolioResults');
-
-        if (savedAssets) {
-            try {
-                setAssets(JSON.parse(savedAssets));
-            } catch (e) {
-                console.error("Failed to parse saved assets", e);
-            }
-        }
-
-        if (savedResults) {
-            try {
-                setOptimizationResults(JSON.parse(savedResults));
-            } catch (e) {
-                console.error("Failed to parse saved results", e);
-            }
-        }
-
-        setIsLoaded(true);
-    }, []);
-
-    // Save assets to localStorage whenever they change
-    useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem('portfolioAssets', JSON.stringify(assets));
-        }
-    }, [assets, isLoaded]);
-
-    // Save results to localStorage whenever they change
-    useEffect(() => {
-        if (isLoaded && optimizationResults) {
-            localStorage.setItem('portfolioResults', JSON.stringify(optimizationResults));
-        }
-    }, [optimizationResults, isLoaded]);
-
-    const handleAddAsset = (symbol, description) => {
-        if (!assets.find(asset => asset.symbol === symbol)) {
-            setAssets([...assets, { symbol, description, weight: 0 }]);
-        }
-    };
-
-    const handleRemoveAsset = (symbol) => {
-        setAssets(assets.filter(asset => asset.symbol !== symbol));
-    };
+    const {
+        assets,
+        addAsset,
+        removeAsset,
+        optimizationResults,
+        isOptimizing,
+        startOptimization,
+        completeOptimization
+    } = useGlobalState();
 
     const handleOptimizationComplete = (results) => {
-        setOptimizationResults(results);
-        setIsOptimizing(false);
+        completeOptimization(results);
         // Scroll to results
         setTimeout(() => {
             document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
-    };
-
-    const handleOptimizationStart = () => {
-        setIsOptimizing(true);
-        setOptimizationResults(null);
     };
 
     return (
@@ -97,8 +48,8 @@ export default function PortfolioPage() {
                     <div className="lg:col-span-2 p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md shadow-xl">
                         <PortfolioBuilder
                             assets={assets}
-                            onAddAsset={handleAddAsset}
-                            onRemoveAsset={handleRemoveAsset}
+                            onAddAsset={addAsset}
+                            onRemoveAsset={removeAsset}
                         />
                     </div>
 
@@ -107,7 +58,7 @@ export default function PortfolioPage() {
                         <OptimizationPanel
                             assets={assets}
                             onOptimizationComplete={handleOptimizationComplete}
-                            onOptimizationStart={handleOptimizationStart}
+                            onOptimizationStart={startOptimization}
                         />
                     </div>
                 </div>

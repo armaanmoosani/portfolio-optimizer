@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { useGlobalState } from "@/app/context/GlobalState";
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -16,17 +17,13 @@ const TIME_RANGES = {
 };
 
 export default function StockViewer() {
-    const [ticker, setTicker] = useState("");
+    const { stockViewerState, updateStockState } = useGlobalState();
+    const { ticker, stockData, news, aiSummary, loading, chartData, timeRange } = stockViewerState;
+
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
-    const [loading, setLoading] = useState(false);
-    const [stockData, setStockData] = useState(null);
-    const [news, setNews] = useState([]);
-    const [aiSummary, setAiSummary] = useState("");
     const [error, setError] = useState("");
-    const [timeRange, setTimeRange] = useState('1D');
-    const [chartData, setChartData] = useState([]);
     const [chartLoading, setChartLoading] = useState(false);
     const searchContainerRef = useRef(null);
 
@@ -41,50 +38,6 @@ export default function StockViewer() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    // Load last viewed ticker and data on mount
-    useEffect(() => {
-        const savedTicker = localStorage.getItem('lastViewedTicker');
-        const savedData = localStorage.getItem('stockViewerData');
-
-        if (savedData) {
-            try {
-                const { stockData, news, aiSummary, chartData, timeRange, timestamp } = JSON.parse(savedData);
-                // Only use cached data if it's less than 1 hour old
-                if (Date.now() - timestamp < 3600000) {
-                    setStockData(stockData);
-                    setNews(news);
-                    setAiSummary(aiSummary);
-                    if (chartData) setChartData(chartData);
-                    if (timeRange) setTimeRange(timeRange);
-                    setTicker(stockData.symbol);
-                    return;
-                }
-            } catch (e) {
-                console.error("Failed to parse saved stock data", e);
-            }
-        }
-
-        if (savedTicker) {
-            setTicker(savedTicker);
-            handleSearch(savedTicker);
-        }
-    }, []);
-
-    // Save data to localStorage whenever it changes
-    useEffect(() => {
-        if (stockData && stockData.symbol) {
-            localStorage.setItem('lastViewedTicker', stockData.symbol);
-            localStorage.setItem('stockViewerData', JSON.stringify({
-                stockData,
-                news,
-                aiSummary,
-                chartData,
-                timeRange,
-                timestamp: Date.now()
-            }));
-        }
-    }, [stockData, news, aiSummary, chartData, timeRange]);
 
     // Fetch chart data when time range or stock data changes
     useEffect(() => {
@@ -115,24 +68,37 @@ export default function StockViewer() {
                     lastPoint.price = stockData.price;
                 }
 
-                setChartData(data);
+                updateStockState({ chartData: data });
             } catch (err) {
                 console.error("Chart fetch error:", err);
                 // Only clear chart data on error if we were loading from scratch
                 if (chartData.length === 0) {
-                    setChartData([]);
+                    updateStockState({ chartData: [] });
                 }
             } finally {
                 setChartLoading(false);
             }
         };
 
+        // Only fetch if chartData is empty or if the ticker/timeRange changed from what's cached
+        // This check is a bit loose, but prevents infinite loops. 
+        // Ideally we'd track "lastFetchedParams" in state.
+        // For now, we rely on the fact that updateStockState will trigger re-render.
+        // To avoid loop, we should check if current chartData matches expectation? 
+        // Actually, let's just fetch if we need to.
+
+        // Simple optimization: If we already have data and it looks "fresh" (handled by GlobalState mount), skip?
+        // But user might change timeRange.
+
+        // We need to know if the current chartData corresponds to the current timeRange.
+        // Since we don't store "chartDataTimeRange", we might re-fetch.
+        // Let's just fetch. The backend is fast.
         fetchChartData();
-    }, [stockData, timeRange]);
+    }, [stockData?.symbol, timeRange]);
 
     const handleInputChange = async (e) => {
         const value = e.target.value.toUpperCase();
-        setTicker(value);
+        updateStockState({ ticker: value });
         setSelectedIndex(-1);
 
         if (!value) {
@@ -154,7 +120,7 @@ export default function StockViewer() {
     };
 
     const handleSuggestionClick = (symbol) => {
-        setTicker(symbol);
+        updateStockState({ ticker: symbol });
         setSuggestions([]);
         setShowSuggestions(false);
         setSelectedIndex(-1);
@@ -187,10 +153,8 @@ export default function StockViewer() {
         const searchTicker = typeof overrideTicker === 'string' ? overrideTicker : ticker;
         if (!searchTicker) return;
 
-        setLoading(true);
+        updateStockState({ loading: true });
         setError("");
-        // Don't clear data immediately to prevent flash if we have cached data
-        // setStockData(null); 
         setShowSuggestions(false);
         setSelectedIndex(-1);
 
@@ -216,18 +180,30 @@ export default function StockViewer() {
                 low: quote.l,
                 prevClose: quote.pc
             };
-            setStockData(newStockData);
+
+            // Update state with stock data immediately
+            updateStockState({
+                stockData: newStockData,
+                ticker: searchTicker,
+                // Clear previous secondary data while loading new
+                news: [],
+                aiSummary: "",
+                chartData: []
+            });
 
             // Fetch News
             const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
             const newsData = await newsRes.json();
             const newsArr = Array.isArray(newsData) ? newsData : [];
 
+            let newAiSummary = "AI summary unavailable.";
+
             if (newsArr.length === 0) {
-                setNews([]);
-                setAiSummary("AI summary unavailable — no news data.");
+                newAiSummary = "AI summary unavailable — no news data.";
+                updateStockState({ news: [], aiSummary: newAiSummary });
             } else {
-                setNews(newsArr.slice(0, 5));
+                const slicedNews = newsArr.slice(0, 5);
+                updateStockState({ news: slicedNews });
 
                 // Generate AI Summary
                 const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
@@ -264,19 +240,20 @@ ${aggregatedNews.slice(0, 15000)}
 
                 const aiData = await aiRes.json();
                 const candidate = aiData.candidates?.[0];
-                const summaryText = candidate?.content?.parts?.[0]?.text ||
+                newAiSummary = candidate?.content?.parts?.[0]?.text ||
                     candidate?.content ||
                     aiData.output_text ||
                     "Summary unavailable.";
-                setAiSummary(summaryText);
+
+                updateStockState({ aiSummary: newAiSummary });
             }
 
         } catch (err) {
             setError("Failed to fetch stock data. Please check the ticker and try again.");
             console.error(err);
-            setAiSummary("AI summary unavailable.");
+            updateStockState({ aiSummary: "AI summary unavailable." });
         } finally {
-            setLoading(false);
+            updateStockState({ loading: false });
         }
     };
 
