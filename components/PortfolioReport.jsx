@@ -1,7 +1,7 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
-const formatPercent = (value) => `${(value * 100).toFixed(2)}%`;
+const formatPercent = (value) => `${Number(value).toFixed(2)}%`;
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
 const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -202,8 +202,8 @@ export default function PortfolioReport({ data }) {
                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Advanced Risk Metrics</h3>
                         <table className="w-full text-sm border-collapse font-sans">
                             <tbody>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">VaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent((data.metrics.var_95_daily || 0) * 100)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">CVaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent((data.metrics.cvar_95_daily || 0) * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">VaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.var_95_daily || 0)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">CVaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.cvar_95_daily || 0)}</td></tr>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Skewness</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.skewness === 'number' ? data.metrics.skewness.toFixed(2) : '-'}</td></tr>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Kurtosis</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.kurtosis === 'number' ? data.metrics.kurtosis.toFixed(2) : '-'}</td></tr>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Calmar Ratio</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.calmar_ratio === 'number' ? data.metrics.calmar_ratio.toFixed(2) : '-'}</td></tr>
@@ -216,7 +216,7 @@ export default function PortfolioReport({ data }) {
                             <tbody>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Beta</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.beta === 'number' ? data.metrics.beta.toFixed(2) : '-'}</td></tr>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Alpha</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.alpha || 0)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Tracking Error</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent((data.metrics.tracking_error || 0) * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Tracking Error</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.tracking_error || 0)}</td></tr>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Information Ratio</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.information_ratio === 'number' ? data.metrics.information_ratio.toFixed(2) : '-'}</td></tr>
                                 <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">R-Squared</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.r_squared === 'number' ? data.metrics.r_squared.toFixed(2) : '-'}</td></tr>
                             </tbody>
@@ -239,7 +239,7 @@ export default function PortfolioReport({ data }) {
                         <tbody>
                             {data.drawdowns.slice(0, 5).map((dd, i) => (
                                 <tr key={i} className="border-b border-slate-100">
-                                    <td className="px-2 py-2 font-bold text-rose-700">{formatPercent(dd.depth * 100)}</td>
+                                    <td className="px-2 py-2 font-bold text-rose-700">{formatPercent(dd.depth)}</td>
                                     <td className="px-2 py-2 text-slate-600">{dd.start}</td>
                                     <td className="px-2 py-2 text-slate-600">{dd.trough}</td>
                                     <td className="px-2 py-2 text-slate-600">{dd.end}</td>

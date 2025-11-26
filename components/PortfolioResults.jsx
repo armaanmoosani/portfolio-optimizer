@@ -23,7 +23,7 @@ const formatCurrency = (value) => {
 // Helper to format percent
 const formatPercent = (value) => {
     if (value === null || value === undefined || isNaN(value)) return '0.00%';
-    return `${(Number(value) * 100).toFixed(2)}%`;
+    return `${Number(value).toFixed(2)}%`;
 };
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
@@ -381,11 +381,11 @@ export default function PortfolioResults({ data }) {
                                                                             formula="5th Percentile of Daily Returns"
                                                                         />
                                                                     </span>
-                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.var_95_daily * 100)} {data.metrics.var_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.var_95_daily)} {data.metrics.var_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400">VaR (99%, Daily)</span>
-                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_daily * 100)} {data.metrics.var_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_daily)} {data.metrics.var_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400 flex items-center">
@@ -396,11 +396,11 @@ export default function PortfolioResults({ data }) {
                                                                             formula="Mean of returns below VaR threshold"
                                                                         />
                                                                     </span>
-                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.cvar_95_daily * 100)} {data.metrics.cvar_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.cvar_95_daily)} {data.metrics.cvar_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400">CVaR (99%, Daily)</span>
-                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.cvar_99_daily * 100)} {data.metrics.cvar_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.cvar_99_daily)} {data.metrics.cvar_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-3">
@@ -432,7 +432,7 @@ export default function PortfolioResults({ data }) {
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400">VaR (99%, Annual)</span>
-                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_annual * 100)}</span>
+                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_annual)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -478,7 +478,7 @@ export default function PortfolioResults({ data }) {
                                                                             formula="StdDev(Portfolio Return - Benchmark Return)"
                                                                         />
                                                                     </span>
-                                                                    <span className="font-mono text-white">{formatPercent(data.metrics.tracking_error * 100)}</span>
+                                                                    <span className="font-mono text-white">{formatPercent(data.metrics.tracking_error)}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400 flex items-center">
@@ -609,7 +609,7 @@ export default function PortfolioResults({ data }) {
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Arithmetic Mean (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly * 100)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Arithmetic Mean (Annualized)</span>
@@ -617,7 +617,7 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Geometric Mean (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly * 100)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Geometric Mean (Annualized)</span>
@@ -625,7 +625,7 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Std Deviation (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly * 100)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Std Deviation (Annualized)</span>
@@ -633,7 +633,7 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Downside Deviation (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly * 100)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Benchmark Correlation</span>
@@ -668,19 +668,19 @@ export default function PortfolioResults({ data }) {
                                                 <tr className="bg-slate-900/20">
                                                     <td className="px-6 py-4 font-medium text-white">Portfolio Return</td>
                                                     <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3M"] !== null && data.trailingReturns["3M"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {data.trailingReturns["3M"] !== null ? formatPercent(data.trailingReturns["3M"] * 100) : '-'}
+                                                        {data.trailingReturns["3M"] !== null ? formatPercent(data.trailingReturns["3M"]) : '-'}
                                                     </td>
                                                     <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["YTD"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {formatPercent(data.trailingReturns["YTD"] * 100)}
+                                                        {formatPercent(data.trailingReturns["YTD"])}
                                                     </td>
                                                     <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["1Y"] !== null && data.trailingReturns["1Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {data.trailingReturns["1Y"] !== null ? formatPercent(data.trailingReturns["1Y"] * 100) : '-'}
+                                                        {data.trailingReturns["1Y"] !== null ? formatPercent(data.trailingReturns["1Y"]) : '-'}
                                                     </td>
                                                     <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["3Y"] !== null && data.trailingReturns["3Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {data.trailingReturns["3Y"] !== null ? formatPercent(data.trailingReturns["3Y"] * 100) : '-'}
+                                                        {data.trailingReturns["3Y"] !== null ? formatPercent(data.trailingReturns["3Y"]) : '-'}
                                                     </td>
                                                     <td className={`px-6 py-4 text-right font-mono ${data.trailingReturns["5Y"] !== null && data.trailingReturns["5Y"] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {data.trailingReturns["5Y"] !== null ? formatPercent(data.trailingReturns["5Y"] * 100) : '-'}
+                                                        {data.trailingReturns["5Y"] !== null ? formatPercent(data.trailingReturns["5Y"]) : '-'}
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -1042,19 +1042,19 @@ export default function PortfolioResults({ data }) {
                                                 key: 'annualized_return',
                                                 label: 'Annualized Return',
                                                 numeric: true,
-                                                render: (val) => <span className={`font-mono ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{val ? formatPercent(val * 100) : '-'}</span>
+                                                render: (val) => <span className={`font-mono ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{val ? formatPercent(val) : '-'}</span>
                                             },
                                             {
                                                 key: 'annualized_volatility',
                                                 label: 'Volatility',
                                                 numeric: true,
-                                                render: (val) => <span className="font-mono text-slate-300">{val ? formatPercent(val * 100) : '-'}</span>
+                                                render: (val) => <span className="font-mono text-slate-300">{val ? formatPercent(val) : '-'}</span>
                                             },
                                             {
                                                 key: 'max_drawdown',
                                                 label: 'Max Drawdown',
                                                 numeric: true,
-                                                render: (val) => <span className="font-mono text-rose-400">{val ? formatPercent(val * 100) : '-'}</span>
+                                                render: (val) => <span className="font-mono text-rose-400">{val ? formatPercent(val) : '-'}</span>
                                             }
                                         ]}
                                         data={data.assets.map(asset => ({

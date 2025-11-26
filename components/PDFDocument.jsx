@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     }
 });
 
-const formatPercent = (value) => `${(value * 100).toFixed(2)}%`;
+const formatPercent = (value) => `${Number(value).toFixed(2)}%`;
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -178,11 +178,11 @@ export const PDFDocument = ({ data }) => (
                 <View style={styles.grid}>
                     <View style={styles.gridItem}>
                         <Text style={styles.label}>VaR (95% Daily)</Text>
-                        <Text style={styles.value}>{formatPercent(data.metrics.var_95_daily * 100)}</Text>
+                        <Text style={styles.value}>{formatPercent(data.metrics.var_95_daily)}</Text>
                     </View>
                     <View style={styles.gridItem}>
                         <Text style={styles.label}>CVaR (95% Daily)</Text>
-                        <Text style={styles.value}>{formatPercent(data.metrics.cvar_95_daily * 100)}</Text>
+                        <Text style={styles.value}>{formatPercent(data.metrics.cvar_95_daily)}</Text>
                     </View>
                 </View>
                 <View style={styles.grid}>
@@ -244,7 +244,7 @@ export const PDFDocument = ({ data }) => (
                     </View>
                     {data.drawdowns?.map((dd, i) => (
                         <View key={i} style={styles.tableRow}>
-                            <Text style={styles.tableCell}>{formatPercent(dd.depth * 100)}</Text>
+                            <Text style={styles.tableCell}>{formatPercent(dd.depth)}</Text>
                             <Text style={styles.tableCell}>{dd.start}</Text>
                             <Text style={styles.tableCell}>{dd.trough}</Text>
                             <Text style={styles.tableCell}>{dd.end}</Text>

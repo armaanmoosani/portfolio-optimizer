@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { AlertTriangle, Info, HelpCircle } from 'lucide-react';
 import MetricTooltip from './MetricTooltip';
 
-const formatPercent = (value) => `${(value * 100).toFixed(2)}%`;
+const formatPercent = (value) => `${Number(value).toFixed(2)}%`;
 const formatNumber = (value) => value.toFixed(4);
 
 export default function RiskAnalysis({ data }) {
