@@ -97,23 +97,29 @@ export default function EfficientFrontier({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Use the first point in the payload. 
-        // We set shared={false} on the Tooltip component to ensure we only get the exact hovered point.
-        const point = payload[0].payload;
+        // Smart Payload Scanning: Prioritize specific overlays over generic points
+        // UPDATED PRIORITY: Asset > Min Vol > Max Sharpe > Frontier
+        // This ensures that if "Max Sharpe" is accidentally included in the payload (ghosting),
+        // the more specific points (Asset/MinVol) will take precedence.
+        let point = payload.find(p => p.payload.type === 'asset')?.payload;
+        if (!point) point = payload.find(p => p.payload.type === 'min_vol_overlay')?.payload;
+        if (!point) point = payload.find(p => p.payload.type === 'max_sharpe_overlay')?.payload;
+        if (!point) point = payload.find(p => p.payload.type === 'cml')?.payload;
+        if (!point) point = payload[0].payload; // Fallback
 
         let title = 'Portfolio';
         let color = '#3b82f6';
 
         // Explicit Type Checks
-        if (point.type === 'max_sharpe_overlay') {
-            title = 'Maximum Sharpe Ratio';
-            color = '#10b981';
+        if (point.type === 'asset') {
+            title = point.name;
+            color = '#c084fc';
         } else if (point.type === 'min_vol_overlay') {
             title = 'Minimum Volatility';
             color = '#f59e0b';
-        } else if (point.type === 'asset') {
-            title = point.name;
-            color = '#c084fc';
+        } else if (point.type === 'max_sharpe_overlay') {
+            title = 'Maximum Sharpe Ratio';
+            color = '#10b981';
         } else if (point.type === 'monte_carlo') {
             title = 'Simulated Portfolio';
             color = '#64748b';
@@ -121,7 +127,7 @@ export default function EfficientFrontier({ data }) {
             title = 'Capital Market Line';
             color = '#94a3b8';
         } else if (point.type === 'frontier') {
-            // Fallback for underlying frontier points if they are hovered without an overlay
+            // Fallback for underlying frontier points
             if (point.isMaxSharpe) {
                 title = 'Maximum Sharpe Ratio';
                 color = '#10b981';
@@ -281,11 +287,7 @@ export default function EfficientFrontier({ data }) {
                             }}
                         />
 
-                        <Tooltip
-                            content={<CustomTooltip />}
-                            cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }}
-                            shared={false}
-                        />
+                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }} />
 
                         {/* CML Line */}
                         {cmlPoints.length > 1 && (
@@ -300,20 +302,9 @@ export default function EfficientFrontier({ data }) {
                             />
                         )}
 
-                        {/* Invisible Hit Layer for Improved UX (Sticky Tooltip) */}
-                        <Scatter
-                            name="HitLayer"
-                            data={frontierSorted}
-                            fill="transparent"
-                            stroke="none"
-                            shape="circle"
-                            r={25} // Large hit radius for easier hovering
-                            isAnimationActive={false}
-                            style={{ cursor: 'crosshair' }}
-                        />
-
                         {/* Efficient Frontier (Main Line) */}
                         <Scatter
+                            key="frontier-line"
                             name="Frontier"
                             data={frontierSorted}
                             line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
@@ -326,6 +317,7 @@ export default function EfficientFrontier({ data }) {
                         {/* Monte Carlo Cloud */}
                         {monteCarloPoints.length > 0 && (
                             <Scatter
+                                key="monte-carlo"
                                 name="MonteCarlo"
                                 data={monteCarloPoints}
                                 fill="#64748b"
@@ -339,6 +331,7 @@ export default function EfficientFrontier({ data }) {
                         {/* Individual Assets */}
                         {assetPoints.length > 0 && (
                             <Scatter
+                                key="assets"
                                 name="Assets"
                                 data={assetPoints}
                                 fill="#c084fc"
@@ -352,6 +345,7 @@ export default function EfficientFrontier({ data }) {
                         {/* Max Sharpe Overlay */}
                         {maxSharpeOverlay && (
                             <Scatter
+                                key="max-sharpe"
                                 name="MaxSharpe"
                                 data={[maxSharpeOverlay]}
                                 fill="#10b981"
@@ -384,6 +378,7 @@ export default function EfficientFrontier({ data }) {
                         {/* Min Vol Overlay */}
                         {minVolOverlay && (
                             <Scatter
+                                key="min-vol"
                                 name="MinVol"
                                 data={[minVolOverlay]}
                                 fill="#f59e0b"
