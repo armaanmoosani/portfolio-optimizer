@@ -381,33 +381,19 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             })
     
     # Use the provided optimal portfolio weights (already calculated in main optimization)
-    # This ensures the Max Sharpe point matches exactly with the Summary tab
-    if optimal_weights:
-        # Calculate precise metrics for the optimal portfolio
-        # Convert dictionary weights back to array if needed
-        if isinstance(optimal_weights, dict):
-            opt_weights_array = np.array([optimal_weights.get(t, 0.0) for t in tickers])
-        else:
-            opt_weights_array = optimal_weights
-
-        opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
-            opt_weights_array, mean_returns, cov_matrix, risk_free_rate, annualization_factor
-        )
-        
-        optimal_portfolio = {
-            "volatility": float(opt_vol),
-            "return": float(opt_ret),
-            "sharpe_ratio": float(opt_sharpe),
-            "weights": {ticker: float(w) for ticker, w in zip(tickers, opt_weights_array)}
-        }
-        
-        # Add this precise point to the frontier to ensure the "Green Star" is on the line
-        frontier_points.append(optimal_portfolio)
-        # Re-sort frontier points by volatility to ensure smooth plotting
-        frontier_points.sort(key=lambda x: x['volatility'])
-        
-    elif frontier_points:
-        # Fallback: Pick best point from generated frontier
+    # This ensures the Max Sharpe point matches exactly with the Assets tab
+    # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
+    # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
+    # used slightly different parameters or didn't use shrinkage when this function does.
+    # Always calculate Max Sharpe locally to ensure consistency with the frontier curve
+    # This ignores the passed 'optimal_weights' to avoid discrepancies if the main optimization
+    # used slightly different parameters or didn't use shrinkage when this function does.
+    
+    # FORCE CONSISTENCY: Instead of running a separate minimization which might find a point slightly
+    # off the discrete curve due to numerical precision, we simply pick the point from our
+    # generated frontier that has the highest Sharpe Ratio. This guarantees the "Green Star"
+    # is exactly on the "Blue Line".
+    if frontier_points:
         optimal_portfolio = max(frontier_points, key=lambda x: x['sharpe_ratio'])
     else:
         # Fallback if frontier generation failed (unlikely)
@@ -438,26 +424,18 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     # Generate random portfolios to show the "cloud" of possible outcomes
     num_simulations = 2000
     
-    # FORCE CONSISTENCY: Use the precise Minimum Variance Portfolio calculated earlier
-    # instead of picking from the discrete frontier points.
-    # This ensures the "Yellow Diamond" is the true mathematical minimum.
-    
-    # Recalculate metrics for the precise weights found in min_ret_result
-    mvp_ret, mvp_vol, mvp_sharpe = calculate_portfolio_performance(
-        min_var_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
-    )
-    
-    min_variance_portfolio = {
-        "volatility": float(mvp_vol),
-        "return": float(mvp_ret),
-        "sharpe_ratio": float(mvp_sharpe),
-        "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
-    }
-    
-    # Add this precise point to the frontier as well
-    frontier_points.append(min_variance_portfolio)
-    # Re-sort one last time
-    frontier_points.sort(key=lambda x: x['volatility'])
+    # FORCE CONSISTENCY: Select Min Variance Portfolio from the generated frontier points
+    # This ensures the "Yellow Diamond" is exactly on the "Blue Line".
+    if frontier_points:
+        min_variance_portfolio = min(frontier_points, key=lambda x: x['volatility'])
+    else:
+        # Fallback
+        min_variance_portfolio = {
+            "volatility": float(min_var_vol),
+            "return": float(min_var_ret),
+            "sharpe_ratio": float(min_var_sharpe),
+            "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
+        }
     
     monte_carlo_points = []
     
