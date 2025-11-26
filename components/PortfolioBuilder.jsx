@@ -76,6 +76,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const validateAndAdd = async (tickerSymbol) => {
         if (isValidating) return;
         setIsValidating(true);
+        setShowSuggestions(false); // Hide suggestions immediately
 
         try {
             // Strict validation: Check against API
