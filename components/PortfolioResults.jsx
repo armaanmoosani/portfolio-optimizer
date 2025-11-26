@@ -78,14 +78,83 @@ export default function PortfolioResults({ data }) {
 
     // Export CSV handler
     const exportCSV = () => {
-        const headers = Object.keys(data.metrics);
-        const rows = [headers.join(','), headers.map(k => data.metrics[k]).join(',')];
-        const csv = rows.join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        // Helper to escape CSV fields
+        const escape = (val) => {
+            if (val === null || val === undefined) return '';
+            const str = String(val);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
+        const rows = [];
+
+        // 1. Report Header
+        rows.push(['PORTFOLIO OPTIMIZATION REPORT']);
+        rows.push(['Generated', new Date().toLocaleDateString()]);
+        rows.push([]);
+
+        // 2. Summary Metrics
+        rows.push(['SUMMARY METRICS']);
+        rows.push(['Metric', 'Value']);
+        rows.push(['Annualized Return', formatPercent(data.metrics.expectedReturn)]);
+        rows.push(['Volatility', formatPercent(data.metrics.volatility)]);
+        rows.push(['Sharpe Ratio', data.metrics.sharpeRatio.toFixed(4)]);
+        rows.push(['Max Drawdown', formatPercent(data.metrics.maxDrawdown)]);
+        rows.push(['Start Balance', formatCurrency(data.metrics.startBalance)]);
+        rows.push(['End Balance', formatCurrency(data.metrics.endBalance)]);
+        rows.push(['Beta', data.metrics.beta.toFixed(4)]);
+        rows.push(['Alpha', formatPercent(data.metrics.alpha)]);
+        rows.push([]);
+
+        // 3. Asset Allocation
+        rows.push(['ASSET ALLOCATION']);
+        rows.push(['Asset', 'Weight', 'Value']);
+        data.assets.forEach(asset => {
+            rows.push([
+                asset,
+                formatPercent(data.weights[asset]),
+                formatCurrency(data.metrics.endBalance * data.weights[asset])
+            ]);
+        });
+        rows.push([]);
+
+        // 4. Risk Analysis
+        rows.push(['RISK ANALYSIS']);
+        rows.push(['Asset', 'Weight', 'Marginal Risk', 'Total Risk Contrib', '% of Risk']);
+        if (data.risk_contributions) {
+            Object.entries(data.risk_contributions).sort((a, b) => (b[1]?.PCR || 0) - (a[1]?.PCR || 0)).forEach(([ticker, metrics]) => {
+                if (!metrics) return;
+                rows.push([
+                    ticker,
+                    formatPercent(metrics.Weight || 0),
+                    typeof metrics.MCR === 'number' ? metrics.MCR.toFixed(6) : '0.000000',
+                    typeof metrics.TRC === 'number' ? metrics.TRC.toFixed(6) : '0.000000',
+                    formatPercent(metrics.PCR || 0)
+                ]);
+            });
+        }
+        rows.push([]);
+
+        // 5. Performance History
+        rows.push(['PERFORMANCE HISTORY']);
+        rows.push(['Date', 'Portfolio Value']);
+        if (Array.isArray(data.performance)) {
+            data.performance.forEach(point => {
+                if (point && typeof point.value === 'number') {
+                    rows.push([point.date || '', point.value.toFixed(2)]);
+                }
+            });
+        }
+
+        // Create CSV Content
+        const csvContent = rows.map(row => row.map(escape).join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', 'portfolio_metrics.csv');
+        link.setAttribute('download', `portfolio_analysis_${new Date().toISOString().slice(0, 10)}.csv`);
         link.click();
     };
 
@@ -125,8 +194,9 @@ export default function PortfolioResults({ data }) {
                             <FileText className="w-4 h-4" />
                             Export PDF
                         </button>
-                        <button onClick={exportCSV} className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Export CSV">
+                        <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors shadow-lg shadow-slate-900/20 border border-slate-600" title="Export CSV">
                             <TableIcon className="w-4 h-4" />
+                            Export CSV
                         </button>
                     </div>
                 </div>

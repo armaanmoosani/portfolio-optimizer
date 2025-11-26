@@ -181,15 +181,18 @@ export default function PortfolioReport({ data }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.entries(data.risk_contributions || {}).map(([ticker, metrics]) => ({ Ticker: ticker, ...metrics })).sort((a, b) => b.PCR - a.PCR).map((asset, i) => (
-                                <tr key={i} className="border-b border-slate-100">
-                                    <td className="px-4 py-2 font-semibold text-slate-700">{asset.Ticker}</td>
-                                    <td className="px-4 py-2 text-right text-slate-600">{formatPercent(asset.Weight)}</td>
-                                    <td className="px-4 py-2 text-right text-slate-600">{asset.MCR.toFixed(4)}</td>
-                                    <td className="px-4 py-2 text-right text-slate-600">{asset.TRC.toFixed(4)}</td>
-                                    <td className="px-4 py-2 text-right font-bold text-slate-800">{formatPercent(asset.PCR)}</td>
-                                </tr>
-                            ))}
+                            {Object.entries(data.risk_contributions || {}).sort((a, b) => (b[1]?.PCR || 0) - (a[1]?.PCR || 0)).map(([ticker, metrics], i) => {
+                                if (!metrics) return null;
+                                return (
+                                    <tr key={i} className="border-b border-slate-100">
+                                        <td className="px-4 py-2 font-semibold text-slate-700">{ticker}</td>
+                                        <td className="px-4 py-2 text-right text-slate-600">{formatPercent(metrics.Weight || 0)}</td>
+                                        <td className="px-4 py-2 text-right text-slate-600">{typeof metrics.MCR === 'number' ? metrics.MCR.toFixed(4) : '0.0000'}</td>
+                                        <td className="px-4 py-2 text-right text-slate-600">{typeof metrics.TRC === 'number' ? metrics.TRC.toFixed(4) : '0.0000'}</td>
+                                        <td className="px-4 py-2 text-right font-bold text-slate-800">{formatPercent(metrics.PCR || 0)}</td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -199,11 +202,11 @@ export default function PortfolioReport({ data }) {
                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Advanced Risk Metrics</h3>
                         <table className="w-full text-sm border-collapse font-sans">
                             <tbody>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">VaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.var_95_daily * 100)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">CVaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.cvar_95_daily * 100)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Skewness</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.skewness.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Kurtosis</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.kurtosis.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Calmar Ratio</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.calmar_ratio.toFixed(2)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">VaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent((data.metrics.var_95_daily || 0) * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">CVaR (95% Daily)</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent((data.metrics.cvar_95_daily || 0) * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Skewness</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.skewness === 'number' ? data.metrics.skewness.toFixed(2) : '-'}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Kurtosis</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.kurtosis === 'number' ? data.metrics.kurtosis.toFixed(2) : '-'}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Calmar Ratio</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.calmar_ratio === 'number' ? data.metrics.calmar_ratio.toFixed(2) : '-'}</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -211,11 +214,11 @@ export default function PortfolioReport({ data }) {
                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Benchmark Comparison</h3>
                         <table className="w-full text-sm border-collapse font-sans">
                             <tbody>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Beta</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.beta.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Alpha</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.alpha)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Tracking Error</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.tracking_error * 100)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Information Ratio</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.information_ratio.toFixed(2)}</td></tr>
-                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">R-Squared</td><td className="py-2 text-right font-mono text-slate-700">{data.metrics.r_squared ? data.metrics.r_squared.toFixed(2) : '-'}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Beta</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.beta === 'number' ? data.metrics.beta.toFixed(2) : '-'}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Alpha</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent(data.metrics.alpha || 0)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Tracking Error</td><td className="py-2 text-right font-mono text-slate-700">{formatPercent((data.metrics.tracking_error || 0) * 100)}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">Information Ratio</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.information_ratio === 'number' ? data.metrics.information_ratio.toFixed(2) : '-'}</td></tr>
+                                <tr className="border-b border-slate-100"><td className="py-2 text-slate-500">R-Squared</td><td className="py-2 text-right font-mono text-slate-700">{typeof data.metrics.r_squared === 'number' ? data.metrics.r_squared.toFixed(2) : '-'}</td></tr>
                             </tbody>
                         </table>
                     </div>
