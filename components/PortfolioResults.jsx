@@ -217,6 +217,7 @@ export default function PortfolioResults({ data }) {
                     <AnimatePresence mode="wait">
                         {activeTab === 'summary' && (
                             <motion.div
+                                key="summary"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
@@ -692,6 +693,7 @@ export default function PortfolioResults({ data }) {
 
                         {activeTab === 'charts' && (
                             <motion.div
+                                key="charts"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
@@ -785,6 +787,7 @@ export default function PortfolioResults({ data }) {
 
                         {activeTab === 'metrics' && (
                             <motion.div
+                                key="metrics"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
@@ -879,6 +882,7 @@ export default function PortfolioResults({ data }) {
 
                         {activeTab === 'assets' && (
                             <motion.div
+                                key="assets"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
@@ -1067,6 +1071,7 @@ export default function PortfolioResults({ data }) {
                         )}
                         {activeTab === 'risk' && (
                             <motion.div
+                                key="risk"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
