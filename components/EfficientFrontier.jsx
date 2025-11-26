@@ -56,7 +56,8 @@ export default function EfficientFrontier({ data }) {
         y: p.return * 100,
         name: p.name,
         type: 'asset',
-        id: idx
+        id: idx,
+        weights: { [p.name]: 1.0 }
     }));
 
     const cmlPoints = (data.cml_points || []).map((p, idx) => ({
