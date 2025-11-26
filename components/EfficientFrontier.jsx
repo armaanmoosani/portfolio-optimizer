@@ -9,25 +9,28 @@ export default function EfficientFrontier({ data }) {
         );
     }
 
-    // 1. Identify Special Indices first
+    // 1. Identify Special Indices
     let maxSharpeIdx = -1;
     let minVolIdx = -1;
     let maxSharpeVal = -Infinity;
     let minVolVal = Infinity;
 
     data.frontier_points.forEach((p, idx) => {
-        if ((p.sharpe_ratio || 0) > maxSharpeVal) {
-            maxSharpeVal = p.sharpe_ratio || 0;
+        const sharpe = p.sharpe_ratio || 0;
+        const vol = p.volatility || 0;
+
+        if (sharpe > maxSharpeVal) {
+            maxSharpeVal = sharpe;
             maxSharpeIdx = idx;
         }
-        // Using volatility for min vol
-        if ((p.volatility || 0) < minVolVal) {
-            minVolVal = p.volatility || 0;
+
+        if (vol < minVolVal) {
+            minVolVal = vol;
             minVolIdx = idx;
         }
     });
 
-    // 2. Transform Data with Flags
+    // 2. Transform Data
     const frontierPoints = data.frontier_points.map((p, idx) => ({
         x: p.volatility * 100,
         y: p.return * 100,
@@ -63,12 +66,16 @@ export default function EfficientFrontier({ data }) {
         id: idx
     })).sort((a, b) => a.x - b.x);
 
-    // 3. Sort for Line Drawing (Single Dataset)
+    // 3. Sort for Line Drawing
     const frontierSorted = [...frontierPoints].sort((a, b) => a.x - b.x);
 
-    // 4. Extract Special Points for Overlay
-    const maxSharpe = frontierPoints.find(p => p.isMaxSharpe);
-    const minVol = frontierPoints.find(p => p.isMinVol);
+    // 4. Create Explicit Overlay Objects
+    // These are distinct objects with specific types to force correct tooltip rendering
+    const maxSharpePoint = frontierPoints.find(p => p.isMaxSharpe);
+    const minVolPoint = frontierPoints.find(p => p.isMinVol);
+
+    const maxSharpeOverlay = maxSharpePoint ? { ...maxSharpePoint, type: 'max_sharpe_overlay' } : null;
+    const minVolOverlay = minVolPoint ? { ...minVolPoint, type: 'min_vol_overlay' } : null;
 
     // Calculate domains
     const allVisible = [...frontierPoints, ...assetPoints];
@@ -88,18 +95,25 @@ export default function EfficientFrontier({ data }) {
 
     // Professional Tooltip
     const CustomTooltip = ({ active, payload }) => {
-        if (!active || !payload || !payload[0]) return null;
+        if (!active || !payload || payload.length === 0) return null;
 
-        const point = payload[0].payload;
+        // Smart Payload Scanning: Prioritize specific overlays over generic points
+        // This fixes the issue where hovering a stack of points (e.g. Star on top of Line)
+        // might accidentally show the generic line point data instead of the Star data.
+        let point = payload.find(p => p.payload.type === 'max_sharpe_overlay')?.payload;
+        if (!point) point = payload.find(p => p.payload.type === 'min_vol_overlay')?.payload;
+        if (!point) point = payload.find(p => p.payload.type === 'asset')?.payload;
+        if (!point) point = payload.find(p => p.payload.type === 'cml')?.payload;
+        if (!point) point = payload[0].payload; // Fallback
 
         let title = 'Portfolio';
         let color = '#3b82f6';
 
-        // Priority Checks using Flags
-        if (point.isMaxSharpe) {
+        // Explicit Type Checks
+        if (point.type === 'max_sharpe_overlay') {
             title = 'Maximum Sharpe Ratio';
             color = '#10b981';
-        } else if (point.isMinVol) {
+        } else if (point.type === 'min_vol_overlay') {
             title = 'Minimum Volatility';
             color = '#f59e0b';
         } else if (point.type === 'asset') {
@@ -112,7 +126,16 @@ export default function EfficientFrontier({ data }) {
             title = 'Capital Market Line';
             color = '#94a3b8';
         } else if (point.type === 'frontier') {
-            title = 'Efficient Portfolio';
+            // Fallback for underlying frontier points if they are hovered without an overlay
+            if (point.isMaxSharpe) {
+                title = 'Maximum Sharpe Ratio';
+                color = '#10b981';
+            } else if (point.isMinVol) {
+                title = 'Minimum Volatility';
+                color = '#f59e0b';
+            } else {
+                title = 'Efficient Portfolio';
+            }
         }
 
         const weights = point.weights || {};
@@ -200,18 +223,18 @@ export default function EfficientFrontier({ data }) {
                         </p>
                     </div>
 
-                    {maxSharpe && (
+                    {maxSharpeOverlay && (
                         <div className="flex gap-4 text-xs">
                             <div className="text-right">
                                 <div className="text-slate-500 font-medium">Optimal Sharpe</div>
                                 <div className="text-emerald-400 font-mono font-semibold text-sm">
-                                    {maxSharpe.sharpe.toFixed(3)}
+                                    {maxSharpeOverlay.sharpe.toFixed(3)}
                                 </div>
                             </div>
                             <div className="text-right">
                                 <div className="text-slate-500 font-medium">Min Volatility</div>
                                 <div className="text-amber-400 font-mono font-semibold text-sm">
-                                    {minVol.x.toFixed(2)}%
+                                    {minVolOverlay ? minVolOverlay.x.toFixed(2) : '0.00'}%
                                 </div>
                             </div>
                         </div>
@@ -265,7 +288,7 @@ export default function EfficientFrontier({ data }) {
 
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }} />
 
-                        {/* CML Line - Rendered as ReferenceLine */}
+                        {/* CML Line */}
                         {cmlPoints.length > 1 && (
                             <ReferenceLine
                                 segment={[
@@ -278,19 +301,21 @@ export default function EfficientFrontier({ data }) {
                             />
                         )}
 
-                        {/* Efficient Frontier (Single Scatter for Line + Dots) */}
+                        {/* Efficient Frontier (Main Line) */}
                         <Scatter
+                            name="Frontier"
                             data={frontierSorted}
                             line={{ stroke: '#3b82f6', strokeWidth: 2.5 }}
                             lineType="monotone"
                             fill="#3b82f6"
                             shape="circle"
-                            isAnimationActive={true}
+                            isAnimationActive={false}
                         />
 
                         {/* Monte Carlo Cloud */}
                         {monteCarloPoints.length > 0 && (
                             <Scatter
+                                name="MonteCarlo"
                                 data={monteCarloPoints}
                                 fill="#64748b"
                                 fillOpacity={0.08}
@@ -303,6 +328,7 @@ export default function EfficientFrontier({ data }) {
                         {/* Individual Assets */}
                         {assetPoints.length > 0 && (
                             <Scatter
+                                name="Assets"
                                 data={assetPoints}
                                 fill="#c084fc"
                                 stroke="#fff"
@@ -313,65 +339,67 @@ export default function EfficientFrontier({ data }) {
                         )}
 
                         {/* Max Sharpe Overlay */}
-                        {maxSharpe && (
-                            <>
-                                <Scatter
-                                    data={[maxSharpe]}
+                        {maxSharpeOverlay && (
+                            <Scatter
+                                name="MaxSharpe"
+                                data={[maxSharpeOverlay]}
+                                fill="#10b981"
+                                stroke="#fff"
+                                strokeWidth={2}
+                                shape="star"
+                                r={8}
+                            />
+                        )}
+                        {maxSharpeOverlay && (
+                            <ReferenceDot
+                                x={maxSharpeOverlay.x}
+                                y={maxSharpeOverlay.y}
+                                r={0}
+                                stroke="none"
+                                fill="none"
+                                ifOverflow="extendDomain"
+                            >
+                                <Label
+                                    value="Max Sharpe"
+                                    position="top"
                                     fill="#10b981"
-                                    stroke="#fff"
-                                    strokeWidth={2}
-                                    shape="star"
-                                    r={8}
+                                    fontSize={11}
+                                    fontWeight="600"
+                                    offset={15}
                                 />
-                                <ReferenceDot
-                                    x={maxSharpe.x}
-                                    y={maxSharpe.y}
-                                    r={0}
-                                    stroke="none"
-                                    fill="none"
-                                    ifOverflow="extendDomain"
-                                >
-                                    <Label
-                                        value="Max Sharpe"
-                                        position="top"
-                                        fill="#10b981"
-                                        fontSize={11}
-                                        fontWeight="600"
-                                        offset={15}
-                                    />
-                                </ReferenceDot>
-                            </>
+                            </ReferenceDot>
                         )}
 
                         {/* Min Vol Overlay */}
-                        {minVol && (
-                            <>
-                                <Scatter
-                                    data={[minVol]}
+                        {minVolOverlay && (
+                            <Scatter
+                                name="MinVol"
+                                data={[minVolOverlay]}
+                                fill="#f59e0b"
+                                stroke="#fff"
+                                strokeWidth={2}
+                                shape="diamond"
+                                r={7}
+                            />
+                        )}
+                        {minVolOverlay && (
+                            <ReferenceDot
+                                x={minVolOverlay.x}
+                                y={minVolOverlay.y}
+                                r={0}
+                                stroke="none"
+                                fill="none"
+                                ifOverflow="extendDomain"
+                            >
+                                <Label
+                                    value="Min Vol"
+                                    position="bottom"
                                     fill="#f59e0b"
-                                    stroke="#fff"
-                                    strokeWidth={2}
-                                    shape="diamond"
-                                    r={7}
+                                    fontSize={10}
+                                    fontWeight="600"
+                                    offset={15}
                                 />
-                                <ReferenceDot
-                                    x={minVol.x}
-                                    y={minVol.y}
-                                    r={0}
-                                    stroke="none"
-                                    fill="none"
-                                    ifOverflow="extendDomain"
-                                >
-                                    <Label
-                                        value="Min Vol"
-                                        position="bottom"
-                                        fill="#f59e0b"
-                                        fontSize={10}
-                                        fontWeight="600"
-                                        offset={15}
-                                    />
-                                </ReferenceDot>
-                            </>
+                            </ReferenceDot>
                         )}
                     </ScatterChart>
                 </ResponsiveContainer>
