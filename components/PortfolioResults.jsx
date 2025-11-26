@@ -205,10 +205,10 @@ export default function PortfolioResults({ data }) {
 
                 {/* Navigation Tabs */}
                 <div className="flex flex-wrap gap-2 p-1 bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm">
+                    <TabButton active={activeTab === 'assets'} onClick={() => setActiveTab('assets')} icon={PieChartIcon} label="Assets" />
                     <TabButton active={activeTab === 'summary'} onClick={() => setActiveTab('summary')} icon={Activity} label="Summary" />
                     <TabButton active={activeTab === 'charts'} onClick={() => setActiveTab('charts')} icon={BarChart3} label="Charts" />
                     <TabButton active={activeTab === 'metrics'} onClick={() => setActiveTab('metrics')} icon={TableIcon} label="Metrics" />
-                    <TabButton active={activeTab === 'assets'} onClick={() => setActiveTab('assets')} icon={PieChartIcon} label="Assets" />
                     <TabButton active={activeTab === 'risk'} onClick={() => setActiveTab('risk')} icon={Target} label="Risk" />
                 </div>
 
