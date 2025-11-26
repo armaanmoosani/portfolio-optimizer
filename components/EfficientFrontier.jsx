@@ -150,7 +150,7 @@ export default function EfficientFrontier({ data }) {
                                             </span>
                                             <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                                                    className="h-full bg-blue-500 rounded-full"
                                                     style={{ width: `${Math.min(weight * 100, 100)}%` }}
                                                 />
                                             </div>
@@ -247,7 +247,7 @@ export default function EfficientFrontier({ data }) {
                             }}
                         />
 
-                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '4 4', stroke: '#64748b', strokeWidth: 1 }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1.5, opacity: 0.5 }} />
 
                         {/* CML Line */}
                         {cmlPoints.length > 0 && (
@@ -258,6 +258,7 @@ export default function EfficientFrontier({ data }) {
                                 stroke="#94a3b8"
                                 strokeWidth={1.5}
                                 strokeDasharray="6 4"
+                                fill="none"
                                 dot={false}
                                 isAnimationActive={false}
                             />
@@ -270,6 +271,7 @@ export default function EfficientFrontier({ data }) {
                             dataKey="y"
                             stroke="#3b82f6"
                             strokeWidth={2.5}
+                            fill="none"
                             dot={false}
                             isAnimationActive={true}
                             animationDuration={800}
@@ -309,26 +311,50 @@ export default function EfficientFrontier({ data }) {
 
                         {/* Max Sharpe */}
                         {maxSharpe && (
-                            <Scatter
-                                data={[maxSharpe]}
-                                fill="#10b981"
-                                stroke="#fff"
-                                strokeWidth={2}
-                                shape="star"
-                                r={8}
-                            />
+                            <>
+                                <Scatter
+                                    data={[maxSharpe]}
+                                    fill="#10b981"
+                                    stroke="#fff"
+                                    strokeWidth={2}
+                                    shape="star"
+                                    r={8}
+                                />
+                                <text
+                                    x={maxSharpe.x}
+                                    y={maxSharpe.y - 15}
+                                    textAnchor="middle"
+                                    fill="#10b981"
+                                    fontSize="11"
+                                    fontWeight="600"
+                                >
+                                    Max Sharpe
+                                </text>
+                            </>
                         )}
 
                         {/* Min Vol */}
                         {minVol && (
-                            <Scatter
-                                data={[minVol]}
-                                fill="#f59e0b"
-                                stroke="#fff"
-                                strokeWidth={2}
-                                shape="diamond"
-                                r={7}
-                            />
+                            <>
+                                <Scatter
+                                    data={[minVol]}
+                                    fill="#f59e0b"
+                                    stroke="#fff"
+                                    strokeWidth={2}
+                                    shape="diamond"
+                                    r={7}
+                                />
+                                <text
+                                    x={minVol.x}
+                                    y={minVol.y + 20}
+                                    textAnchor="middle"
+                                    fill="#f59e0b"
+                                    fontSize="10"
+                                    fontWeight="600"
+                                >
+                                    Min Vol
+                                </text>
+                            </>
                         )}
                     </ComposedChart>
                 </ResponsiveContainer>
