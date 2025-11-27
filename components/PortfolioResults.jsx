@@ -102,7 +102,8 @@ export default function PortfolioResults({ data }) {
         // 2. Summary Metrics
         rows.push(['SUMMARY METRICS']);
         rows.push(['Metric', 'Value']);
-        rows.push(['Annualized Return', formatPercent(data.metrics.expectedReturn)]);
+        rows.push(['CAGR (Realized)', formatPercent(data.metrics.realizedCAGR)]);
+        rows.push(['Expected Return (Optimization)', formatPercent(data.metrics.expectedReturn)]);
         rows.push(['Volatility', formatPercent(data.metrics.volatility)]);
         rows.push(['Sharpe Ratio', typeof data.metrics.sharpeRatio === 'number' ? data.metrics.sharpeRatio.toFixed(4) : '-']);
         rows.push(['Max Drawdown', formatPercent(data.metrics.maxDrawdown)]);
@@ -241,7 +242,7 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                     <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
                                         <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">CAGR</div>
-                                        <div className="text-xl font-bold text-blue-400">{formatPercent(data.metrics.expectedReturn)}</div>
+                                        <div className="text-xl font-bold text-blue-400">{formatPercent(data.metrics.realizedCAGR)}</div>
                                     </div>
                                     <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
                                         <div>

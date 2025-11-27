@@ -157,6 +157,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     sharpeRatio: data.optimization.metrics.sharpe_ratio || 0,
 
                     // USE BACKTEST METRICS (Realized) for other historical metrics
+                    realizedCAGR: (data.backtest.metrics.annualized_return || 0) * 100,  // Actual CAGR from backtest
                     sortinoRatio: data.backtest.metrics.sortino_ratio || 0,
                     maxDrawdown: (data.backtest.metrics.max_drawdown || 0) * 100,
                     alpha: (data.backtest.metrics.alpha || 0) * 100,
