@@ -395,11 +395,11 @@ export default function PortfolioResults({ data }) {
                                                                             formula="5th Percentile of Daily Returns"
                                                                         />
                                                                     </span>
-                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.var_95_daily)} {data.metrics.var_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.var_95_daily * 100)} {data.metrics.var_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400">VaR (99%, Daily)</span>
-                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_daily)} {data.metrics.var_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_daily * 100)} {data.metrics.var_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400 flex items-center">
@@ -410,11 +410,11 @@ export default function PortfolioResults({ data }) {
                                                                             formula="Mean of returns below VaR threshold"
                                                                         />
                                                                     </span>
-                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.cvar_95_daily)} {data.metrics.cvar_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-400">{formatPercent(data.metrics.cvar_95_daily * 100)} {data.metrics.cvar_95_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400">CVaR (99%, Daily)</span>
-                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.cvar_99_daily)} {data.metrics.cvar_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.cvar_99_daily * 100)} {data.metrics.cvar_99_daily >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-3">
@@ -446,7 +446,7 @@ export default function PortfolioResults({ data }) {
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400">VaR (99%, Annual)</span>
-                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_annual)}</span>
+                                                                    <span className="font-mono text-rose-500">{formatPercent(data.metrics.var_99_annual * 100)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -492,7 +492,7 @@ export default function PortfolioResults({ data }) {
                                                                             formula="StdDev(Portfolio Return - Benchmark Return)"
                                                                         />
                                                                     </span>
-                                                                    <span className="font-mono text-white">{formatPercent(data.metrics.tracking_error)}</span>
+                                                                    <span className="font-mono text-white">{formatPercent(data.metrics.tracking_error * 100)}</span>
                                                                 </div>
                                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                                     <span className="text-slate-400 flex items-center">
@@ -623,7 +623,7 @@ export default function PortfolioResults({ data }) {
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Arithmetic Mean (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.arithmetic_mean_monthly * 100)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Arithmetic Mean (Annualized)</span>
@@ -631,7 +631,7 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Geometric Mean (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.geometric_mean_monthly * 100)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Geometric Mean (Annualized)</span>
@@ -639,7 +639,7 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Std Deviation (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.std_dev_monthly * 100)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Std Deviation (Annualized)</span>
@@ -647,7 +647,7 @@ export default function PortfolioResults({ data }) {
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Downside Deviation (Monthly)</span>
-                                                <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly)}</span>
+                                                <span className="font-mono text-white">{formatPercent(data.metrics.downside_dev_monthly * 100)}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-slate-800">
                                                 <span className="text-slate-400">Benchmark Correlation</span>
