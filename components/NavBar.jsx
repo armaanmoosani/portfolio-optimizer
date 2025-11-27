@@ -67,11 +67,11 @@ export default function NavBar() {
 
     return (
         <>
-            <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50">
+            <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
                 <div className="container mx-auto px-4 pt-6">
                     <div className="flex items-center justify-center">
                         {/* Desktop Navigation */}
-                        <div className="hidden md:block relative">
+                        <div className="hidden md:block relative pointer-events-auto">
                             <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-xsm border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab) => (
                                     <Link
@@ -99,7 +99,7 @@ export default function NavBar() {
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="md:hidden absolute right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                            className="md:hidden absolute right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors pointer-events-auto"
                             aria-label="Toggle menu"
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
