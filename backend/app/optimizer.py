@@ -182,12 +182,74 @@ def negative_omega(weights, mean_returns, cov_matrix, risk_free_rate, annualizat
     omega = upside_sum / downside_sum
     return -omega
 
-def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, mar: float = 0.0):
+def negative_treynor(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, benchmark_returns, mar=None):
+    """
+    Treynor Ratio: Maximize (Return - Risk_Free_Rate) / Beta.
+    
+    Measures excess return per unit of systematic (market) risk.
+    Beta represents the portfolio's sensitivity to benchmark movements.
+    
+    Preferred when:
+    - Portfolio is part of a larger, well-diversified portfolio
+    - Comparing multiple portfolios against the same benchmark
+    - Systematic risk (beta) is the primary concern
+    
+    Reference:
+    Treynor, J. L. (1965). "How to Rate Management of Investment Funds."
+    Harvard Business Review, 43(1), 63-75.
+    
+    Used by:
+    - Mutual fund managers comparing performance vs market
+    - Portfolio managers with mandated benchmark tracking
+    - Academic research on market-adjusted performance
+    
+    Args:
+        benchmark_returns: Benchmark returns (e.g., SPY) aligned with portfolio period
+    """
+    if returns_matrix is None:
+        raise ValueError("Treynor Ratio requires historical returns matrix")
+    if benchmark_returns is None:
+        raise ValueError("Treynor Ratio requires benchmark returns")
+    
+    # Calculate portfolio returns
+    portfolio_returns = returns_matrix.dot(weights)
+    
+    # Ensure same length
+    min_len = min(len(portfolio_returns), len(benchmark_returns))
+    portfolio_returns = portfolio_returns[:min_len]
+    benchmark_returns = benchmark_returns[:min_len]
+    
+    # Calculate beta using covariance formula
+    # β = Cov(R_p, R_m) / Var(R_m)
+    covariance = np.cov(portfolio_returns, benchmark_returns)[0, 1]
+    benchmark_variance = np.var(benchmark_returns, ddof=1)
+    
+    if benchmark_variance < 1e-10:
+        return 1e10  # Penalize if benchmark has no variance
+    
+    beta = covariance / benchmark_variance
+    
+    # Penalize zero or negative beta (negative beta is valid but rare)
+    if abs(beta) < 1e-10:
+        return 1e10  # Near-zero beta means no systematic risk exposure
+    
+    # Calculate annualized portfolio return
+    mean_return = np.mean(portfolio_returns) * annualization_factor
+    
+    # Treynor ratio: (E[R] - R_f) / β
+    treynor = (mean_return - risk_free_rate) / beta
+    
+    return -treynor
+
+def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, mar: float = 0.0, benchmark_prices: pd.Series = None):
     """
     Run portfolio optimization based on the selected objective using Scipy.
     
     For portfolios with 20+ assets, automatically applies Ledoit-Wolf covariance shrinkage
     to improve estimation accuracy and reduce optimization instability.
+    
+    Args:
+        benchmark_prices: Benchmark price series (required for Treynor optimization)
     """
     # Calculate daily returns
     returns = prices.pct_change().dropna()
@@ -208,6 +270,15 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     
     returns_matrix = returns.values  # Convert to numpy array for objective functions
     tickers = prices.columns.tolist()
+    
+    # Process benchmark returns if provided (for Treynor)
+    benchmark_returns = None
+    if benchmark_prices is not None:
+        benchmark_returns_series = benchmark_prices.pct_change().dropna()
+        # Align benchmark with portfolio returns
+        common_index = returns.index.intersection(benchmark_returns_series.index)
+        returns_matrix = returns.loc[common_index].values
+        benchmark_returns = benchmark_returns_series.loc[common_index].values.flatten()
 
     # Constraints: Sum of weights = 1
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
@@ -237,6 +308,11 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     elif objective == "omega":
         obj_fun = negative_omega
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar)
+    elif objective == "treynor":
+        if benchmark_returns is None:
+            raise ValueError("Treynor optimization requires benchmark_prices parameter")
+        obj_fun = negative_treynor
+        args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, benchmark_returns, mar)
     else:
         # Default to Sharpe
         obj_fun = negative_sharpe

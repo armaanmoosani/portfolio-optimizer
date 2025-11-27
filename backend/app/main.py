@@ -84,6 +84,15 @@ async def optimize(request: PortfolioRequest):
         # 2. Get Risk Free Rate
         rf_rate = get_risk_free_rate()
         
+        # 2b. Fetch benchmark data if Treynor optimization is selected
+        benchmark_prices = None
+        if request.objective == "treynor":
+            print(f"Fetching benchmark data ({request.benchmark}) for Treynor optimization")
+            benchmark_data = fetch_benchmark_data(request.start_date, request.end_date, request.benchmark)
+            if benchmark_data.empty:
+                raise HTTPException(status_code=400, detail=f"Could not fetch benchmark data for {request.benchmark}")
+            benchmark_prices = benchmark_data['Close']
+        
         # 3. Run Optimization
         print(f"Running optimization with objective: {request.objective}")
         optimization_result = optimize_portfolio(
@@ -93,7 +102,8 @@ async def optimize(request: PortfolioRequest):
             min_weight=request.min_weight,
             max_weight=request.max_weight,
             annualization_factor=annualization_factor,
-            mar=request.mar
+            mar=request.mar,
+            benchmark_prices=benchmark_prices
         )
         
         if not optimization_result["success"]:

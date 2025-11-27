@@ -48,6 +48,13 @@ const optimizationMethods = [
         icon: Target,
         detail: "Ratio of upside to downside potential relative to MAR. Comprehensive risk-reward measure.",
         requiresMAR: true
+    },
+    {
+        id: "treynor",
+        name: "Max Treynor Ratio",
+        description: "Maximize systematic risk-adjusted returns",
+        icon: Activity,
+        detail: "Like Sharpe but uses beta (market risk) instead of total risk. Best when portfolio is part of larger holdings or comparing against benchmark."
     }
 ];
 
