@@ -20,10 +20,11 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
-// Helper to format percent
+// Helper to format percent (UPDATED: correctly converts decimal to percentage)
 const formatPercent = (value) => {
     if (value === null || value === undefined || isNaN(value)) return '0.00%';
-    return `${(Number(value)).toFixed(2)}%`;
+    // Backend returns decimals (0.1234), convert to percentage (12.34%)
+    return `${(Number(value) * 100).toFixed(2)}%`;
 };
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
@@ -257,14 +258,38 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                     <div className="bg-slate-900/40 p-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                                            {/* LEFT COLUMN: Expected Portfolio Characteristics */}
                                             <div className="space-y-3">
+                                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
+                                                    <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Expected Characteristics</h4>
+                                                    <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-500/20 text-blue-300 rounded border border-blue-500/30">Optimization</span>
+                                                </div>
                                                 <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Annualized Return (CAGR)</span>
+                                                    <span className="text-slate-400">Expected Annual Return</span>
                                                     <span className="font-mono text-white">{formatPercent(data.metrics.expectedReturn)}</span>
                                                 </div>
                                                 <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400">Standard Deviation</span>
+                                                    <span className="text-slate-400">Expected Volatility</span>
                                                     <span className="font-mono text-white">{formatPercent(data.metrics.volatility)}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-800">
+                                                    <span className="text-slate-400 flex items-center">
+                                                        Sharpe Ratio
+                                                        <MetricTooltip
+                                                            title="Sharpe Ratio"
+                                                            description="Expected risk-adjusted return based on historical statistics and optimization. This matches the Efficient Frontier chart."
+                                                            formula="(Expected Return - Risk-Free Rate) / Expected Volatility"
+                                                        />
+                                                    </span>
+                                                    <span className="font-mono text-white">{data.metrics.sharpeRatio.toFixed(2)} {data.metrics.sharpeRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* RIGHT COLUMN: Realized Performance & Risk Metrics */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
+                                                    <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Historical Performance</h4>
+                                                    <span className="px-2 py-0.5 text-[10px] font-medium bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">Backtest</span>
                                                 </div>
                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                     <span className="text-slate-400">Best Year</span>
@@ -274,26 +299,13 @@ export default function PortfolioResults({ data }) {
                                                     <span className="text-slate-400">Worst Year</span>
                                                     <span className="font-mono text-rose-400">{formatPercent(data.metrics.worstYear)}</span>
                                                 </div>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between py-2 border-b border-slate-800">
-                                                    <span className="text-slate-400 flex items-center">
-                                                        Sharpe Ratio
-                                                        <MetricTooltip
-                                                            title="Sharpe Ratio"
-                                                            description="Measures risk-adjusted return by showing how much excess return you receive for the extra volatility endured. Higher is better. >1 is good, >2 is very good, >3 is excellent."
-                                                            formula="(Return -Risk-Free Rate) / Standard Deviation"
-                                                        />
-                                                    </span>
-                                                    <span className="font-mono text-white">{data.metrics.sharpeRatio.toFixed(2)} {data.metrics.sharpeRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
-                                                </div>
                                                 <div className="flex justify-between py-2 border-b border-slate-800">
                                                     <span className="text-slate-400 flex items-center">
                                                         Sortino Ratio
                                                         <MetricTooltip
                                                             title="Sortino Ratio"
-                                                            description="Similar to Sharpe but only penalizes downside volatility. Preferred by investors who care more about losses than upside volatility. Higher is better."
-                                                            formula="(Return - MAR) / Downside Deviation"
+                                                            description="Realized risk-adjusted return penalizing only downside volatility. Based on historical backtest performance."
+                                                            formula="(Realized Return - MAR) / Downside Deviation"
                                                         />
                                                     </span>
                                                     <span className="font-mono text-white">{data.metrics.sortinoRatio.toFixed(2)} {data.metrics.sortinoRatio >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
@@ -303,8 +315,8 @@ export default function PortfolioResults({ data }) {
                                                         Alpha
                                                         <MetricTooltip
                                                             title="Alpha (Jensen's)"
-                                                            description="Excess return above what the CAPM model predicts. Positive alpha indicates outperformance vs. the benchmark after adjusting for risk (beta)."
-                                                            formula="Portfolio Return - [Risk-Free + Beta × (Benchmark Return - Risk-Free)]"
+                                                            description="Realized excess return above what the CAPM model predicts. Positive alpha indicates outperformance vs. the benchmark after adjusting for risk (beta)."
+                                                            formula="Realized Return - [Risk-Free + Beta × (Benchmark Return - Risk-Free)]"
                                                         />
                                                     </span>
                                                     <span className="font-mono text-white">{formatPercent(data.metrics.alpha)} {parseFloat(data.metrics.alpha) >= 0 ? <ArrowUp className="w-4 h-4 inline text-emerald-400" /> : <ArrowDown className="w-4 h-4 inline text-rose-400" />}</span>
