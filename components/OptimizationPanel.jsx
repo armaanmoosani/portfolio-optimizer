@@ -68,8 +68,9 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
     const [isOptimizing, setIsOptimizing] = useState(false);
 
     // Configuration state
-    const [startYear, setStartYear] = useState("2020");
-    const [endYear, setEndYear] = useState("2024");
+    const [startYear, setStartYear] = useState("1985");
+    const currentYear = new Date().getFullYear();
+    const [endYear, setEndYear] = useState(String(currentYear));
     const [frequency, setFrequency] = useState("daily");
     const [strategyType, setStrategyType] = useState("long-only");
     const [benchmark, setBenchmark] = useState("SPY");
@@ -80,8 +81,8 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
     const [rebalanceFreq, setRebalanceFreq] = useState("never");  // Rebalancing frequency
 
 
-    // Generate years array from 1985 to 2025
-    const years = Array.from({ length: 2025 - 1985 + 1 }, (_, i) => 1985 + i);
+    // Generate years array from 1985 to current year
+    const years = Array.from({ length: currentYear - 1985 + 1 }, (_, i) => 1985 + i);
 
     const handleOptimize = async () => {
         if (assets.length < 2) {
