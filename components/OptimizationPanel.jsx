@@ -58,7 +58,7 @@ const optimizationMethods = [
     }
 ];
 
-export default function OptimizationPanel({ assets = [], onOptimizationComplete, onOptimizationStart }) {
+export default function OptimizationPanel({ assets = [], minSelectableDate, onOptimizationComplete, onOptimizationStart }) {
     const toast = useToast();
     const router = useRouter();
 
@@ -87,9 +87,18 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
     const [mar, setMar] = useState("0");  // Minimum Acceptable Return (%) for Sortino/Omega
     const [rebalanceFreq, setRebalanceFreq] = useState("never");  // Rebalancing frequency
 
+    // Calculate minimum year from prop
+    const minYear = minSelectableDate ? parseInt(minSelectableDate.split('-')[0]) : 1985;
 
-    // Generate years array from 1985 to current year
-    const years = Array.from({ length: currentYear - 1985 + 1 }, (_, i) => 1985 + i);
+    // Auto-update startYear if it's invalid
+    useEffect(() => {
+        if (parseInt(startYear) < minYear) {
+            setStartYear(String(minYear));
+        }
+    }, [minYear, startYear]);
+
+    // Generate years array from minYear to current year
+    const years = Array.from({ length: currentYear - minYear + 1 }, (_, i) => minYear + i);
 
     const handleOptimize = async () => {
         if (assets.length < 2) {

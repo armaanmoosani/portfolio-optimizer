@@ -79,30 +79,25 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         setShowSuggestions(false); // Hide suggestions immediately
 
         try {
-            // Strict validation: Check against API
-            const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(tickerSymbol)}`);
+            // Strict validation: Check against our backend (which checks yfinance and gets start date)
+            const res = await fetch(`/api/validate_ticker?ticker=${encodeURIComponent(tickerSymbol)}`);
+
             if (res.ok) {
                 const data = await res.json();
-                const results = data.result || [];
+                // data = { symbol: "NVDA", name: "NVIDIA Corp", first_valid_date: "1999-01-22" }
 
-                // Check for exact match
-                const match = results.find(s => s.symbol.toUpperCase() === tickerSymbol);
-
-                if (match) {
-                    handleAdd(match.symbol, match.description);
-                } else {
-                    toast.error(`Invalid ticker "${tickerSymbol}". Please select a valid stock.`);
-                }
+                handleAdd(data.symbol, data.name, data.first_valid_date);
             } else {
-                toast.error("Validation failed. Please try again.");
+                toast.error(`Invalid ticker "${tickerSymbol}". Please select a valid stock.`);
             }
         } catch (err) {
             console.error("Validation error:", err);
-            toast.error("Validation error. Please check your connection.");
+            toast.error("Validation failed. Please try again.");
         } finally {
             setIsValidating(false);
         }
     };
+
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
