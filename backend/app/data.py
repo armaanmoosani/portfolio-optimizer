@@ -67,20 +67,10 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
             
         return data
     except Exception as e:
-        # Fallback: generate synthetic price data for the requested tickers
-        print(f"Warning: yfinance fetch failed ({e}), generating synthetic data.")
-        # Create a date range matching the requested interval
-        date_range = pd.date_range(start=start_date, end=end_date, freq='B')  # business days
-        # Simple random walk for each ticker
-        data = pd.DataFrame(index=date_range)
-        np.random.seed(0)
-        for ticker in tickers:
-            # start price around 100
-            prices = 100 + np.cumsum(np.random.normal(0, 1, size=len(date_range)))
-            data[ticker] = prices
-        # Ensure no NaNs
-        data = data.ffill().bfill()
-        return data
+        # STRICT MODE: No synthetic data allowed.
+        # If fetching fails, we must fail loudly to maintain professional integrity.
+        print(f"Error: yfinance fetch failed for {tickers}: {e}")
+        raise ValueError(f"Failed to fetch market data: {str(e)}")
 
 def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str = "SPY") -> pd.Series:
     """

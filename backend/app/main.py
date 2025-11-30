@@ -163,6 +163,9 @@ async def optimize(request: PortfolioRequest):
              # Simple string comparison works for YYYY-MM-DD
              if actual_start > request.start_date:
                   warnings.append(f"Data limited: Optimization starts from {actual_start} (earliest common date).")
+        
+        # Add version tag to confirm reload
+        warnings.append("System: Patch 2.1 Loaded (Fixes Applied)")
 
         return {
             "optimization": optimization_result,

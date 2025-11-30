@@ -39,14 +39,16 @@ const StressTestPanel = ({ results, isLoading }) => {
     const availableScenarios = results.filter(r => r.available);
     const unavailableScenarios = results.filter(r => !r.available);
 
-    // Format data for chart
-    const chartData = availableScenarios.map(scenario => ({
-        name: scenario.name.split(' ')[0], // Short name (e.g., "2008")
-        fullName: scenario.name,
-        Portfolio: scenario.metrics.portfolio_return * 100,
-        Benchmark: scenario.metrics.benchmark_return * 100,
-        difference: scenario.metrics.difference * 100
-    }));
+    // Format data for chart (Historical Only)
+    const chartData = results
+        .filter(r => r.available && r.type !== 'hypothetical')
+        .map(scenario => ({
+            name: scenario.name.split(' ')[0], // Short name (e.g., "2008")
+            fullName: scenario.name,
+            Portfolio: scenario.metrics.portfolio_return * 100,
+            Benchmark: scenario.metrics.benchmark_return * 100,
+            difference: scenario.metrics.difference * 100
+        }));
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
@@ -161,7 +163,13 @@ const StressTestPanel = ({ results, isLoading }) => {
                                 </div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-500 mb-1">Max Drawdown</div>
+                                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                                    Max Drawdown
+                                    <MetricTooltip
+                                        title="Maximum Drawdown"
+                                        description="The largest peak-to-trough decline during the crisis period. Measures the worst pain felt by the investor."
+                                    />
+                                </div>
                                 <div className="font-mono font-bold text-rose-400">
                                     {(scenario.metrics.max_drawdown * 100).toFixed(2)}%
                                 </div>
@@ -171,11 +179,11 @@ const StressTestPanel = ({ results, isLoading }) => {
                                     Stress Volatility
                                     <MetricTooltip
                                         title="Stress Volatility"
-                                        description="Annualized standard deviation of returns specifically during this crisis period. Higher means a bumpier ride."
+                                        description="Annualized standard deviation of returns specifically during the crisis period. Higher means more erratic price swings."
                                     />
                                 </div>
                                 <div className="font-mono font-bold text-slate-300">
-                                    {(scenario.metrics.stress_volatility * 100).toFixed(2)}%
+                                    {scenario.metrics.stress_volatility != null ? (scenario.metrics.stress_volatility * 100).toFixed(2) : '0.00'}%
                                 </div>
                             </div>
                             <div>
@@ -187,7 +195,7 @@ const StressTestPanel = ({ results, isLoading }) => {
                                     />
                                 </div>
                                 <div className="font-mono font-bold text-slate-300">
-                                    {scenario.metrics.stress_correlation?.toFixed(2) || 'N/A'}
+                                    {scenario.metrics.stress_correlation != null ? scenario.metrics.stress_correlation.toFixed(2) : 'N/A'}
                                 </div>
                             </div>
                             <div>
@@ -199,7 +207,7 @@ const StressTestPanel = ({ results, isLoading }) => {
                                     />
                                 </div>
                                 <div className={`font-mono font-bold ${scenario.metrics.stress_beta > 1 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                    {scenario.metrics.stress_beta?.toFixed(2) || 'N/A'}
+                                    {scenario.metrics.stress_beta != null ? scenario.metrics.stress_beta.toFixed(2) : 'N/A'}
                                 </div>
                             </div>
                             <div>
@@ -211,7 +219,7 @@ const StressTestPanel = ({ results, isLoading }) => {
                                     />
                                 </div>
                                 <div className="font-mono font-bold text-rose-400">
-                                    {(scenario.metrics.stress_var_95 * 100).toFixed(2)}%
+                                    {scenario.metrics.stress_var_95 != null ? (scenario.metrics.stress_var_95 * 100).toFixed(2) : '0.00'}%
                                 </div>
                             </div>
                         </div>
@@ -242,7 +250,7 @@ const StressTestPanel = ({ results, isLoading }) => {
                                     <div className="text-right">
                                         <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1">Sensitivity</div>
                                         <div className="text-xs font-mono text-slate-400">
-                                            {scenario.metrics.beta_used.toFixed(2)} ({scenario.metrics.beta_used > 1 ? 'High' : 'Low'})
+                                            {scenario.metrics.beta_used != null ? scenario.metrics.beta_used.toFixed(2) : '0.00'} ({scenario.metrics.beta_used > 1 ? 'High' : 'Low'})
                                         </div>
                                     </div>
                                 </div>
