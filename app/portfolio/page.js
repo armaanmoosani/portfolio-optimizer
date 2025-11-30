@@ -26,13 +26,6 @@ export default function PortfolioPage() {
         }, 800);
     };
 
-    // Calculate minimum start date based on assets (Constraint: Start Date >= Max(Asset IPO Dates))
-    const minSelectableDate = assets.length > 0
-        ? assets.reduce((max, asset) => {
-            return (asset.startDate && asset.startDate > max) ? asset.startDate : max;
-        }, "1985-01-01")
-        : "1985-01-01";
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -64,7 +57,6 @@ export default function PortfolioPage() {
                     <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md shadow-xl">
                         <OptimizationPanel
                             assets={assets}
-                            minSelectableDate={minSelectableDate}
                             onOptimizationComplete={handleOptimizationComplete}
                             onOptimizationStart={startOptimization}
                         />

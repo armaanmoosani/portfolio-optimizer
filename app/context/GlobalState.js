@@ -93,9 +93,9 @@ export function GlobalStateProvider({ children }) {
     // --- Actions ---
 
     // Portfolio Actions
-    const addAsset = (symbol, description, startDate) => {
+    const addAsset = (symbol, description) => {
         if (!assets.find(asset => asset.symbol === symbol)) {
-            setAssets([...assets, { symbol, description, startDate, weight: 0 }]);
+            setAssets([...assets, { symbol, description, weight: 0 }]);
         }
     };
 

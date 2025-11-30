@@ -200,38 +200,6 @@ class StressTestRequest(BaseModel):
     weights: dict
     benchmark: str = "SPY"
 
-@app.get("/api/validate_ticker")
-def validate_ticker(ticker: str):
-    """
-    Validate a ticker and return its metadata (including first available date).
-    """
-    try:
-        import yfinance as yf
-        stock = yf.Ticker(ticker)
-        # Fetch max history to find start date
-        # We use 'max' but only need the index. 
-        # Optimization: Fetching '1mo' first to check existence might be faster? 
-        # But we need the START date. 'max' is the only way.
-        hist = stock.history(period="max")
-        
-        if hist.empty:
-             raise HTTPException(status_code=400, detail=f"Ticker '{ticker}' not found or has no data.")
-        
-        first_date = hist.index[0].strftime("%Y-%m-%d")
-        
-        # Get company name if possible
-        info = stock.info
-        name = info.get('longName') or info.get('shortName') or ticker
-        
-        return {
-            "symbol": ticker.upper(),
-            "name": name,
-            "first_valid_date": first_date
-        }
-    except Exception as e:
-        print(f"Validation error for {ticker}: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
 @app.post("/api/stress_test")
 async def stress_test(request: StressTestRequest):
     """

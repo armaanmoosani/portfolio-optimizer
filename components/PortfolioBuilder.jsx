@@ -73,28 +73,32 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
     const [isValidating, setIsValidating] = useState(false);
 
-    const fetchAndAdd = async (tickerSymbol, description = "") => {
+    const validateAndAdd = async (tickerSymbol) => {
         if (isValidating) return;
         setIsValidating(true);
         setShowSuggestions(false); // Hide suggestions immediately
 
         try {
-            // Strict validation: Check against our backend (which checks yfinance and gets start date)
-            const res = await fetch(`/api/validate_ticker?ticker=${encodeURIComponent(tickerSymbol)}`);
-
+            // Strict validation: Check against API
+            const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(tickerSymbol)}`);
             if (res.ok) {
                 const data = await res.json();
-                // data = { symbol: "NVDA", name: "NVIDIA Corp", first_valid_date: "1999-01-22" }
+                const results = data.result || [];
 
-                // Use description from autocomplete if available, otherwise use name from backend
-                const finalDesc = description || data.name;
-                handleAdd(data.symbol, finalDesc, data.first_valid_date);
+                // Check for exact match
+                const match = results.find(s => s.symbol.toUpperCase() === tickerSymbol);
+
+                if (match) {
+                    handleAdd(match.symbol, match.description);
+                } else {
+                    toast.error(`Invalid ticker "${tickerSymbol}". Please select a valid stock.`);
+                }
             } else {
-                toast.error(`Invalid ticker "${tickerSymbol}". Please select a valid stock.`);
+                toast.error("Validation failed. Please try again.");
             }
         } catch (err) {
             console.error("Validation error:", err);
-            toast.error("Validation failed. Please try again.");
+            toast.error("Validation error. Please check your connection.");
         } finally {
             setIsValidating(false);
         }
@@ -105,27 +109,29 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
             e.preventDefault();
             if (selectedIndex >= 0 && suggestions[selectedIndex]) {
                 // Add from selected suggestion
-                fetchAndAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
+                handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             } else if (ticker.trim()) {
                 const tickerSymbol = ticker.trim().toUpperCase();
                 const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
 
                 if (matchingSuggestion) {
                     // Valid ticker found in suggestions
-                    fetchAndAdd(matchingSuggestion.symbol, matchingSuggestion.description);
+                    handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
                 } else {
                     // Fast typing case: Validate asynchronously
-                    fetchAndAdd(tickerSymbol);
+                    validateAndAdd(tickerSymbol);
                 }
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
-            setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+            if (showSuggestions && suggestions.length > 6) {
+                setSelectedIndex(prev => (prev + 1) % Math.min(suggestions.length, 6));
+            }
         } else if (e.key === "ArrowUp") {
             e.preventDefault();
-            setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
-        } else if (e.key === "Escape") {
-            setShowSuggestions(false);
+            if (showSuggestions && suggestions.length > 0) {
+                setSelectedIndex(prev => (prev - 1 + Math.min(suggestions.length, 6)) % Math.min(suggestions.length, 6));
+            }
         }
     };
 
@@ -208,7 +214,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                                 {suggestions.slice(0, 8).map((item, index) => (
                                     <li
                                         key={index}
-                                        onClick={() => fetchAndAdd(item.symbol, item.description)}
+                                        onClick={() => handleAdd(item.symbol, item.description)}
                                         className={`px-5 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none flex items-center justify-between group ${index === selectedIndex ? 'bg-blue-500/10' : 'hover:bg-white/5'
                                             }`}
                                     >
