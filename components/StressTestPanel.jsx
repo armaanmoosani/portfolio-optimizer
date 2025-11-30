@@ -35,8 +35,8 @@ const StressTestPanel = ({ results, isLoading }) => {
         );
     }
 
-    // Filter available scenarios
-    const availableScenarios = results.filter(r => r.available);
+    // Filter available scenarios (Historical Only)
+    const availableScenarios = results.filter(r => r.available && r.type !== 'hypothetical');
     const unavailableScenarios = results.filter(r => !r.available);
 
     // Format data for chart (Historical Only)
