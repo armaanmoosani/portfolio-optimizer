@@ -156,6 +156,14 @@ async def optimize(request: PortfolioRequest):
             rebalance_freq=request.rebalance_freq
         )
         
+        # Check for start date truncation
+        warnings = []
+        if not prices.empty:
+             actual_start = prices.index[0].strftime("%Y-%m-%d")
+             # Simple string comparison works for YYYY-MM-DD
+             if actual_start > request.start_date:
+                  warnings.append(f"Data limited: Optimization starts from {actual_start} (earliest common date).")
+
         return {
             "optimization": optimization_result,
             "backtest": backtest_result,
@@ -164,7 +172,8 @@ async def optimize(request: PortfolioRequest):
                 "risk_free_rate": rf_rate,
                 "tickers": request.tickers,
                 "period": f"{request.start_date} to {request.end_date}"
-            }
+            },
+            "warnings": warnings
         }
 
     except ValueError as e:

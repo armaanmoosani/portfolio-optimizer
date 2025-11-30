@@ -148,6 +148,13 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
 
             const data = await response.json();
 
+            // Check for warnings
+            if (data.warnings && data.warnings.length > 0) {
+                data.warnings.forEach(warning => {
+                    showToast(warning, "warning");
+                });
+            }
+
             // Transform backend data to frontend format
             const results = {
                 metrics: {

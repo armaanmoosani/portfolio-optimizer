@@ -246,8 +246,15 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
         common_dates = portfolio_returns.index.intersection(benchmark_data.index)
         
         if len(common_dates) > 10:  # Need sufficient data for regression
-            port_rets_aligned = portfolio_returns.loc[common_dates]
-            bench_rets_aligned = benchmark_data.pct_change().dropna().loc[common_dates]
+            # Calculate benchmark returns FIRST to ensure alignment
+            bench_returns_all = benchmark_data.pct_change().dropna()
+            
+            # Re-calculate intersection with RETURNS index, not price index
+            common_dates = portfolio_returns.index.intersection(bench_returns_all.index)
+            
+            if len(common_dates) > 10:
+                port_rets_aligned = portfolio_returns.loc[common_dates]
+                bench_rets_aligned = bench_returns_all.loc[common_dates]
             
             # Calculate Beta (Covariance / Variance)
             covariance = np.cov(port_rets_aligned, bench_rets_aligned)[0][1]

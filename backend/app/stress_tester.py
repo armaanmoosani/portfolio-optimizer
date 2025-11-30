@@ -274,7 +274,7 @@ class StressTester:
             market_cols = [c for c in returns.columns if c in tickers or c == benchmark_ticker]
             market_returns = returns[market_cols].dropna()
             
-            if not market_returns.empty and benchmark_ticker in market_returns.columns:
+            if not market_returns.empty and benchmark_ticker in market_returns.columns and len(market_returns) > 1:
                 # Align vector
                 valid_tickers = [c for c in market_returns.columns if c in tickers]
                 if valid_tickers:
@@ -300,7 +300,7 @@ class StressTester:
                 rate_cols = [c for c in returns.columns if c in tickers or c == "TLT"]
                 rate_returns = returns[rate_cols].dropna()
                 
-                if not rate_returns.empty and "TLT" in rate_returns.columns:
+                if not rate_returns.empty and "TLT" in rate_returns.columns and len(rate_returns) > 1:
                      valid_tickers = [c for c in rate_returns.columns if c in tickers]
                      if valid_tickers:
                         sub_weights = {t: weights.get(t, 0) for t in valid_tickers}
