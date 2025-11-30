@@ -350,10 +350,13 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
     # Benchmark Correlation
     benchmark_correlation = 0.0
     if benchmark_data is not None and not benchmark_data.empty:
-        common_dates = portfolio_returns.index.intersection(benchmark_data.index)
+        # Calculate benchmark returns FIRST to ensure alignment
+        bench_returns_all = benchmark_data.pct_change().dropna()
+        common_dates = portfolio_returns.index.intersection(bench_returns_all.index)
+        
         if len(common_dates) > 10:
             port_rets_aligned = portfolio_returns.loc[common_dates]
-            bench_rets_aligned = benchmark_data.pct_change().dropna().loc[common_dates]
+            bench_rets_aligned = bench_returns_all.loc[common_dates]
             benchmark_correlation = float(np.corrcoef(port_rets_aligned, bench_rets_aligned)[0, 1])
     
     # Treynor Ratio: (Return - Risk-Free Rate) / Beta
