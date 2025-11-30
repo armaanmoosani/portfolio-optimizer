@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { HelpCircle } from 'lucide-react';
 
 const MetricTooltip = ({ title, description, formula, align = 'left' }) => {
@@ -86,7 +87,7 @@ const MetricTooltip = ({ title, description, formula, align = 'left' }) => {
                 <HelpCircle className="w-4 h-4" />
             </button>
 
-            {isOpen && (
+            {isOpen && createPortal(
                 <div
                     className="fixed z-[9999] w-80 p-4 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200"
                     style={{
@@ -107,7 +108,8 @@ const MetricTooltip = ({ title, description, formula, align = 'left' }) => {
                             </div>
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
