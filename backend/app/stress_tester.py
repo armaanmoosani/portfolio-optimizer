@@ -267,38 +267,57 @@ class StressTester:
                 return []
 
             # Calculate Returns
-            returns = data.pct_change().dropna()
+            returns = data.pct_change()
             
-            # Calculate Portfolio Daily Returns
-            w_vector = np.array([weights.get(t, 0) for t in tickers])
-            asset_cols = [c for c in returns.columns if c in tickers]
-            
-            if len(asset_cols) != len(tickers):
-                 # Handle missing assets in recent data?
-                 # Re-normalize weights for available assets
-                 available_weights = {t: weights[t] for t in asset_cols}
-                 total_w = sum(available_weights.values())
-                 if total_w == 0: return []
-                 w_vector = np.array([available_weights[t]/total_w for t in asset_cols])
-            else:
-                 # Align vector to columns
-                 w_vector = np.array([weights[t] for t in asset_cols])
-
-            port_returns = returns[asset_cols].dot(w_vector)
-            
-            # Calculate Betas
             # 1. Market Beta
-            bench_returns = returns[benchmark_ticker]
-            cov_matrix = np.cov(port_returns, bench_returns)
-            market_beta = cov_matrix[0][1] / cov_matrix[1][1] if cov_matrix[1][1] != 0 else 0
+            # Subset to tickers + benchmark
+            market_cols = [c for c in returns.columns if c in tickers or c == benchmark_ticker]
+            market_returns = returns[market_cols].dropna()
+            
+            if not market_returns.empty and benchmark_ticker in market_returns.columns:
+                # Align vector
+                valid_tickers = [c for c in market_returns.columns if c in tickers]
+                if valid_tickers:
+                    # Re-weight for available assets
+                    sub_weights = {t: weights.get(t, 0) for t in valid_tickers}
+                    total_w = sum(sub_weights.values())
+                    if total_w > 0:
+                        w_vector = np.array([sub_weights[t]/total_w for t in valid_tickers])
+                        port_ret = market_returns[valid_tickers].dot(w_vector)
+                        bench_ret = market_returns[benchmark_ticker]
+                        
+                        cov_matrix = np.cov(port_ret, bench_ret)
+                        market_beta = cov_matrix[0][1] / cov_matrix[1][1] if cov_matrix[1][1] != 0 else 0
+                    else:
+                        market_beta = 0
+                else:
+                    market_beta = 0
+            else:
+                market_beta = 0 # Default if no data
             
             # 2. Rate Beta (vs TLT)
-            # Note: TLT is bond price. Rates UP = TLT DOWN.
-            # We calculate beta to TLT price.
             if "TLT" in returns.columns:
-                tlt_returns = returns["TLT"]
-                cov_matrix_tlt = np.cov(port_returns, tlt_returns)
-                rate_beta = cov_matrix_tlt[0][1] / cov_matrix_tlt[1][1] if cov_matrix_tlt[1][1] != 0 else 0
+                rate_cols = [c for c in returns.columns if c in tickers or c == "TLT"]
+                rate_returns = returns[rate_cols].dropna()
+                
+                if not rate_returns.empty and "TLT" in rate_returns.columns:
+                     valid_tickers = [c for c in rate_returns.columns if c in tickers]
+                     if valid_tickers:
+                        sub_weights = {t: weights.get(t, 0) for t in valid_tickers}
+                        total_w = sum(sub_weights.values())
+                        if total_w > 0:
+                            w_vector = np.array([sub_weights[t]/total_w for t in valid_tickers])
+                            port_ret = rate_returns[valid_tickers].dot(w_vector)
+                            tlt_ret = rate_returns["TLT"]
+                            
+                            cov_matrix = np.cov(port_ret, tlt_ret)
+                            rate_beta = cov_matrix[0][1] / cov_matrix[1][1] if cov_matrix[1][1] != 0 else 0
+                        else:
+                            rate_beta = 0
+                     else:
+                        rate_beta = 0
+                else:
+                    rate_beta = 0
             else:
                 rate_beta = 0
 

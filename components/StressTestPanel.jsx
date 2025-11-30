@@ -149,9 +149,15 @@ const StressTestPanel = ({ results, isLoading }) => {
                                 </div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-500 mb-1">Alpha</div>
+                                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                                    Alpha
+                                    <MetricTooltip
+                                        title="Active Return (Alpha)"
+                                        description="The excess return of the portfolio relative to the benchmark. Positive alpha indicates outperformance."
+                                    />
+                                </div>
                                 <div className={`font-mono font-bold ${scenario.metrics.difference >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {(scenario.metrics.difference * 100).toFixed(2)}%
+                                    {(scenario.metrics.difference * 100).toFixed(2)}
                                 </div>
                             </div>
                             <div>
