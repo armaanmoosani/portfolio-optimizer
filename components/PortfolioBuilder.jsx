@@ -73,7 +73,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
     const [isValidating, setIsValidating] = useState(false);
 
-    const validateAndAdd = async (tickerSymbol) => {
+    const fetchAndAdd = async (tickerSymbol, description = "") => {
         if (isValidating) return;
         setIsValidating(true);
         setShowSuggestions(false); // Hide suggestions immediately
@@ -86,7 +86,9 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                 const data = await res.json();
                 // data = { symbol: "NVDA", name: "NVIDIA Corp", first_valid_date: "1999-01-22" }
 
-                handleAdd(data.symbol, data.name, data.first_valid_date);
+                // Use description from autocomplete if available, otherwise use name from backend
+                const finalDesc = description || data.name;
+                handleAdd(data.symbol, finalDesc, data.first_valid_date);
             } else {
                 toast.error(`Invalid ticker "${tickerSymbol}". Please select a valid stock.`);
             }
@@ -98,35 +100,32 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         }
     };
 
-
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
             if (selectedIndex >= 0 && suggestions[selectedIndex]) {
                 // Add from selected suggestion
-                handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
+                fetchAndAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             } else if (ticker.trim()) {
                 const tickerSymbol = ticker.trim().toUpperCase();
                 const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
 
                 if (matchingSuggestion) {
                     // Valid ticker found in suggestions
-                    handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
+                    fetchAndAdd(matchingSuggestion.symbol, matchingSuggestion.description);
                 } else {
                     // Fast typing case: Validate asynchronously
-                    validateAndAdd(tickerSymbol);
+                    fetchAndAdd(tickerSymbol);
                 }
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
-            if (showSuggestions && suggestions.length > 6) {
-                setSelectedIndex(prev => (prev + 1) % Math.min(suggestions.length, 6));
-            }
+            setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
         } else if (e.key === "ArrowUp") {
             e.preventDefault();
-            if (showSuggestions && suggestions.length > 0) {
-                setSelectedIndex(prev => (prev - 1 + Math.min(suggestions.length, 6)) % Math.min(suggestions.length, 6));
-            }
+            setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
+        } else if (e.key === "Escape") {
+            setShowSuggestions(false);
         }
     };
 
@@ -209,7 +208,7 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                                 {suggestions.slice(0, 8).map((item, index) => (
                                     <li
                                         key={index}
-                                        onClick={() => handleAdd(item.symbol, item.description)}
+                                        onClick={() => fetchAndAdd(item.symbol, item.description)}
                                         className={`px-5 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none flex items-center justify-between group ${index === selectedIndex ? 'bg-blue-500/10' : 'hover:bg-white/5'
                                             }`}
                                     >
