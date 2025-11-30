@@ -1,14 +1,15 @@
 "use client";
 import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+import PortfolioReport from './PortfolioReport';
+import StressTestPanel from './StressTestPanel';
 import SortableTable from './SortableTable';
 import LoadingSkeleton from './LoadingSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import EfficientFrontier from './EfficientFrontier';
 import MetricTooltip from './MetricTooltip';
 import RiskAnalysis from './RiskAnalysis';
-import PortfolioReport from './PortfolioReport';
+import { TrendingUp, TrendingDown, Activity, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon, ArrowUp, ArrowDown, Loader2, Shield } from 'lucide-react';
 
 // Helper to format currency
 const formatCurrency = (value) => {
@@ -79,6 +80,42 @@ export default function PortfolioResults({ data }) {
     const [showBenchmark, setShowBenchmark] = useState(true);
     const [showRebalancing, setShowRebalancing] = useState(true);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+    // Stress Test State
+    const [stressTestResults, setStressTestResults] = useState(null);
+    const [isStressTesting, setIsStressTesting] = useState(false);
+
+    // Fetch Stress Tests
+    const fetchStressTests = async () => {
+        if (stressTestResults) return; // Already fetched
+
+        setIsStressTesting(true);
+        try {
+            // Convert weights array to dictionary for backend
+            const weightsDict = {};
+            data.weights.forEach(w => {
+                weightsDict[w.asset] = w.weight / 100; // Convert back to decimal
+            });
+
+            const response = await fetch('http://localhost:8000/api/stress_test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    weights: weightsDict,
+                    benchmark: data.benchmark || "SPY"
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch stress tests');
+
+            const result = await response.json();
+            setStressTestResults(result.results);
+        } catch (error) {
+            console.error("Stress test error:", error);
+        } finally {
+            setIsStressTesting(false);
+        }
+    };
 
     // Export CSV handler
     const exportCSV = () => {
@@ -213,6 +250,15 @@ export default function PortfolioResults({ data }) {
                     <TabButton active={activeTab === 'charts'} onClick={() => setActiveTab('charts')} icon={BarChart3} label="Charts" />
                     <TabButton active={activeTab === 'metrics'} onClick={() => setActiveTab('metrics')} icon={TableIcon} label="Metrics" />
                     <TabButton active={activeTab === 'risk'} onClick={() => setActiveTab('risk')} icon={Target} label="Risk" />
+                    <TabButton
+                        active={activeTab === 'stress'}
+                        onClick={() => {
+                            setActiveTab('stress');
+                            fetchStressTests();
+                        }}
+                        icon={Shield}
+                        label="Stress Test"
+                    />
                 </div>
 
                 {/* Content Area */}

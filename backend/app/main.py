@@ -15,6 +15,7 @@ from datetime import datetime
 from data import fetch_historical_data, fetch_benchmark_data, get_risk_free_rate
 from optimizer import optimize_portfolio
 from backtester import run_backtest
+from stress_tester import StressTester
 
 app = FastAPI(title="Portfolio Optimizer API")
 
@@ -183,6 +184,27 @@ def get_history(ticker: str, period: str = "1mo", interval: str = "1d"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+class StressTestRequest(BaseModel):
+    weights: dict
+    benchmark: str = "SPY"
+
+@app.post("/api/stress_test")
+async def stress_test(request: StressTestRequest):
+    """
+    Run stress tests on the portfolio against historical scenarios.
+    """
+    try:
+        print(f"Running stress test for portfolio with {len(request.weights)} assets")
+        historical_results = StressTester.run_stress_test(request.weights, request.benchmark)
+        hypothetical_results = StressTester.run_hypothetical_test(request.weights, request.benchmark)
+        
+        # Merge results
+        results = historical_results + hypothetical_results
+        return {"results": results}
+    except Exception as e:
+        print(f"Stress test error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

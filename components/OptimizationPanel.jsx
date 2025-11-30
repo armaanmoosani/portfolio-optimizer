@@ -200,6 +200,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     weight: weight * 100,
                     color: `hsl(${Math.random() * 360}, 70%, 50%)`
                 })),
+                benchmark: benchmark, // Pass selected benchmark to results
                 chartData: data.backtest.chart_data || [],
                 performance: (data.backtest.chart_data || []).map(d => ({
                     date: d.date,
