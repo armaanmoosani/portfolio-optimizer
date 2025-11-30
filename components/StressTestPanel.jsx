@@ -111,9 +111,9 @@ const StressTestPanel = ({ results, isLoading }) => {
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
                             <Legend wrapperStyle={{ paddingTop: '20px' }} />
                             <ReferenceLine y={0} stroke="#475569" />
-                            <Bar dataKey="Portfolio" name="Your Portfolio" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                            <Bar dataKey="Portfolio" name="Your Portfolio" fill="#10b981" radius={[4, 4, 0, 0]}>
                                 {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.Portfolio >= 0 ? '#3b82f6' : '#ef4444'} fillOpacity={0.8} />
+                                    <Cell key={`cell-${index}`} fill={entry.Portfolio >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.8} />
                                 ))}
                             </Bar>
                             <Bar dataKey="Benchmark" name="S&P 500 (Benchmark)" fill="#64748b" radius={[4, 4, 0, 0]} />
