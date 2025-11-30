@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, Shield, Target, PieChart, Sliders, Info, Calendar, ChevronDown, ChevronUp, Loader2, Activity } from "lucide-react";
