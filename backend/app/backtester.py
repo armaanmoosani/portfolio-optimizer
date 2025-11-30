@@ -256,53 +256,53 @@ def run_backtest(prices: pd.DataFrame, weights: dict, benchmark_data: pd.Series 
                 port_rets_aligned = portfolio_returns.loc[common_dates]
                 bench_rets_aligned = bench_returns_all.loc[common_dates]
             
-            # Calculate Beta (Covariance / Variance)
-            covariance = np.cov(port_rets_aligned, bench_rets_aligned)[0][1]
-            variance = np.var(bench_rets_aligned)
-            beta = covariance / variance if variance != 0 else 1
-            
-            # Calculate Alpha (Jensen's Alpha)
-            # Alpha = R_p - (R_f + Beta * (R_m - R_f))
-            bench_total_ret = (1 + bench_rets_aligned).cumprod().iloc[-1] - 1
-            bench_ann_ret = (1 + bench_total_ret) ** (annualization_factor / len(bench_rets_aligned)) - 1
-            alpha = annualized_return - (risk_free_rate + beta * (bench_ann_ret - risk_free_rate))
-            
-            # --- ENHANCED BENCHMARK METRICS ---
-            
-            # 1. Tracking Error (Active Risk)
-            # Standard deviation of difference between portfolio and benchmark returns
-            active_returns = port_rets_aligned - bench_rets_aligned
-            tracking_error = float(active_returns.std() * np.sqrt(annualization_factor))
-            
-            # 2. Information Ratio
-            # Measures risk-adjusted active return (alpha) per unit of tracking error
-            # IR = Alpha / Tracking Error
-            information_ratio = float(alpha / tracking_error) if tracking_error != 0 else 0
-            
-            # 3. Up Capture Ratio
-            # Portfolio return / Benchmark return when benchmark is positive
-            # > 100% means portfolio captures more upside than benchmark
-            up_periods = bench_rets_aligned > 0
-            if up_periods.sum() > 0:
-                port_up = port_rets_aligned[up_periods].mean()
-                bench_up = bench_rets_aligned[up_periods].mean()
-                up_capture = float((port_up / bench_up) * 100) if bench_up != 0 else 0
-            
-            # 4. Down Capture Ratio
-            # Portfolio return / Benchmark return when benchmark is negative  
-            # < 100% means portfolio captures less downside than benchmark (good)
-            down_periods = bench_rets_aligned < 0
-            if down_periods.sum() > 0:
-                port_down = port_rets_aligned[down_periods].mean()
-                bench_down = bench_rets_aligned[down_periods].mean()
-                down_capture = float((port_down / bench_down) * 100) if bench_down != 0 else 0
-            
-            # 5. R-squared
-            # Proportion of portfolio variance explained by benchmark
-            # R² = 1 - (Residual Variance / Total Variance)
-            from scipy.stats import linregress
-            slope, intercept, r_value, p_value, std_err = linregress(bench_rets_aligned, port_rets_aligned)
-            r_squared = float(r_value ** 2)
+                # Calculate Beta (Covariance / Variance)
+                covariance = np.cov(port_rets_aligned, bench_rets_aligned)[0][1]
+                variance = np.var(bench_rets_aligned)
+                beta = covariance / variance if variance != 0 else 1
+                
+                # Calculate Alpha (Jensen's Alpha)
+                # Alpha = R_p - (R_f + Beta * (R_m - R_f))
+                bench_total_ret = (1 + bench_rets_aligned).cumprod().iloc[-1] - 1
+                bench_ann_ret = (1 + bench_total_ret) ** (annualization_factor / len(bench_rets_aligned)) - 1
+                alpha = annualized_return - (risk_free_rate + beta * (bench_ann_ret - risk_free_rate))
+                
+                # --- ENHANCED BENCHMARK METRICS ---
+                
+                # 1. Tracking Error (Active Risk)
+                # Standard deviation of difference between portfolio and benchmark returns
+                active_returns = port_rets_aligned - bench_rets_aligned
+                tracking_error = float(active_returns.std() * np.sqrt(annualization_factor))
+                
+                # 2. Information Ratio
+                # Measures risk-adjusted active return (alpha) per unit of tracking error
+                # IR = Alpha / Tracking Error
+                information_ratio = float(alpha / tracking_error) if tracking_error != 0 else 0
+                
+                # 3. Up Capture Ratio
+                # Portfolio return / Benchmark return when benchmark is positive
+                # > 100% means portfolio captures more upside than benchmark
+                up_periods = bench_rets_aligned > 0
+                if up_periods.sum() > 0:
+                    port_up = port_rets_aligned[up_periods].mean()
+                    bench_up = bench_rets_aligned[up_periods].mean()
+                    up_capture = float((port_up / bench_up) * 100) if bench_up != 0 else 0
+                
+                # 4. Down Capture Ratio
+                # Portfolio return / Benchmark return when benchmark is negative  
+                # < 100% means portfolio captures less downside than benchmark (good)
+                down_periods = bench_rets_aligned < 0
+                if down_periods.sum() > 0:
+                    port_down = port_rets_aligned[down_periods].mean()
+                    bench_down = bench_rets_aligned[down_periods].mean()
+                    down_capture = float((port_down / bench_down) * 100) if bench_down != 0 else 0
+                
+                # 5. R-squared
+                # Proportion of portfolio variance explained by benchmark
+                # R² = 1 - (Residual Variance / Total Variance)
+                from scipy.stats import linregress
+                slope, intercept, r_value, p_value, std_err = linregress(bench_rets_aligned, port_rets_aligned)
+                r_squared = float(r_value ** 2)
 
     # --- COMPREHENSIVE PROFESSIONAL METRICS ---
     
