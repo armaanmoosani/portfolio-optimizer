@@ -149,6 +149,12 @@ const StressTestPanel = ({ results, isLoading }) => {
                                 </div>
                             </div>
                             <div>
+                                <div className="text-xs text-slate-500 mb-1">Alpha</div>
+                                <div className={`font-mono font-bold ${scenario.metrics.difference >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {(scenario.metrics.difference * 100).toFixed(2)}%
+                                </div>
+                            </div>
+                            <div>
                                 <div className="text-xs text-slate-500 mb-1">Max Drawdown</div>
                                 <div className="font-mono font-bold text-rose-400">
                                     {(scenario.metrics.max_drawdown * 100).toFixed(2)}%
@@ -176,6 +182,30 @@ const StressTestPanel = ({ results, isLoading }) => {
                                 </div>
                                 <div className="font-mono font-bold text-slate-300">
                                     {scenario.metrics.stress_correlation?.toFixed(2) || 'N/A'}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                                    Stress Beta
+                                    <MetricTooltip
+                                        title="Stress Beta"
+                                        description="Portfolio sensitivity to the benchmark specifically during the crisis. A Beta > 1.0 means you crashed harder than the market."
+                                    />
+                                </div>
+                                <div className={`font-mono font-bold ${scenario.metrics.stress_beta > 1 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                    {scenario.metrics.stress_beta?.toFixed(2) || 'N/A'}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                                    Stress VaR (95%)
+                                    <MetricTooltip
+                                        title="Stress Value at Risk (95%)"
+                                        description="The worst daily loss expected with 95% confidence during this crisis period. A measure of extreme tail risk."
+                                    />
+                                </div>
+                                <div className="font-mono font-bold text-rose-400">
+                                    {(scenario.metrics.stress_var_95 * 100).toFixed(2)}%
                                 </div>
                             </div>
                         </div>

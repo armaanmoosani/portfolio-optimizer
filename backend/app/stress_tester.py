@@ -71,12 +71,26 @@ class StressTester:
                     start=buffer_start, 
                     end=scenario["end_date"], 
                     progress=False
-                )['Adj Close']
+                )
                 
-                # Handle single ticker case
+                # Handle different yfinance return structures
+                if isinstance(data, pd.DataFrame):
+                    if 'Adj Close' in data.columns:
+                        data = data['Adj Close']
+                    elif 'Close' in data.columns:
+                        data = data['Close']
+                    elif isinstance(data.columns, pd.MultiIndex):
+                        # Try to find the price level
+                        if 'Adj Close' in data.columns.get_level_values(0):
+                             data = data.xs('Adj Close', axis=1, level=0)
+                        elif 'Close' in data.columns.get_level_values(0):
+                             data = data.xs('Close', axis=1, level=0)
+                
+                # Handle single ticker case (Series -> DataFrame)
                 if isinstance(data, pd.Series):
                     data = data.to_frame()
-                    data.columns = tickers + [benchmark_ticker]
+                    if len(tickers) + 1 == 1:
+                        data.columns = tickers + [benchmark_ticker]
 
                 # Check if we have data for all assets
                 # If an asset didn't exist (all NaNs), we can't run this scenario accurately
@@ -159,9 +173,21 @@ class StressTester:
                 
                 # Stress Volatility (Annualized)
                 stress_vol = port_daily_ret.std() * np.sqrt(252)
+                bench_vol = bench_daily_ret.std() * np.sqrt(252)
                 
                 # Stress Correlation
                 stress_corr = port_daily_ret.corr(bench_daily_ret)
+                
+                # Stress Beta
+                # Beta = Corr * (PortVol / BenchVol)
+                if bench_vol > 0 and not np.isnan(stress_corr):
+                    stress_beta = stress_corr * (stress_vol / bench_vol)
+                else:
+                    stress_beta = 0.0
+                
+                # Stress VaR (95%)
+                # 5th percentile of daily returns
+                stress_var_95 = np.percentile(port_daily_ret, 5)
                 
                 results.append({
                     "id": key,
@@ -176,7 +202,9 @@ class StressTester:
                         "difference": float(total_return - benchmark_return),
                         "max_drawdown": float(max_drawdown),
                         "stress_volatility": float(stress_vol),
-                        "stress_correlation": float(stress_corr) if not np.isnan(stress_corr) else 0.0
+                        "stress_correlation": float(stress_corr) if not np.isnan(stress_corr) else 0.0,
+                        "stress_beta": float(stress_beta),
+                        "stress_var_95": float(stress_var_95)
                     }
                 })
 
@@ -215,7 +243,19 @@ class StressTester:
             factors = [benchmark_ticker, "TLT"]
             all_tickers = list(set(tickers + factors))
             
-            data = yf.download(all_tickers, start=start_date, end=end_date, progress=False)['Adj Close']
+            data = yf.download(all_tickers, start=start_date, end=end_date, progress=False)
+            
+            # Handle different yfinance return structures
+            if isinstance(data, pd.DataFrame):
+                if 'Adj Close' in data.columns:
+                    data = data['Adj Close']
+                elif 'Close' in data.columns:
+                    data = data['Close']
+                elif isinstance(data.columns, pd.MultiIndex):
+                    if 'Adj Close' in data.columns.get_level_values(0):
+                         data = data.xs('Adj Close', axis=1, level=0)
+                    elif 'Close' in data.columns.get_level_values(0):
+                         data = data.xs('Close', axis=1, level=0)
             
             if isinstance(data, pd.Series):
                 data = data.to_frame()
