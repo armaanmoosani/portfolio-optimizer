@@ -12,6 +12,7 @@ import {
     Cell
 } from 'recharts';
 import { AlertTriangle, TrendingDown, Shield, Info, Activity } from 'lucide-react';
+import MetricTooltip from './MetricTooltip';
 
 const StressTestPanel = ({ results, isLoading }) => {
     if (isLoading) {
@@ -151,6 +152,30 @@ const StressTestPanel = ({ results, isLoading }) => {
                                 <div className="text-xs text-slate-500 mb-1">Max Drawdown</div>
                                 <div className="font-mono font-bold text-rose-400">
                                     {(scenario.metrics.max_drawdown * 100).toFixed(2)}%
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                                    Stress Volatility
+                                    <MetricTooltip
+                                        title="Stress Volatility"
+                                        description="Annualized standard deviation of returns specifically during this crisis period. Higher means a bumpier ride."
+                                    />
+                                </div>
+                                <div className="font-mono font-bold text-slate-300">
+                                    {(scenario.metrics.stress_volatility * 100).toFixed(2)}%
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                                    Correlation
+                                    <MetricTooltip
+                                        title="Stress Correlation"
+                                        description="Correlation with the benchmark during the crisis. Correlations often converge to 1.0 during market crashes, reducing diversification benefits."
+                                    />
+                                </div>
+                                <div className="font-mono font-bold text-slate-300">
+                                    {scenario.metrics.stress_correlation?.toFixed(2) || 'N/A'}
                                 </div>
                             </div>
                         </div>

@@ -147,15 +147,22 @@ class StressTester:
                 # Benchmark Return
                 bench_daily_ret = period_returns[benchmark_ticker] if benchmark_ticker in period_returns else pd.Series(0, index=period_returns.index)
 
-                # 3. Calculate Cumulative Metrics
-                port_cum_ret = (1 + port_daily_ret).prod() - 1
-                bench_cum_ret = (1 + bench_daily_ret).prod() - 1
+                # Calculate Performance Metrics
+                total_return = (1 + port_daily_ret).prod() - 1
+                benchmark_return = (1 + bench_daily_ret).prod() - 1
                 
-                # Max Drawdown during the crisis
-                cum_value = (1 + port_daily_ret).cumprod()
-                drawdown = (cum_value / cum_value.cummax()) - 1
-                max_dd = drawdown.min()
-
+                # Max Drawdown
+                cumulative = (1 + port_daily_ret).cumprod()
+                peak = cumulative.cummax()
+                drawdown = (cumulative - peak) / peak
+                max_drawdown = drawdown.min()
+                
+                # Stress Volatility (Annualized)
+                stress_vol = port_daily_ret.std() * np.sqrt(252)
+                
+                # Stress Correlation
+                stress_corr = port_daily_ret.corr(bench_daily_ret)
+                
                 results.append({
                     "id": key,
                     "name": scenario["name"],
@@ -164,10 +171,12 @@ class StressTester:
                     "start_date": scenario["start_date"],
                     "end_date": scenario["end_date"],
                     "metrics": {
-                        "portfolio_return": float(port_cum_ret),
-                        "benchmark_return": float(bench_cum_ret),
-                        "difference": float(port_cum_ret - bench_cum_ret),
-                        "max_drawdown": float(max_dd)
+                        "portfolio_return": float(total_return),
+                        "benchmark_return": float(benchmark_return),
+                        "difference": float(total_return - benchmark_return),
+                        "max_drawdown": float(max_drawdown),
+                        "stress_volatility": float(stress_vol),
+                        "stress_correlation": float(stress_corr) if not np.isnan(stress_corr) else 0.0
                     }
                 })
 
