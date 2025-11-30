@@ -105,7 +105,7 @@ class StressTester:
                     continue
 
                 # Fill missing data (standard practice)
-                data = data.ffill().bfill().dropna()
+                data = data.ffill().dropna()
                 
                 if data.empty:
                      results.append({
@@ -261,7 +261,7 @@ class StressTester:
                 data = data.to_frame()
             
             # Fill missing
-            data = data.ffill().bfill().dropna()
+            data = data.ffill().dropna()
             
             if data.empty:
                 return []

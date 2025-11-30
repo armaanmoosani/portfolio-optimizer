@@ -40,9 +40,8 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         
         # 1. Forward fill (propagate last valid observation forward)
         data = data.ffill()
-        # 2. Backward fill (use next valid observation to fill gaps at start)
-        data = data.bfill()
-        # 3. Drop any remaining rows with NaNs (e.g., if a stock didn't exist yet)
+        # 2. Drop any remaining rows with NaNs (e.g., if a stock didn't exist yet)
+        # We DO NOT bfill() because that would fabricate history before an asset existed.
         data = data.dropna()
         
         # Log data quality warnings for audit trails
@@ -96,7 +95,7 @@ def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str =
             data.index = data.index.tz_localize(None)
         
         # Fill missing values
-        data = data.ffill().bfill().dropna()
+        data = data.ffill().dropna()
         
         return data
     except Exception as e:
