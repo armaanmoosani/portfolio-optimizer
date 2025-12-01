@@ -8,8 +8,6 @@ const formatNumber = (value) => value.toFixed(4);
 
 export default function RiskAnalysis({ data }) {
     if (!data) return null;
-
-    // Convert data object to array and sort by PCR descending
     const riskData = Object.entries(data).map(([ticker, metrics]) => ({
         Ticker: ticker,
         ...metrics
@@ -18,7 +16,6 @@ export default function RiskAnalysis({ data }) {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Summary Section */}
             <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 flex items-start gap-4">
                 <div className="p-3 rounded-full bg-rose-500/10 text-rose-400">
                     <AlertTriangle className="w-6 h-6" />
@@ -37,7 +34,6 @@ export default function RiskAnalysis({ data }) {
                 </div>
             </div>
 
-            {/* Risk Contribution Chart */}
             <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50">
                 <h3 className="text-lg font-bold text-white mb-6">Risk Contribution by Asset (PCR)</h3>
                 <div className="h-[300px]">
@@ -70,8 +66,6 @@ export default function RiskAnalysis({ data }) {
                     </div>
                 </div>
             </div>
-
-            {/* Detailed Risk Table */}
             <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                 <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                     <h3 className="font-semibold text-white">Detailed Risk Metrics</h3>

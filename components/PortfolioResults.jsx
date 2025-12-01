@@ -11,7 +11,6 @@ import MetricTooltip from './MetricTooltip';
 import RiskAnalysis from './RiskAnalysis';
 import { TrendingUp, TrendingDown, Activity, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon, ArrowUp, ArrowDown, Loader2, Shield } from 'lucide-react';
 
-// Helper to format currency
 const formatCurrency = (value) => {
     if (value === null || value === undefined || isNaN(value)) return '$0';
     return new Intl.NumberFormat('en-US', {
@@ -21,9 +20,6 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
-// Helper to format percent
-// IMPORTANT: Frontend already stores percentage numbers (12.34), NOT decimals (0.1234)
-// So we just add the % sign, no multiplication needed
 const formatPercent = (value) => {
     if (value === null || value === undefined || isNaN(value)) return '0.00%';
     return `${(Number(value)).toFixed(2)}%`;
@@ -63,7 +59,6 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// Sparkline Component
 const Sparkline = ({ data, dataKey, color }) => (
     <div className="h-10 w-24">
         <ResponsiveContainer width="100%" height="100%">
@@ -81,20 +76,17 @@ export default function PortfolioResults({ data }) {
     const [showRebalancing, setShowRebalancing] = useState(true);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-    // Stress Test State
     const [stressTestResults, setStressTestResults] = useState(null);
     const [isStressTesting, setIsStressTesting] = useState(false);
 
-    // Fetch Stress Tests
     const fetchStressTests = async () => {
-        if (stressTestResults) return; // Already fetched
+        if (stressTestResults) return;
 
         setIsStressTesting(true);
         try {
-            // Convert weights array to dictionary for backend
             const weightsDict = {};
             data.weights.forEach(w => {
-                weightsDict[w.asset] = w.weight / 100; // Convert back to decimal
+                weightsDict[w.asset] = w.weight / 100;
             });
 
             const response = await fetch('/api/stress_test', {
@@ -117,9 +109,7 @@ export default function PortfolioResults({ data }) {
         }
     };
 
-    // Export CSV handler
     const exportCSV = () => {
-        // Helper to escape CSV fields
         const escape = (val) => {
             if (val === null || val === undefined) return '';
             const str = String(val);
@@ -131,12 +121,9 @@ export default function PortfolioResults({ data }) {
 
         const rows = [];
 
-        // 1. Report Header
         rows.push(['PORTFOLIO OPTIMIZATION REPORT']);
         rows.push(['Generated', new Date().toLocaleDateString()]);
         rows.push([]);
-
-        // 2. Summary Metrics
         rows.push(['SUMMARY METRICS']);
         rows.push(['Metric', 'Value']);
         rows.push(['CAGR (Realized)', formatPercent(data.metrics.realizedCAGR)]);
@@ -150,7 +137,6 @@ export default function PortfolioResults({ data }) {
         rows.push(['Alpha', formatPercent(data.metrics.alpha)]);
         rows.push([]);
 
-        // 3. Asset Allocation
         rows.push(['ASSET ALLOCATION']);
         rows.push(['Asset', 'Weight', 'Value']);
         data.assets.forEach(asset => {
@@ -162,7 +148,6 @@ export default function PortfolioResults({ data }) {
         });
         rows.push([]);
 
-        // 4. Risk Analysis
         rows.push(['RISK ANALYSIS']);
         rows.push(['Asset', 'Weight', 'Marginal Risk', 'Total Risk Contrib', '% of Risk']);
         if (data.risk_contributions) {
@@ -179,7 +164,6 @@ export default function PortfolioResults({ data }) {
         }
         rows.push([]);
 
-        // 5. Performance History
         rows.push(['PERFORMANCE HISTORY']);
         rows.push(['Date', 'Portfolio Value']);
         if (Array.isArray(data.performance)) {
@@ -190,7 +174,6 @@ export default function PortfolioResults({ data }) {
             });
         }
 
-        // Create CSV Content
         const csvContent = rows.map(row => row.map(escape).join(',')).join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -200,17 +183,6 @@ export default function PortfolioResults({ data }) {
         link.click();
     };
 
-    // Keyboard shortcut for Optimize (Ctrl+Enter)
-    React.useEffect(() => {
-        const handler = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                const btn = document.getElementById('optimize-button');
-                if (btn) btn.click();
-            }
-        };
-        window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, []);
 
     if (!data) return null;
 
@@ -221,7 +193,6 @@ export default function PortfolioResults({ data }) {
     return (
         <>
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 print:hidden" data-internal-navigation>
-                {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h2 className="text-2xl font-bold text-white">Portfolio Analysis</h2>
@@ -243,7 +214,6 @@ export default function PortfolioResults({ data }) {
                     </div>
                 </div>
 
-                {/* Navigation Tabs */}
                 <div className="flex flex-wrap gap-2 p-1 bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm">
                     <TabButton active={activeTab === 'assets'} onClick={() => setActiveTab('assets')} icon={PieChartIcon} label="Assets" />
                     <TabButton active={activeTab === 'summary'} onClick={() => setActiveTab('summary')} icon={Activity} label="Summary" />
@@ -261,7 +231,6 @@ export default function PortfolioResults({ data }) {
                     />
                 </div>
 
-                {/* Content Area */}
                 <div className="min-h-[500px]">
                     <AnimatePresence mode="wait">
                         {activeTab === 'summary' && (
@@ -273,7 +242,6 @@ export default function PortfolioResults({ data }) {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-6"
                             >
-                                {/* Key Metrics Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
                                         <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Start Balance</div>
@@ -299,14 +267,12 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                 </div>
 
-                                {/* Performance Summary Table */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                     <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                         <h3 className="font-semibold text-white">Performance Summary</h3>
                                     </div>
                                     <div className="bg-slate-900/40 p-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                                            {/* LEFT COLUMN: Expected Portfolio Characteristics */}
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
                                                     <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Expected Characteristics</h4>
@@ -333,7 +299,6 @@ export default function PortfolioResults({ data }) {
                                                 </div>
                                             </div>
 
-                                            {/* RIGHT COLUMN: Realized Performance & Risk Metrics */}
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
                                                     <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Historical Performance</h4>
@@ -395,8 +360,6 @@ export default function PortfolioResults({ data }) {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Professional Risk Metrics */}
 
                                 {data.metrics.calmar_ratio !== undefined && (
                                     <div className="rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
@@ -504,7 +467,6 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                 )}
 
-                                {/* Benchmark Comparison */}
                                 {data.metrics.tracking_error !== undefined && data.metrics.tracking_error > 0 && (
                                     <div className="mt-6 rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
                                         <div
@@ -600,7 +562,6 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                 )}
 
-                                {/* Rebalancing Analysis Section */}
                                 {data.rebalancing && (
                                     <>
                                         <div className="flex items-center justify-between mt-6 mb-2">
@@ -661,7 +622,6 @@ export default function PortfolioResults({ data }) {
                                     </>
                                 )}
 
-                                {/* Comprehensive Professional Metrics */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                     <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                         <h3 className="font-semibold text-white">Comprehensive Statistics</h3>
@@ -708,7 +668,6 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                 </div>
 
-                                {/* Trailing Returns */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                     <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                         <h3 className="font-semibold text-white">Trailing Returns</h3>
@@ -758,15 +717,13 @@ export default function PortfolioResults({ data }) {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-8" // Changed from space-y-6 to space-y-8
+                                className="space-y-8"
                             >
-                                {/* Efficient Frontier */}
                                 {data.efficientFrontier && (
                                     <EfficientFrontier data={data.efficientFrontier} />
                                 )}
 
-                                {/* Growth Chart */}
-                                <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]"> {/* Added min-h-[400px] */}
+                                <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]">
                                     <h3 className="text-lg font-bold text-white mb-6">Portfolio Growth</h3>
                                     <div className="h-[400px]">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -803,11 +760,9 @@ export default function PortfolioResults({ data }) {
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
-
-                                {/* Drawdown Chart */}
-                                <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]"> {/* Added min-h-[400px] and adjusted height */}
+                                <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]">
                                     <h3 className="text-lg font-bold text-white mb-6">Drawdown</h3>
-                                    <div className="h-[400px]"> {/* Changed from h-[300px] to h-[400px] */}
+                                    <div className="h-[400px]">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <AreaChart data={data.drawdown}>
                                                 <defs>
