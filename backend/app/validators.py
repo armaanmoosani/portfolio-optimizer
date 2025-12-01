@@ -78,9 +78,9 @@ class InputValidator:
                 detail=f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
             )
         
-        # Check if dates are in the future
-        now = datetime.now()
-        if start_dt > now or end_dt > now:
+        # Check if dates are in the future (compare only dates, not times)
+        today = datetime.now().date()
+        if start_dt.date() > today or end_dt.date() > today:
             raise HTTPException(
                 status_code=400,
                 detail="Dates cannot be in the future"
