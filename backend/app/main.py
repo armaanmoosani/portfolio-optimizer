@@ -4,7 +4,7 @@ import os
 # Add current directory to path to ensure imports work correctly in all environments (Vercel vs Local)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -17,7 +17,22 @@ from optimizer import optimize_portfolio
 from backtester import run_backtest
 from stress_tester import StressTester
 
-app = FastAPI(title="Portfolio Optimizer API")
+# Import rate limiting and validation
+from rate_limiter import limiter, rate_limit_handler, RATE_LIMITS
+from validators import InputValidator
+from slowapi.errors import RateLimitExceeded
+
+app = FastAPI(
+    title="Portfolio Optimizer API",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
+
+# Add rate limiter state
+app.state.limiter = limiter
+
+# Add rate limit exception handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # Configure CORS
 app.add_middleware(
@@ -26,6 +41,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 class PortfolioRequest(BaseModel):
@@ -42,27 +58,39 @@ class PortfolioRequest(BaseModel):
     rebalance_freq: str = "never"  # Rebalancing frequency
 
 @app.get("/")
-def read_root():
+@limiter.limit(RATE_LIMITS["general"])
+def read_root(request: Request):
     return {"status": "online", "message": "Portfolio Optimizer API is running"}
 
 @app.get("/api/health")
-def health_check():
+@limiter.limit(RATE_LIMITS["general"])
+def health_check(request: Request):
     return {"status": "healthy"}
 
 @app.post("/api/optimize")
-async def optimize(request: PortfolioRequest):
+@limiter.limit(RATE_LIMITS["compute_intensive"])
+async def optimize(request: Request, portfolio_request: PortfolioRequest):
     try:
+        # Validate all inputs before processing
+        InputValidator.validate_tickers(portfolio_request.tickers)
+        InputValidator.validate_date_range(portfolio_request.start_date, portfolio_request.end_date)
+        InputValidator.validate_weight_constraints(portfolio_request.min_weight, portfolio_request.max_weight)
+        InputValidator.validate_capital(portfolio_request.initial_capital)
+        InputValidator.validate_mar(portfolio_request.mar)
+        InputValidator.validate_objective(portfolio_request.objective)
+        InputValidator.validate_frequency(portfolio_request.frequency)
+        
         # Determine interval and annualization factor
         interval = "1d"
         annualization_factor = 252
         
-        if request.frequency == "monthly":
+        if portfolio_request.frequency == "monthly":
             interval = "1mo"
             annualization_factor = 12
 
         # 1. Fetch Data
-        print(f"Fetching data for {request.tickers} from {request.start_date} to {request.end_date} ({request.frequency})")
-        prices = fetch_historical_data(request.tickers, request.start_date, request.end_date, interval=interval)
+        print(f"Fetching data for {portfolio_request.tickers} from {portfolio_request.start_date} to {portfolio_request.end_date} ({portfolio_request.frequency})")
+        prices = fetch_historical_data(portfolio_request.tickers, portfolio_request.start_date, portfolio_request.end_date, interval=interval)
         
         if prices.empty:
             raise HTTPException(status_code=400, detail="No data found for the provided tickers and date range.")
@@ -87,23 +115,23 @@ async def optimize(request: PortfolioRequest):
         
         # 2b. Fetch benchmark data if Treynor optimization is selected
         benchmark_prices = None
-        if request.objective == "treynor":
-            print(f"Fetching benchmark data ({request.benchmark}) for Treynor optimization")
-            benchmark_data = fetch_benchmark_data(request.start_date, request.end_date, request.benchmark)
+        if portfolio_request.objective == "treynor":
+            print(f"Fetching benchmark data ({portfolio_request.benchmark}) for Treynor optimization")
+            benchmark_data = fetch_benchmark_data(portfolio_request.start_date, portfolio_request.end_date, portfolio_request.benchmark)
             if benchmark_data.empty:
-                raise HTTPException(status_code=400, detail=f"Could not fetch benchmark data for {request.benchmark}")
+                raise HTTPException(status_code=400, detail=f"Could not fetch benchmark data for {portfolio_request.benchmark}")
             benchmark_prices = benchmark_data['Close']
         
         # 3. Run Optimization
-        print(f"Running optimization with objective: {request.objective}")
+        print(f"Running optimization with objective: {portfolio_request.objective}")
         optimization_result = optimize_portfolio(
             prices, 
-            objective=request.objective, 
+            objective=portfolio_request.objective, 
             risk_free_rate=rf_rate,
-            min_weight=request.min_weight,
-            max_weight=request.max_weight,
+            min_weight=portfolio_request.min_weight,
+            max_weight=portfolio_request.max_weight,
             annualization_factor=annualization_factor,
-            mar=request.mar,
+            mar=portfolio_request.mar,
             benchmark_prices=benchmark_prices
         )
         
@@ -111,20 +139,20 @@ async def optimize(request: PortfolioRequest):
             raise HTTPException(status_code=500, detail=f"Optimization failed: {optimization_result['message']}")
         
         # 3b. Calculate Efficient Frontier
-        print(f"Calculating efficient frontier for objective: {request.objective}")
+        print(f"Calculating efficient frontier for objective: {portfolio_request.objective}")
         from optimizer import calculate_efficient_frontier
         
         # Only pass optimal weights if the objective was Max Sharpe, 
         # otherwise let the frontier calculate the global Max Sharpe point independently
-        is_sharpe = request.objective == "sharpe"
+        is_sharpe = portfolio_request.objective == "sharpe"
         pass_weights = optimization_result["weights"] if is_sharpe else None
         
         efficient_frontier_data = calculate_efficient_frontier(
             prices,
             optimal_weights=pass_weights,
             risk_free_rate=rf_rate,
-            min_weight=request.min_weight,
-            max_weight=request.max_weight,
+            min_weight=portfolio_request.min_weight,
+            max_weight=portfolio_request.max_weight,
             annualization_factor=annualization_factor,
             num_portfolios=150
         )
@@ -140,20 +168,20 @@ async def optimize(request: PortfolioRequest):
                 "weights": optimization_result["weights"]
             }
         else:
-            print(f"Objective is {request.objective}, skipping Max Sharpe override")
+            print(f"Objective is {portfolio_request.objective}, skipping Max Sharpe override")
             
         # 4. Run Backtest
         print("Running backtest...")
-        benchmark_data = fetch_benchmark_data(request.start_date, request.end_date, request.benchmark)
+        benchmark_data = fetch_benchmark_data(portfolio_request.start_date, portfolio_request.end_date, portfolio_request.benchmark)
         backtest_result = run_backtest(
             prices, 
             optimization_result["weights"], 
             benchmark_data=benchmark_data, 
-            initial_capital=request.initial_capital,
+            initial_capital=portfolio_request.initial_capital,
             risk_free_rate=rf_rate,
             annualization_factor=annualization_factor,
-            mar=request.mar,
-            rebalance_freq=request.rebalance_freq
+            mar=portfolio_request.mar,
+            rebalance_freq=portfolio_request.rebalance_freq
         )
         
         # Check for start date truncation
@@ -161,7 +189,7 @@ async def optimize(request: PortfolioRequest):
         if not prices.empty:
              actual_start = prices.index[0].strftime("%Y-%m-%d")
              # Simple string comparison works for YYYY-MM-DD
-             if actual_start > request.start_date:
+             if actual_start > portfolio_request.start_date:
                   warnings.append(f"Data limited: Optimization starts from {actual_start} (earliest common date).")
         
 
@@ -172,8 +200,8 @@ async def optimize(request: PortfolioRequest):
             "efficient_frontier": efficient_frontier_data,
             "parameters": {
                 "risk_free_rate": rf_rate,
-                "tickers": request.tickers,
-                "period": f"{request.start_date} to {request.end_date}"
+                "tickers": portfolio_request.tickers,
+                "period": f"{portfolio_request.start_date} to {portfolio_request.end_date}"
             },
             "warnings": warnings
         }
@@ -187,8 +215,22 @@ async def optimize(request: PortfolioRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/history")
-def get_history(ticker: str, period: str = "1mo", interval: str = "1d"):
+@limiter.limit(RATE_LIMITS["data_fetch"])
+def get_history(request: Request, ticker: str, period: str = "1mo", interval: str = "1d"):
     try:
+        # Validate ticker
+        InputValidator.validate_ticker(ticker)
+        
+        # Validate period (basic validation)
+        valid_periods = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
+        if period not in valid_periods:
+            raise HTTPException(status_code=400, detail=f"Invalid period. Must be one of: {', '.join(valid_periods)}")
+        
+        # Validate interval
+        valid_intervals = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
+        if interval not in valid_intervals:
+            raise HTTPException(status_code=400, detail=f"Invalid interval. Must be one of: {', '.join(valid_intervals)}")
+        
         from data import get_chart_data
         data = get_chart_data(ticker, period, interval)
         return data
@@ -201,14 +243,29 @@ class StressTestRequest(BaseModel):
     benchmark: str = "SPY"
 
 @app.post("/api/stress_test")
-async def stress_test(request: StressTestRequest):
+@limiter.limit(RATE_LIMITS["compute_intensive"])
+async def stress_test(request: Request, stress_request: StressTestRequest):
     """
     Run stress tests on the portfolio against historical scenarios.
     """
     try:
-        print(f"Running stress test for portfolio with {len(request.weights)} assets")
-        historical_results = StressTester.run_stress_test(request.weights, request.benchmark)
-        hypothetical_results = StressTester.run_hypothetical_test(request.weights, request.benchmark)
+        # Validate inputs
+        if not stress_request.weights or len(stress_request.weights) == 0:
+            raise HTTPException(status_code=400, detail="Portfolio weights are required")
+        
+        if len(stress_request.weights) > InputValidator.MAX_TICKERS:
+            raise HTTPException(status_code=400, detail=f"Maximum {InputValidator.MAX_TICKERS} assets allowed")
+        
+        # Validate each ticker in weights
+        for ticker in stress_request.weights.keys():
+            InputValidator.validate_ticker(ticker)
+        
+        # Validate benchmark
+        InputValidator.validate_ticker(stress_request.benchmark)
+        
+        print(f"Running stress test for portfolio with {len(stress_request.weights)} assets")
+        historical_results = StressTester.run_stress_test(stress_request.weights, stress_request.benchmark)
+        hypothetical_results = StressTester.run_hypothetical_test(stress_request.weights, stress_request.benchmark)
         
         # Merge results
         results = historical_results + hypothetical_results

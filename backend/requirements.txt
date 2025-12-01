@@ -6,3 +6,5 @@ numpy==1.26.3
 scipy==1.12.0
 pydantic==2.6.0
 python-multipart==0.0.6
+slowapi==0.1.9
+python-dateutil==2.8.2
