@@ -73,7 +73,6 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
     try:
         # Validate all inputs before processing
         InputValidator.validate_tickers(portfolio_request.tickers)
-        InputValidator.validate_date_range(portfolio_request.start_date, portfolio_request.end_date)
         InputValidator.validate_weight_constraints(portfolio_request.min_weight, portfolio_request.max_weight)
         InputValidator.validate_capital(portfolio_request.initial_capital)
         InputValidator.validate_mar(portfolio_request.mar)
