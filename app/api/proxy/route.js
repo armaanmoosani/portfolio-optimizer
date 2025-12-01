@@ -29,7 +29,7 @@ export async function GET(request) {
                 if (!ticker) return NextResponse.json({ error: 'Missing ticker' }, { status: 400 });
 
                 // Fallback logic: Try 1 day, then 3 days, then 7 days
-                const lookbacks = [1, 3, 7];
+                const lookbacks = [1, 3, 7, 14, 30, 60, 90, 180, 365, 1825];
                 let finalData = [];
 
                 for (const days of lookbacks) {
