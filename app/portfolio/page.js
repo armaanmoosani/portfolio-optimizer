@@ -43,9 +43,9 @@ export default function PortfolioPage() {
                     <p className="text-slate-400">Build your portfolio, configure optimization parameters, and analyze results</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     {/* Portfolio Builder - Takes 2 columns on large screens */}
-                    <div className="lg:col-span-2 p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md shadow-xl">
+                    <div className="xl:col-span-2 p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md shadow-xl">
                         <PortfolioBuilder
                             assets={assets}
                             onAddAsset={addAsset}
