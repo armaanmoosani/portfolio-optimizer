@@ -27,13 +27,36 @@ export async function GET(request) {
 
             case 'finnhubNews':
                 if (!ticker) return NextResponse.json({ error: 'Missing ticker' }, { status: 400 });
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getDate() - 1);
-                const dateStrToday = today.toISOString().split('T')[0];
-                const dateStrYesterday = yesterday.toISOString().split('T')[0];
-                url = `https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${dateStrYesterday}&to=${dateStrToday}&token=${process.env.FINNHUB_API_KEY}`;
-                break;
+
+                // Fallback logic: Try 1 day, then 3 days, then 7 days
+                const lookbacks = [1, 3, 7];
+                let finalData = [];
+
+                for (const days of lookbacks) {
+                    const today = new Date();
+                    const fromDate = new Date(today);
+                    fromDate.setDate(today.getDate() - days);
+
+                    const toStr = today.toISOString().split('T')[0];
+                    const fromStr = fromDate.toISOString().split('T')[0];
+
+                    const fetchUrl = `https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${fromStr}&to=${toStr}&token=${process.env.FINNHUB_API_KEY}`;
+
+                    try {
+                        const res = await fetch(fetchUrl);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (Array.isArray(data) && data.length > 0) {
+                                finalData = data;
+                                break; // Found news, stop searching
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error fetching news for ${days} days:`, e);
+                    }
+                }
+
+                return NextResponse.json(finalData);
 
             case 'finnhubAutocomplete':
                 if (!query) return NextResponse.json({ error: 'Missing query' }, { status: 400 });
