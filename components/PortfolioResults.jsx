@@ -904,27 +904,20 @@ export default function PortfolioResults({ data }) {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-6"
                             >
-                                {/* Grid for Asset Allocation and Correlation Matrix */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Asset Allocation - Pie Chart */}
                                     <div className="rounded-xl border border-slate-700/50 overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-shadow duration-300">
                                         <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                             <h3 className="font-semibold text-white">Asset Allocation</h3>
                                         </div>
                                         <div className="p-6">
                                             {(() => {
-                                                // Filter out zero or near-zero allocations (< 0.1%) for the PIE CHART ONLY
-                                                // This prevents visual glitches with tiny slices
                                                 const pieData = data.weights.filter(item => item.weight >= 0.1);
-
-                                                // Use ALL data for the list below so users can see 0% allocations
                                                 const displayData = data.weights;
 
                                                 const hasMany = pieData.length > 8;
 
                                                 return (
                                                     <>
-                                                        {/* Pie Chart */}
                                                         <div className="h-[300px] flex items-center justify-center mb-4">
                                                             <ResponsiveContainer width="100%" height="100%">
                                                                 <PieChart>
@@ -971,7 +964,6 @@ export default function PortfolioResults({ data }) {
                                                             </ResponsiveContainer>
                                                         </div>
 
-                                                        {/* Legend/List - Shows ALL assets including 0% */}
                                                         <div className="space-y-2">
                                                             {displayData.map((item, index) => (
                                                                 <div
@@ -1008,7 +1000,6 @@ export default function PortfolioResults({ data }) {
                                         </div>
                                     </div>
 
-                                    {/* Correlation Matrix */}
                                     <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                         <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                             <h3 className="font-semibold text-white">Correlation Matrix</h3>
@@ -1049,7 +1040,6 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                 </div>
 
-                                {/* Individual Asset Metrics */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                     <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                         <h3 className="font-semibold text-white">Asset Statistics</h3>
