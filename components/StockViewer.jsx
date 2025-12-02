@@ -14,9 +14,9 @@ const TIME_RANGES = {
     '1M': { period: '1mo', interval: '1d' },
     '3M': { period: '3mo', interval: '1d' },
     'YTD': { period: 'ytd', interval: '1d' },
-    '1Y': { period: '1y', interval: '1d' },
+    '1Y': { period: '1y', interval: '1wk' },
     '5Y': { period: '5y', interval: '1wk' },
-    'MAX': { period: 'max', interval: '1mo' },
+    'MAX': { period: 'max', interval: '1wk' },
 };
 
 export default function StockViewer() {
@@ -327,9 +327,31 @@ ${aggregatedNews.slice(0, 15000)}
             const changePercent = (change / startPrice) * 100;
             const isPositive = change >= 0;
 
+            // Format date based on timeRange
+            let dateStr = label;
+            try {
+                const date = new Date(payload[0].payload.date); // Access original date string from payload
+                if (timeRange === '1D') {
+                    // "10:30"
+                    dateStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else if (timeRange === '1W') {
+                    // "Tue, Nov 25 10:30"
+                    dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' +
+                        date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else if (['1M', '3M', 'YTD'].includes(timeRange)) {
+                    // "Tue, Nov 25"
+                    dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                } else {
+                    // 1Y, 5Y, MAX -> "Nov 25, 2024"
+                    dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            } catch (e) {
+                console.error("Date format error", e);
+            }
+
             return (
                 <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-2xl min-w-[200px]">
-                    <p className="text-slate-400 text-xs font-medium mb-1">{label}</p>
+                    <p className="text-slate-400 text-xs font-medium mb-1">{dateStr}</p>
                     <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-bold text-white tracking-tight">
                             ${currentPrice.toFixed(2)}
