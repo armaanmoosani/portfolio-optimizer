@@ -805,7 +805,7 @@ ${aggregatedNews.slice(0, 15000)}
                                                 </h4>
                                                 <div className="flex items-center justify-between mt-4">
                                                     <p className="text-[10px] font-bold uppercase tracking-wider bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
-                                                        {new URL(item.url).hostname.replace('www.', '')}
+                                                        {item.source || new URL(item.url).hostname.replace('www.', '')}
                                                     </p>
                                                     <span className="text-xs text-slate-500 font-medium">
                                                         {new Date(item.datetime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
