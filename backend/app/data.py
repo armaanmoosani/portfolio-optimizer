@@ -228,6 +228,11 @@ def get_stock_info(ticker: str) -> dict:
             "sector": info.get("sector"),
             "industry": info.get("industry"),
             "exDividendDate": info.get("exDividendDate"),
+            "lastDividendValue": info.get("lastDividendValue"),
+            "trailingEps": info.get("trailingEps"),
+            "volume": info.get("regularMarketVolume") or info.get("volume"),
+            "averageVolume": info.get("averageVolume"),
+            "beta": info.get("beta"),
             "earnings": None
         }
 

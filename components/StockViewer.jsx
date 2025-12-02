@@ -664,15 +664,33 @@ ${aggregatedNews.slice(0, 15000)}
                                             </p>
                                         </div>
                                         <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.dividendYield ? `${(stockInfo.dividendYield * 100).toFixed(2)}%` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Rate</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.dividendRate ? `$${stockInfo.dividendRate.toFixed(2)}` : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">EPS (TTM)</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Volume</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {formatLargeNumber(stockInfo.volume)}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Beta</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
                                     </div>
