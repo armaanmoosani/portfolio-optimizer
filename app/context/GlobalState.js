@@ -20,7 +20,8 @@ export function GlobalStateProvider({ children }) {
         loading: false,
         chartData: [],
         timeRange: '1D',
-        timestamp: 0
+        timestamp: 0,
+        stockInfo: null
     });
 
     // Load Portfolio Data from LocalStorage on Mount

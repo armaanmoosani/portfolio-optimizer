@@ -204,3 +204,102 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
     except Exception as e:
         print(f"Error fetching chart data for {ticker}: {e}")
         return []
+
+def get_stock_info(ticker: str) -> dict:
+    """
+    Fetch detailed stock information including Market Cap, P/E, 52-wk High/Low, Dividends.
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # Extract relevant fields with safe defaults
+        result = {
+            "marketCap": info.get("marketCap"),
+            "trailingPE": info.get("trailingPE"),
+            "forwardPE": info.get("forwardPE"),
+            "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
+            "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
+            "dividendRate": info.get("dividendRate"),
+            "dividendYield": info.get("dividendYield"),
+            "currency": info.get("currency", "USD"),
+            "shortName": info.get("shortName"),
+            "longName": info.get("longName"),
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+            "exDividendDate": info.get("exDividendDate"),
+            "earnings": None
+        }
+
+        # Fetch Earnings Data
+        try:
+            earnings_dates = stock.earnings_dates
+            if earnings_dates is not None and not earnings_dates.empty:
+                # Filter for rows with valid Surprise (Reported earnings)
+                # Sort by date descending just in case
+                earnings_dates = earnings_dates.sort_index(ascending=False)
+                
+                # Find the first row with a valid Surprise value
+                valid_earnings = earnings_dates[earnings_dates['Surprise(%)'].notna()]
+                
+                if not valid_earnings.empty:
+                    recent = valid_earnings.iloc[0]
+                    date = valid_earnings.index[0]
+                    
+                    # Determine Quarter (approximate)
+                    # If report date is Jan/Feb/Mar -> Q4 Prev Year
+                    # Apr/May/Jun -> Q1 Curr Year
+                    # Jul/Aug/Sep -> Q2 Curr Year
+                    # Oct/Nov/Dec -> Q3 Curr Year
+                    month = date.month
+                    year = date.year
+                    quarter = "Q?"
+                    if month in [1, 2, 3]:
+                        quarter = f"Q4 {year - 1}"
+                    elif month in [4, 5, 6]:
+                        quarter = f"Q1 {year}"
+                    elif month in [7, 8, 9]:
+                        quarter = f"Q2 {year}"
+                    elif month in [10, 11, 12]:
+                        quarter = f"Q3 {year}"
+
+                    result["earnings"] = {
+                        "quarter": quarter,
+                        "date": date.strftime("%Y-%m-%d"),
+                        "eps": {
+                            "estimate": recent.get("EPS Estimate"),
+                            "reported": recent.get("Reported EPS"),
+                            "surprise": recent.get("Surprise(%)")
+                        },
+                        "revenue": None
+                    }
+                    
+                    # Try to get Revenue from financials
+                    # Look for a quarter end date ~1-3 months before report date
+                    financials = stock.quarterly_financials
+                    if financials is not None and not financials.empty:
+                        # Convert columns to datetime if they aren't
+                        cols = pd.to_datetime(financials.columns)
+                        # Find closest date before report date
+                        potential_dates = [d for d in cols if d < date.replace(tzinfo=None)]
+                        if potential_dates:
+                            # Get max date (closest to report)
+                            closest_date = max(potential_dates)
+                            # Find the column name that matches this date
+                            # (Original columns might be strings or timestamps)
+                            col_idx = list(cols).index(closest_date)
+                            orig_col = financials.columns[col_idx]
+                            
+                            if "Total Revenue" in financials.index:
+                                result["earnings"]["revenue"] = {
+                                    "reported": financials.loc["Total Revenue", orig_col],
+                                    "date": closest_date.strftime("%Y-%m-%d")
+                                }
+
+        except Exception as e:
+            print(f"Error fetching earnings for {ticker}: {e}")
+
+        return result
+    except Exception as e:
+        print(f"Error fetching stock info for {ticker}: {e}")
+        return {}

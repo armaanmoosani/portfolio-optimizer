@@ -16,11 +16,12 @@ const TIME_RANGES = {
     'YTD': { period: 'ytd', interval: '1d' },
     '1Y': { period: '1y', interval: '1d' },
     '5Y': { period: '5y', interval: '1wk' },
+    'MAX': { period: 'max', interval: '1mo' },
 };
 
 export default function StockViewer() {
     const { stockViewerState, updateStockState } = useGlobalState();
-    const { ticker, stockData, news, aiSummary, loading, chartData, timeRange } = stockViewerState;
+    const { ticker, stockData, news, aiSummary, loading, chartData, timeRange, stockInfo } = stockViewerState;
     const toast = useToast();
     const router = useRouter();
 
@@ -192,8 +193,14 @@ export default function StockViewer() {
                 // Clear previous secondary data while loading new
                 news: [],
                 aiSummary: "",
-                chartData: []
+                chartData: [],
+                stockInfo: null
             });
+
+            // Fetch Extended Stock Info
+            const infoRes = await fetch(`/api/stock_info?ticker=${searchTicker}`);
+            const infoData = await infoRes.json();
+            updateStockState({ stockInfo: infoData });
 
             // Fetch News
             const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
@@ -361,12 +368,21 @@ ${aggregatedNews.slice(0, 15000)}
 
         if (timeRange === '1D') {
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else if (timeRange === '5Y') {
+        } else if (timeRange === '5Y' || timeRange === 'MAX') {
             return date.getFullYear().toString();
         } else {
             // 1W, 1M, 3M, 1Y -> Short Month + Day (e.g., "Nov 25")
             return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         }
+    };
+
+    // Helper to format large numbers (T/B/M)
+    const formatLargeNumber = (num) => {
+        if (!num) return '-';
+        if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
+        if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+        if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+        return `$${num.toLocaleString()}`;
     };
 
     return (
@@ -517,7 +533,7 @@ ${aggregatedNews.slice(0, 15000)}
                                         {Object.keys(TIME_RANGES).map((range) => (
                                             <button
                                                 key={range}
-                                                onClick={() => setTimeRange(range)}
+                                                onClick={() => updateStockState({ timeRange: range })}
                                                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === range
                                                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/10'
                                                     : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -585,6 +601,11 @@ ${aggregatedNews.slice(0, 15000)}
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
+                                <div className="px-6 pb-4 flex justify-end">
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        * Prices may be delayed
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Key Statistics Grid */}
@@ -616,7 +637,103 @@ ${aggregatedNews.slice(0, 15000)}
                                         </p>
                                     </div>
                                 </div>
+                                {stockInfo && (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Mkt Cap</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {formatLargeNumber(stockInfo.marketCap)}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">P/E Ratio</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk High</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk Low</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.dividendYield ? `${(stockInfo.dividendYield * 100).toFixed(2)}%` : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Rate</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.dividendRate ? `$${stockInfo.dividendRate.toFixed(2)}` : '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Earnings Card */}
+                            {stockInfo?.earnings && (
+                                <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                                Earnings
+                                            </h3>
+                                            <p className="text-slate-400 text-sm font-medium mt-1">{stockInfo.earnings.quarter}</p>
+                                        </div>
+                                        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-bold text-slate-400">
+                                            {new Date(stockInfo.earnings.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* EPS */}
+                                        <div className="bg-slate-800/40 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">EPS Surprise</p>
+                                            <div className={`text-3xl font-bold tracking-tight mb-1 ${stockInfo.earnings.eps.surprise >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {stockInfo.earnings.eps.surprise >= 0 ? '+' : ''}{stockInfo.earnings.eps.surprise?.toFixed(2)}%
+                                            </div>
+                                            <p className="text-sm text-white font-medium mb-4">
+                                                {stockInfo.earnings.eps.surprise >= 0 ? 'Beat Estimates' : 'Missed Estimates'}
+                                            </p>
+                                            <div className="pt-4 border-t border-white/5 flex justify-between text-xs text-slate-400 font-medium">
+                                                <span>Est: <span className="text-slate-300">{stockInfo.earnings.eps.estimate?.toFixed(2)}</span></span>
+                                                <span>Act: <span className="text-white">{stockInfo.earnings.eps.reported?.toFixed(2)}</span></span>
+                                            </div>
+                                        </div>
+
+                                        {/* Revenue */}
+                                        <div className="bg-slate-800/40 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">Revenue</p>
+                                            {stockInfo.earnings.revenue ? (
+                                                <>
+                                                    <div className="text-3xl font-bold tracking-tight text-white mb-1">
+                                                        {formatLargeNumber(stockInfo.earnings.revenue.reported)}
+                                                    </div>
+                                                    <p className="text-sm text-white font-medium mb-4">
+                                                        Reported Revenue
+                                                    </p>
+                                                    <div className="pt-4 border-t border-white/5 text-xs text-slate-400 font-medium">
+                                                        Fiscal Quarter: <span className="text-white">{stockInfo.earnings.quarter}</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+                                                    Revenue data unavailable
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Right Column: AI & News (Span 1) */}

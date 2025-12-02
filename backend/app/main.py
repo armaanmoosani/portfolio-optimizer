@@ -236,6 +236,17 @@ def get_history(request: Request, ticker: str, period: str = "1mo", interval: st
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/stock_info")
+@limiter.limit(RATE_LIMITS["data_fetch"])
+def get_stock_info_endpoint(request: Request, ticker: str):
+    try:
+        InputValidator.validate_ticker(ticker)
+        from data import get_stock_info
+        data = get_stock_info(ticker)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 class StressTestRequest(BaseModel):
     weights: dict
