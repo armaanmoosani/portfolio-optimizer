@@ -664,9 +664,15 @@ ${aggregatedNews.slice(0, 15000)}
                                             </p>
                                         </div>
                                         <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Rate</p>
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.dividendRate ? `$${stockInfo.dividendRate.toFixed(2)}` : '-'}
+                                                {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
+                                            </p>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
+                                            <p className="text-xl font-bold text-white tracking-tight">
+                                                {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
                                         <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
