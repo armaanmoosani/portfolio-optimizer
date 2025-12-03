@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine } from 'recharts';
 
 export default function SecurityMarketLine({ data }) {
     if (!data || !data.sml_points || data.sml_points.length === 0) {
@@ -191,17 +191,16 @@ export default function SecurityMarketLine({ data }) {
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }} />
 
-                        {/* 1. SML Line */}
-                        <Scatter
-                            name="SML"
-                            data={smlPoints}
-                            line={{ stroke: '#ffffff', strokeWidth: 2, strokeDasharray: '5 5' }}
-                            lineType="linear"
-                            shape={false}
+                        {/* 1. SML Line - Reference Line */}
+                        <ReferenceLine
+                            segment={[
+                                { x: smlPoints[0].beta, y: smlPoints[0].return },
+                                { x: smlPoints[smlPoints.length - 1].beta, y: smlPoints[smlPoints.length - 1].return }
+                            ]}
                             stroke="#ffffff"
-                            isAnimationActive={false}
-                            legendType="line"
-                            tooltipType="none"
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            ifOverflow="extendDomain"
                         />
 
                         {/* Invisible Layers for Tooltips */}

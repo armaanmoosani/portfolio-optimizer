@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
@@ -293,18 +293,17 @@ export default function EfficientFrontier({ data }) {
                             isAnimationActive={false}
                         />
 
-                        {/* 2. Capital Market Line (CML) */}
+                        {/* 2. Capital Market Line (CML) - Reference Line */}
                         {cmlPoints.length > 1 && (
-                            <Scatter
-                                name="Capital Market Line"
-                                data={cmlPoints}
-                                line={{ stroke: '#ffffff', strokeWidth: 2, strokeDasharray: '5 5' }}
-                                lineType="linear"
-                                shape={false}
+                            <ReferenceLine
+                                segment={[
+                                    { x: cmlPoints[0].volatility, y: cmlPoints[0].return },
+                                    { x: cmlPoints[cmlPoints.length - 1].volatility, y: cmlPoints[cmlPoints.length - 1].return }
+                                ]}
                                 stroke="#ffffff"
-                                isAnimationActive={false}
-                                legendType="line"
-                                tooltipType="none"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                ifOverflow="extendDomain"
                             />
                         )}
 
