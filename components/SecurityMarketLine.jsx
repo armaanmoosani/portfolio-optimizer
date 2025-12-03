@@ -203,6 +203,24 @@ export default function SecurityMarketLine({ data }) {
                             strokeDasharray="5 5"
                             ifOverflow="extendDomain"
                         />
+                        <ReferenceDot
+                            x={0}
+                            y={smlPoints[0].return}
+                            r={4}
+                            fill="#a855f7"
+                            stroke="#fff"
+                            strokeWidth={2}
+                            isFront={true}
+                        >
+                            <Label
+                                value="Risk Free"
+                                position="right"
+                                fill="#a855f7"
+                                fontSize={11}
+                                fontWeight="bold"
+                                offset={10}
+                            />
+                        </ReferenceDot>
 
 
                         <Scatter
