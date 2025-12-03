@@ -173,7 +173,9 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
     """
     try:
         stock = yf.Ticker(ticker)
-        hist = stock.history(period=period, interval=interval)
+        # Fetch pre/post market data for 1d view
+        include_prepost = period == "1d"
+        hist = stock.history(period=period, interval=interval, prepost=include_prepost)
         
         if hist.empty:
             return []
@@ -181,15 +183,37 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
         # Reset index to get Date/Datetime as a column
         hist = hist.reset_index()
         
+        # Ensure we have a timezone-aware datetime for comparison
+        # yfinance usually returns Eastern time for US stocks, but let's be safe
+        # We'll assume the index (Datetime) is already localized if it's intraday
+        
         results = []
         for _, row in hist.iterrows():
             # Handle different date column names (Date vs Datetime)
             date_col = 'Date' if 'Date' in hist.columns else 'Datetime'
             date_val = row[date_col]
             
-            # Format date based on interval
+            # Determine if Regular Market (09:30 - 16:00 ET)
+            is_regular = True
             if interval in ['1m', '2m', '5m', '15m', '30m', '60m', '90m', '1h']:
-                # Intraday: ISO format or specific time format
+                # Intraday: Check time
+                # Convert to datetime if it's not already
+                if isinstance(date_val, pd.Timestamp):
+                    # Check if it has timezone, if so convert to ET
+                    if date_val.tzinfo is not None:
+                        date_et = date_val.tz_convert('America/New_York')
+                    else:
+                        # Assume it's already local/ET if no tz (yfinance default)
+                        date_et = date_val
+                        
+                    current_time = date_et.time()
+                    market_open = datetime.strptime("09:30", "%H:%M").time()
+                    market_close = datetime.strptime("16:00", "%H:%M").time()
+                    
+                    if current_time < market_open or current_time >= market_close:
+                        is_regular = False
+
+                # Format date
                 date_str = date_val.strftime('%Y-%m-%d %H:%M')
             else:
                 # Daily or larger: YYYY-MM-DD
@@ -197,7 +221,8 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
                 
             results.append({
                 "date": date_str,
-                "price": row['Close']
+                "price": row['Close'],
+                "isRegularMarket": is_regular
             })
             
         return results

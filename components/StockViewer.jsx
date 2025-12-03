@@ -300,6 +300,7 @@ ${aggregatedNews.slice(0, 15000)}
     }, [chartData, baselinePrice]);
 
     // Calculate Y-axis domain to ensure reference line is visible
+    // Calculate Y-axis domain to ensure reference line is visible
     const yDomain = useMemo(() => {
         if (chartData.length === 0) return ['auto', 'auto'];
 
@@ -316,6 +317,43 @@ ${aggregatedNews.slice(0, 15000)}
         const padding = (max - min) * 0.02;
         return [min - padding, max + padding];
     }, [chartData, baselinePrice, timeRange]);
+
+    // Calculate After Hours Data
+    const afterHoursData = useMemo(() => {
+        if (timeRange !== '1D' || chartData.length === 0) return null;
+
+        // Find the last point that is "Regular Market"
+        // We iterate backwards or findLastIndex if supported, or just find index
+        // Since data is sorted, we find the last index where isRegularMarket is true
+        let closeIndex = -1;
+        for (let i = chartData.length - 1; i >= 0; i--) {
+            if (chartData[i].isRegularMarket) {
+                closeIndex = i;
+                break;
+            }
+        }
+
+        // If no regular market data (e.g. pre-market only) or all regular, handle gracefully
+        if (closeIndex === -1 || closeIndex === chartData.length - 1) return null;
+
+        const regularClosePrice = chartData[closeIndex].price;
+        const currentPrice = chartData[chartData.length - 1].price;
+        const change = currentPrice - regularClosePrice;
+        const percent = (change / regularClosePrice) * 100;
+
+        // Calculate offset for gradient (0 to 1)
+        const splitOffset = closeIndex / (chartData.length - 1);
+
+        return {
+            regularClosePrice,
+            price: currentPrice,
+            change,
+            percent,
+            splitOffset,
+            closeDate: chartData[closeIndex].date // For reference line
+        };
+
+    }, [chartData, timeRange]);
 
     // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
@@ -523,12 +561,18 @@ ${aggregatedNews.slice(0, 15000)}
                         </div>
                         <div className="text-left md:text-right">
                             <div className="text-6xl font-bold text-white tracking-tighter tabular-nums">
-                                ${stockData.price.toFixed(2)}
+                                ${afterHoursData ? afterHoursData.regularClosePrice.toFixed(2) : stockData.price.toFixed(2)}
                             </div>
                             <div className={`flex items-center md:justify-end gap-2 mt-2 text-xl font-medium ${stockData.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {stockData.changePercent >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
                                 {Math.abs(stockData.changePercent).toFixed(2)}% <span className="text-slate-500 text-base font-normal ml-1">Today</span>
                             </div>
+                            {afterHoursData && (
+                                <div className={`flex items-center md:justify-end gap-2 mt-1 text-sm font-medium ${afterHoursData.percent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    <span className="text-slate-500 font-normal">After hours:</span>
+                                    ${afterHoursData.price.toFixed(2)} ({afterHoursData.percent >= 0 ? '+' : ''}{afterHoursData.percent.toFixed(2)}%)
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -576,10 +620,25 @@ ${aggregatedNews.slice(0, 15000)}
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                                             <defs>
+                                                {/* Dynamic Color Gradient for Fill */}
                                                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
-                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                    <stop offset="5%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} stopOpacity={0.1} />
+                                                    <stop offset="95%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} stopOpacity={0} />
                                                 </linearGradient>
+
+                                                {/* Split Gradient for Stroke (1D View) */}
+                                                {afterHoursData ? (
+                                                    <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
+                                                        <stop offset={afterHoursData.splitOffset} stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
+                                                        <stop offset={afterHoursData.splitOffset} stopColor="#94a3b8" />
+                                                    </linearGradient>
+                                                ) : (
+                                                    /* Standard Gradient for Stroke (Other Views - solid color) */
+                                                    <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
+                                                        <stop offset="0%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
+                                                        <stop offset="100%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
+                                                    </linearGradient>
+                                                )}
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                                             <XAxis
@@ -611,14 +670,36 @@ ${aggregatedNews.slice(0, 15000)}
                                                     strokeOpacity={0.5}
                                                 />
                                             )}
+                                            {afterHoursData && (
+                                                <ReferenceLine
+                                                    x={afterHoursData.closeDate}
+                                                    stroke="#94a3b8"
+                                                    strokeDasharray="3 3"
+                                                    strokeOpacity={0.5}
+                                                />
+                                            )}
                                             <Area
                                                 type="monotone"
                                                 dataKey="price"
-                                                stroke="#3b82f6"
+                                                stroke={afterHoursData ? "url(#splitColor)" : "url(#standardColor)"}
                                                 strokeWidth={2}
                                                 fillOpacity={1}
                                                 fill="url(#colorPrice)"
-                                                activeDot={{ r: 6, strokeWidth: 0, fill: '#fff', stroke: '#3b82f6', strokeWidth: 2 }}
+                                                activeDot={(props) => {
+                                                    const { cx, cy, payload } = props;
+                                                    // Determine color based on the specific point being hovered
+                                                    const isRegular = payload.isRegularMarket;
+                                                    // If it's 1D view and we have after hours data:
+                                                    // Regular points -> Green/Red
+                                                    // After hours points -> Grey
+                                                    // For other views, always Green/Red
+                                                    const isAfterHoursPoint = timeRange === '1D' && !isRegular;
+                                                    const color = isAfterHoursPoint ? '#94a3b8' : (periodChange?.isPositive ? '#34d399' : '#f43f5e');
+
+                                                    return (
+                                                        <circle cx={cx} cy={cy} r={6} stroke={color} strokeWidth={2} fill="#fff" />
+                                                    );
+                                                }}
                                             />
                                         </AreaChart>
                                     </ResponsiveContainer>
