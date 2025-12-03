@@ -77,8 +77,12 @@ export default function SecurityMarketLine({ data }) {
     const betaPadding = (maxBeta - minBeta) * 0.1;
     const retPadding = (maxRet - minRet) * 0.1;
 
+    // Fix: Clamp lower domain to 0 if no negative betas exist
+    // This ensures the Risk Free point (Beta=0) sits on the Y-axis
+    const lowerBetaDomain = minBeta < 0 ? Math.floor((minBeta - betaPadding) * 10) / 10 : 0;
+
     const betaDomain = [
-        Math.floor((minBeta - betaPadding) * 10) / 10,
+        lowerBetaDomain,
         Math.ceil((maxBeta + betaPadding) * 10) / 10
     ];
 
@@ -162,7 +166,7 @@ export default function SecurityMarketLine({ data }) {
         const { cx, cy, fill } = props;
         // Simple star path
         const path = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
-        // Scale and position logic would be needed for a true SVG path, 
+        // Scale and position logic would be needed for a true SVG path,
         // but Recharts supports 'star' type natively for Scatter, or we can use a simple polygon/symbol.
         // Let's use a simple circle with a distinct stroke for now to ensure reliability, or a diamond.
         return <circle cx={cx} cy={cy} r={6} fill={fill} stroke="#fff" strokeWidth={2} />;
@@ -235,6 +239,11 @@ export default function SecurityMarketLine({ data }) {
                             allowEscapeViewBox={{ x: true, y: true }}
                             wrapperStyle={{ zIndex: 100 }}
                         />
+
+                        {/* 0. Vertical Axis Line (if domain < 0) */}
+                        {minBeta < 0 && (
+                            <ReferenceLine x={0} stroke="#64748b" strokeWidth={1} strokeDasharray="3 3" />
+                        )}
 
                         {/* 1. SML Line - Reference Line */}
                         <ReferenceLine
