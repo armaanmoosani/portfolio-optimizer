@@ -509,15 +509,6 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
                 "sharpe_ratio": float(portfolio_sharpe),
                 "weights": weights_dict
             })
-            
-    # DEBUG: Check frontier range
-    print(f"DEBUG: min_return={min_return:.4f}, max_return={max_return:.4f}")
-    if min_variance_portfolio:
-        print(f"DEBUG: GMVP return={min_variance_portfolio['return']:.4f}")
-    print(f"DEBUG: Generated {len(frontier_points)} frontier points")
-    if frontier_points:
-        min_frontier_ret = min(p['return'] for p in frontier_points)
-        print(f"DEBUG: Min frontier point return={min_frontier_ret:.4f}")
     
     # Use the provided optimal portfolio weights if available (from main optimization)
     # This ensures the Max Sharpe point matches exactly with the Summary tab
