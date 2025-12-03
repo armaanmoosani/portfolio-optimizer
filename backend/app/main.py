@@ -112,13 +112,14 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
         # 2. Get Risk Free Rate
         rf_rate = get_risk_free_rate()
         
-        # 2b. Fetch benchmark data if Treynor optimization is selected
-        benchmark_prices = None
-        if portfolio_request.objective == "treynor":
-            print(f"Fetching benchmark data ({portfolio_request.benchmark}) for Treynor optimization")
-            benchmark_data = fetch_benchmark_data(portfolio_request.start_date, portfolio_request.end_date, portfolio_request.benchmark)
-            if benchmark_data.empty:
-                raise HTTPException(status_code=400, detail=f"Could not fetch benchmark data for {portfolio_request.benchmark}")
+        # 2b. Fetch benchmark data (Always fetch for SML/Beta calculations)
+        print(f"Fetching benchmark data ({portfolio_request.benchmark}) for Beta/SML calculations")
+        benchmark_data = fetch_benchmark_data(portfolio_request.start_date, portfolio_request.end_date, portfolio_request.benchmark)
+        
+        if benchmark_data.empty:
+            print(f"WARNING: Could not fetch benchmark data for {portfolio_request.benchmark}. SML will be disabled.")
+            benchmark_prices = None
+        else:
             benchmark_prices = benchmark_data['Close']
         
         # 3. Run Optimization
@@ -153,8 +154,10 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
             min_weight=portfolio_request.min_weight,
             max_weight=portfolio_request.max_weight,
             annualization_factor=annualization_factor,
-            num_portfolios=150
+            num_portfolios=150,
+            benchmark_prices=benchmark_prices
         )
+
         
         # FORCE CONSISTENCY: If the user selected Max Sharpe, ensure the chart shows 
         # EXACTLY the same metrics and weights as the Assets tab

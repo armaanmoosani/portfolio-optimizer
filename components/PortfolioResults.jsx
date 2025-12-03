@@ -7,6 +7,7 @@ import SortableTable from './SortableTable';
 import LoadingSkeleton from './LoadingSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import EfficientFrontier from './EfficientFrontier';
+import SecurityMarketLine from './SecurityMarketLine';
 import MetricTooltip from './MetricTooltip';
 import RiskAnalysis from './RiskAnalysis';
 import { TrendingUp, TrendingDown, Activity, Target, AlertTriangle, BarChart3, Calendar, Download, FileText, Table as TableIcon, PieChart as PieChartIcon, ArrowUp, ArrowDown, Loader2, Shield } from 'lucide-react';
@@ -720,7 +721,10 @@ export default function PortfolioResults({ data }) {
                                 className="space-y-8"
                             >
                                 {data.efficientFrontier && (
-                                    <EfficientFrontier data={data.efficientFrontier} />
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                        <EfficientFrontier data={data.efficientFrontier} />
+                                        <SecurityMarketLine data={data.efficientFrontier} />
+                                    </div>
                                 )}
 
                                 <div className="p-6 rounded-xl bg-slate-800/40 border border-slate-700/50 min-h-[400px]">

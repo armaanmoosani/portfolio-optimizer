@@ -338,7 +338,7 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
         "message": str(result.message)
     }
 
-def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = None, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 100):
+def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = None, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 100, benchmark_prices: pd.Series = None):
     """
     Calculate the efficient frontier by optimizing portfolios across a range of target returns.
     
@@ -366,15 +366,41 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     
     tickers = prices.columns.tolist()
     
+    # Calculate Market Stats for Beta if benchmark provided
+    market_mean_return = None
+    market_variance = None
+    aligned_benchmark = None
+    
+    if benchmark_prices is not None:
+        benchmark_returns = benchmark_prices.pct_change().dropna()
+        # Align dates
+        common_index = returns.index.intersection(benchmark_returns.index)
+        if len(common_index) > 10:
+            aligned_returns = returns.loc[common_index]
+            aligned_benchmark = benchmark_returns.loc[common_index]
+            
+            market_mean_return = float(aligned_benchmark.mean() * annualization_factor)
+            market_variance = float(aligned_benchmark.var() * annualization_factor)
+    
     # Calculate individual asset statistics
     individual_assets = []
     for ticker in tickers:
         asset_return = float(mean_returns[ticker] * annualization_factor)
         asset_vol = float(returns[ticker].std() * np.sqrt(annualization_factor))
+        
+        asset_beta = 0.0
+        if aligned_benchmark is not None:
+            # Calculate Beta: Cov(Ra, Rm) / Var(Rm)
+            # Use aligned data for accurate covariance
+            covariance = aligned_returns[ticker].cov(aligned_benchmark) * annualization_factor
+            if market_variance and market_variance != 0:
+                asset_beta = float(covariance / market_variance)
+        
         individual_assets.append({
             "name": ticker,
             "return": asset_return,
-            "volatility": asset_vol
+            "volatility": asset_vol,
+            "beta": asset_beta
         })
     
     # Find minimum and maximum achievable returns
@@ -571,11 +597,38 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             "sharpe_ratio": optimal_portfolio["sharpe_ratio"]
         })
 
+    # --- NEW: Security Market Line (SML) ---
+    sml_points = []
+    if market_mean_return is not None:
+        # Point 1: Risk Free Rate (Beta = 0)
+        sml_points.append({
+            "beta": 0.0,
+            "return": risk_free_rate
+        })
+        
+        # Point 2: Market Portfolio (Beta = 1)
+        sml_points.append({
+            "beta": 1.0,
+            "return": market_mean_return
+        })
+        
+        # Point 3: Extension (Beta = 2.0)
+        # CAPM: E(Ri) = Rf + Beta * (Rm - Rf)
+        beta_ext = 2.0
+        ret_ext = risk_free_rate + beta_ext * (market_mean_return - risk_free_rate)
+        
+        sml_points.append({
+            "beta": beta_ext,
+            "return": ret_ext
+        })
+
     return {
         "frontier_points": frontier_points,
         "individual_assets": individual_assets,
         "optimal_portfolio": optimal_portfolio,
         "min_variance_portfolio": min_variance_portfolio,
         "monte_carlo_points": monte_carlo_points,
-        "cml_points": cml_points
+        "cml_points": cml_points,
+        "sml_points": sml_points,
+        "market_return": market_mean_return
     }
