@@ -544,22 +544,21 @@ ${aggregatedNews.slice(0, 15000)}
                 <div id="stock-results" className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 -mt-12">
 
                     {/* Header Section */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
-                        <div>
-                            <div className="flex items-center gap-4 mb-2">
+                    <div className="flex flex-col items-center text-center gap-6 border-b border-white/5 pb-8">
+                        <div className="flex flex-col items-center">
+                            <div className="flex items-center justify-center gap-4 mb-2">
                                 <h1 className="text-5xl font-bold text-white tracking-tight">{stockData.name}</h1>
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider border ${isMarketOpen() ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30'}`}>
                                     {isMarketOpen() ? 'MARKET OPEN' : 'MARKET CLOSED'}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-3 text-xl text-slate-400">
+                            <div className="flex items-center justify-center gap-3 text-xl text-slate-400">
                                 <span className="font-semibold text-white">{stockData.symbol}</span>
                                 <span className="w-1 h-1 rounded-full bg-slate-600"></span>
                                 <span className="text-slate-500">Nasdaq</span>
                             </div>
-                            <p className="text-lg text-slate-400 mt-4 max-w-3xl leading-relaxed">{stockData.description}</p>
+                            <p className="text-lg text-slate-400 mt-4 max-w-3xl leading-relaxed mx-auto">{stockData.description}</p>
                         </div>
-
                     </div>
 
                     {/* Main Content Grid */}
