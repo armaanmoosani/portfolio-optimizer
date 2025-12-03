@@ -796,12 +796,7 @@ ${aggregatedNews.slice(0, 15000)}
                                                 {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
+
                                     </div>
                                 )}
                             </div>
