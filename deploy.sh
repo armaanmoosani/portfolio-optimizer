@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+export DOCKER_BUILDKIT=0
 
 echo "Starting deployment..."
 
