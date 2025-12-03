@@ -126,10 +126,13 @@ export default function EfficientFrontier({ data }) {
                 // Calculate distance from cursor (coordinate) to the point (entry.cx/cy or entry.x/y)
                 // Recharts provides cx/cy for Scatter points
                 const x = entry.cx ?? entry.x ?? 0;
-                const y = entry.cy ?? entry.y ?? 0;
+                const y = entry.y ?? entry.y ?? 0;
 
                 // If coordinate is missing (shouldn't happen if active), use large distance
                 const dist = coordinate ? Math.sqrt(Math.pow(x - coordinate.x, 2) + Math.pow(y - coordinate.y, 2)) : Infinity;
+
+                // DEBUG: Log distance calculation
+                // console.log(`Point: ${entry.payload.type}, x:${x}, y:${y}, cursor:${coordinate?.x},${coordinate?.y}, dist:${dist}`);
 
                 return { ...entry, dist };
             }).sort((a, b) => {
@@ -152,9 +155,10 @@ export default function EfficientFrontier({ data }) {
 
             const closestPoint = sortedPayload[0];
 
-            // Enforce a maximum hit radius (e.g., 30px)
+            // Enforce a maximum hit radius (e.g., 50px)
             // If the cursor is too far from the point, don't show the tooltip
-            if (!closestPoint || closestPoint.dist > 30) {
+            if (!closestPoint || closestPoint.dist > 50) {
+                // console.log("Tooltip hidden: too far", closestPoint?.dist);
                 return null;
             }
 
