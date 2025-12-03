@@ -124,35 +124,37 @@ export default function EfficientFrontier({ data }) {
             console.log("TOOLTIP PAYLOAD:", payload);
             console.log("TOOLTIP PAYLOAD TYPES:", payload.map(p => p.payload?.type || p.payload?.name));
 
-            // Filter out CML lines and duplicates
-            const seen = new Set();
-            const filteredPayload = payload.filter(p => {
-                if (p.payload?.type === 'CML') return false;
-                const key = `${p.payload?.type}-${p.payload?.volatility}-${p.payload?.return}`;
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-
-            // Check if both portfolios are in the payload
-            const hasOptimal = filteredPayload.some(p => p.payload?.type === 'Optimal Portfolio');
-            const hasMinVar = filteredPayload.some(p => p.payload?.type === 'Minimum Variance Portfolio');
+            // Check if both portfolios are in the original payload
+            const optimalIndex = payload.findIndex(p => p.payload?.type === 'Optimal Portfolio');
+            const minVarIndex = payload.findIndex(p => p.payload?.type === 'Minimum Variance Portfolio');
 
             let point;
 
-            if (hasOptimal && hasMinVar) {
-                // Both portfolios detected: use the FIRST one (Recharts orders by proximity)
-                const portfolioPoint = filteredPayload.find(p =>
-                    p.payload?.type === 'Optimal Portfolio' ||
-                    p.payload?.type === 'Minimum Variance Portfolio'
-                );
-                point = portfolioPoint?.payload;
+            if (optimalIndex !== -1 && minVarIndex !== -1) {
+                // Both detected: use whichever appears FIRST in payload (Recharts orders by proximity)
+                console.log("Both portfolios detected. Optimal index:", optimalIndex, "MinVar index:", minVarIndex);
+                if (optimalIndex < minVarIndex) {
+                    point = payload[optimalIndex].payload;
+                    console.log("Using Optimal (closer)");
+                } else {
+                    point = payload[minVarIndex].payload;
+                    console.log("Using MinVar (closer)");
+                }
             } else {
-                // Only one or neither portfolio: use priority sorting
+                // Only one or neither: filter and sort by priority
+                const seen = new Set();
+                const filteredPayload = payload.filter(p => {
+                    if (p.payload?.type === 'CML') return false;
+                    const key = `${p.payload?.type}-${p.payload?.volatility}-${p.payload?.return}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+
                 const sortedPayload = [...filteredPayload].sort((a, b) => {
                     const typePriority = {
                         'Minimum Variance Portfolio': 5,
-                        'Optimal Portfolio': 5,  // Equal priority when solo
+                        'Optimal Portfolio': 5,
                         'Asset': 3,
                         'Efficient Frontier': 2,
                         'Monte Carlo': 1
