@@ -311,7 +311,7 @@ export default function EfficientFrontier({ data }) {
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
-                            line={{ stroke: '#3b82f6', strokeWidth: 4 }}
+                            line={{ stroke: '#22d3ee', strokeWidth: 4 }}
                             lineType="natural"
                             shape={false}
                             isAnimationActive={false}
@@ -372,6 +372,28 @@ export default function EfficientFrontier({ data }) {
                                     offset={10}
                                 />
                             </ReferenceDot>
+                        )}
+
+                        {/* 7. Invisible Scatter for Tooltips (Optimal & MinVar) */}
+                        {optimalPortfolio && (
+                            <Scatter
+                                name="Optimal Portfolio"
+                                data={[optimalPortfolio]}
+                                fill="transparent"
+                                shape="circle"
+                                legendType="none"
+                                tooltipType="none" // We want the custom tooltip to pick it up, but not show a separate entry
+                                style={{ pointerEvents: 'none' }} // Actually we want pointer events
+                            />
+                        )}
+                        {minVariancePortfolio && (
+                            <Scatter
+                                name="Minimum Variance Portfolio"
+                                data={[minVariancePortfolio]}
+                                fill="transparent"
+                                shape="circle"
+                                legendType="none"
+                            />
                         )}
                     </ScatterChart>
                 </ResponsiveContainer>

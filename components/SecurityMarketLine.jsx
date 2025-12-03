@@ -195,7 +195,7 @@ export default function SecurityMarketLine({ data }) {
                         <Scatter
                             name="SML"
                             data={smlPoints}
-                            line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
+                            line={{ stroke: '#22d3ee', strokeWidth: 2, strokeDasharray: '5 5' }}
                             lineType="linear"
                             shape={false}
                             isAnimationActive={false}
