@@ -295,26 +295,46 @@ export default function EfficientFrontier({ data }) {
 
                         {/* 2. Capital Market Line (CML) - Reference Line */}
                         {cmlPoints.length > 1 && (
-                            <ReferenceLine
-                                segment={[
-                                    { x: cmlPoints[0].volatility, y: cmlPoints[0].return },
-                                    { x: cmlPoints[cmlPoints.length - 1].volatility, y: cmlPoints[cmlPoints.length - 1].return }
-                                ]}
-                                stroke="#ffffff"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
-                                ifOverflow="extendDomain"
-                            />
+                            <>
+                                <ReferenceLine
+                                    segment={[
+                                        { x: cmlPoints[0].volatility, y: cmlPoints[0].return },
+                                        { x: cmlPoints[cmlPoints.length - 1].volatility, y: cmlPoints[cmlPoints.length - 1].return }
+                                    ]}
+                                    stroke="#ffffff"
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    ifOverflow="extendDomain"
+                                />
+                                <ReferenceDot
+                                    x={0}
+                                    y={cmlPoints[0].return}
+                                    r={4}
+                                    fill="#a855f7"
+                                    stroke="#fff"
+                                    strokeWidth={2}
+                                    isFront={true}
+                                >
+                                    <Label
+                                        value="Risk Free"
+                                        position="right"
+                                        fill="#a855f7"
+                                        fontSize={11}
+                                        fontWeight="bold"
+                                        offset={10}
+                                    />
+                                </ReferenceDot>
+                            </>
                         )}
 
                         {/* 3. Efficient Frontier Curve */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
-                            line={{ stroke: '#22d3ee', strokeWidth: 4 }}
+                            line={{ stroke: '#3b82f6', strokeWidth: 4 }}
                             lineType="natural"
                             shape={false}
-                            stroke="#22d3ee"
+                            stroke="#3b82f6"
                             isAnimationActive={false}
                         />
 
