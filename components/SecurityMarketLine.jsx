@@ -196,9 +196,8 @@ export default function SecurityMarketLine({ data }) {
                         <Tooltip
                             content={<CustomTooltip />}
                             cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }}
-                            position={{ x: 0, y: 0 }}
                             allowEscapeViewBox={{ x: true, y: true }}
-                            wrapperStyle={{ top: -10, left: 0, right: 0, zIndex: 100 }}
+                            wrapperStyle={{ zIndex: 100 }}
                         />
 
                         {/* 1. SML Line - Reference Line */}

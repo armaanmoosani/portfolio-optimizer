@@ -642,6 +642,10 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
             "return": ret_ext
         })
 
+    # Debug Logging
+    print(f"DEBUG: Optimal Portfolio: {optimal_portfolio}")
+    print(f"DEBUG: Min Variance Portfolio: {min_variance_portfolio}")
+
     return {
         "frontier_points": frontier_points,
         "individual_assets": individual_assets,
