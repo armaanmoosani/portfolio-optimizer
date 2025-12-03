@@ -135,35 +135,7 @@ export default function EfficientFrontier({ data }) {
                 return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
             });
 
-            let point = sortedPayload[0]?.payload;
-
-            // Refinement: If the top priority point is Optimal or MinVar,
-            // verify we are actually close to it (e.g., within 20px).
-            // If not, fall back to the next highest priority item (e.g., a nearby Monte Carlo point).
-            if (point && (point.type === 'Optimal Portfolio' || point.type === 'Minimum Variance Portfolio') && coordinate) {
-                const item = payload.find(p => p.payload === point);
-                if (item) {
-                    const cx = item.cx ?? item.x ?? 0;
-                    const cy = item.cy ?? item.y ?? 0;
-                    const dist = Math.sqrt(Math.pow(cx - coordinate.x, 2) + Math.pow(cy - coordinate.y, 2));
-
-                    // If we are too far (>20px), try to find a better point
-                    if (dist > 20) {
-                        const nextBest = sortedPayload.find(p =>
-                            p.payload.type !== 'Optimal Portfolio' &&
-                            p.payload.type !== 'Minimum Variance Portfolio'
-                        );
-                        if (nextBest) {
-                            point = nextBest.payload;
-                        } else {
-                            // If nothing else is close, just don't show the tooltip at all
-                            // or keep showing it if you prefer "sticky" behavior.
-                            // Here we'll hide it to prevent "ghost" tooltips.
-                            return null;
-                        }
-                    }
-                }
-            }
+            const point = sortedPayload[0]?.payload;
             if (!point) return null; // If no point is selected after filtering and sorting
             if (point.type === 'CML') return null; // Don't show tooltip for CML line
 
@@ -320,7 +292,6 @@ export default function EfficientFrontier({ data }) {
                             cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }}
                             allowEscapeViewBox={{ x: true, y: true }}
                             wrapperStyle={{ zIndex: 100 }}
-                            isAnimationActive={false}
                         />
 
                         {/* 1. Monte Carlo Cloud (Background) */}
