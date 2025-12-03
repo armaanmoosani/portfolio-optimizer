@@ -92,9 +92,41 @@ export default function SecurityMarketLine({ data }) {
     ];
 
     // Custom Tooltip
-    const CustomTooltip = ({ active, payload }) => {
+    const CustomTooltip = ({ active, payload, coordinate }) => {
         if (active && payload && payload.length > 0) {
-            const point = payload[0].payload;
+            // Sort payload by distance to cursor to ensure the closest point is always selected
+            const sortedPayload = [...payload].map(entry => {
+                // Robustly find coordinates
+                const x = entry.cx ?? entry.payload?.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.payload?.cy ?? entry.y ?? 0;
+
+                // Calculate distance
+                const dist = coordinate ? Math.hypot(x - coordinate.x, y - coordinate.y) : Infinity;
+
+                return { ...entry, dist };
+            }).sort((a, b) => {
+                // Primary sort: Distance (closest first)
+                if (a.dist === Infinity) return 1;
+                if (b.dist === Infinity) return -1;
+
+                const diff = a.dist - b.dist;
+                if (Math.abs(diff) > 2) { // 2px tolerance
+                    return diff;
+                }
+
+                // Secondary sort: Priority
+                // Assets should be high priority if they are the specific target
+                const typePriority = {
+                    'Optimal Portfolio': 10,
+                    'Market': 8,
+                    'Asset': 5,
+                    'SML': -1
+                };
+                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
+            });
+
+            const point = sortedPayload[0]?.payload;
+            if (!point) return null;
             if (point.type === 'SML') return null;
 
             // Calculate Alpha (Distance from SML)
@@ -119,10 +151,10 @@ export default function SecurityMarketLine({ data }) {
                             {point.name}
                         </p>
                         <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${point.type === 'Asset' ? 'bg-slate-700 text-slate-300' :
-                            point.type === 'Market' ? 'bg-blue-900/50 text-blue-300 border border-blue-700/30' :
-                                'bg-emerald-900/50 text-emerald-300 border border-emerald-700/30'
+                                point.type === 'Market' ? 'bg-blue-900/50 text-blue-300 border border-blue-700/30' :
+                                    'bg-emerald-900/50 text-emerald-300 border border-emerald-700/30'
                             }`}>
-                            {point.type}
+                            {point.type === 'Optimal Portfolio' ? 'Max Sharpe' : point.type}
                         </span>
                     </div>
 
@@ -166,7 +198,7 @@ export default function SecurityMarketLine({ data }) {
         const { cx, cy, fill } = props;
         // Simple star path
         const path = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
-        // Scale and position logic would be needed for a true SVG path,
+        // Scale and position logic would be needed for a true SVG path, 
         // but Recharts supports 'star' type natively for Scatter, or we can use a simple polygon/symbol.
         // Let's use a simple circle with a distinct stroke for now to ensure reliability, or a diamond.
         return <circle cx={cx} cy={cy} r={6} fill={fill} stroke="#fff" strokeWidth={2} />;
@@ -341,7 +373,7 @@ export default function SecurityMarketLine({ data }) {
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="#10b981" stroke="white" strokeWidth="2">
                                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                             </svg>
-                            <span>Optimal Portfolio</span>
+                            <span>Optimal (Max Sharpe)</span>
                         </div>
                     )}
 
