@@ -431,18 +431,46 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     min_return = float(np.sum(mean_returns * min_ret_result.x) * annualization_factor)
     max_return = float(np.sum(mean_returns * max_ret_result.x) * annualization_factor)
 
-    # Calculate Min Variance Portfolio details (Initial estimate for range)
-    min_var_weights = min_ret_result.x
-    min_var_ret, min_var_vol, min_var_sharpe = calculate_portfolio_performance(
-        min_var_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+    # --- NEW: Explicit Global Minimum Variance Portfolio (GMVP) Calculation ---
+    # We calculate this explicitly to ensure we have the exact "nose" of the bullet
+    # and to fix the bug where it was duplicating the Max Sharpe stats.
+    gmvp_result = minimize(
+        portfolio_volatility,
+        initial_guess,
+        args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints, # Only sum(w)=1 constraint, no return constraint
+        options={'maxiter': 1000}
     )
     
-    # We will define the final min_variance_portfolio object AFTER generating the frontier
-    # to ensure it matches one of the points on the curve exactly.
-    
+    if gmvp_result.success:
+        gmvp_weights = gmvp_result.x
+        gmvp_ret, gmvp_vol, gmvp_sharpe = calculate_portfolio_performance(
+            gmvp_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+        )
+        min_variance_portfolio = {
+            "volatility": float(gmvp_vol),
+            "return": float(gmvp_ret),
+            "sharpe_ratio": float(gmvp_sharpe),
+            "weights": {ticker: float(w) for ticker, w in zip(tickers, gmvp_weights)}
+        }
+    else:
+        # Fallback (should rarely happen)
+        min_variance_portfolio = None
+
     # Generate target returns
-    target_returns = np.linspace(min_return, max_return, num_portfolios)
+    # We want the full Minimum Variance Frontier (bullet shape)
+    # Range: Min Possible Return -> Max Possible Return
+    # We also force the inclusion of the GMVP return to ensure the nose is plotted
+    target_returns = np.linspace(min_return, max_return, 200) # Increased resolution
     
+    if min_variance_portfolio:
+        # Insert GMVP return into the array to ensure it's sampled
+        # Find where it fits to keep array sorted
+        idx = np.searchsorted(target_returns, min_variance_portfolio['return'])
+        target_returns = np.insert(target_returns, idx, min_variance_portfolio['return'])
+
     # Calculate efficient frontier points
     frontier_points = []
     
@@ -526,18 +554,10 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     # Generate random portfolios to show the "cloud" of possible outcomes
     num_simulations = 2000
     
-    # FORCE CONSISTENCY: Select Min Variance Portfolio from the generated frontier points
-    # This ensures the "Yellow Diamond" is exactly on the "Blue Line".
-    if frontier_points:
-        min_variance_portfolio = min(frontier_points, key=lambda x: x['volatility'])
-    else:
-        # Fallback
-        min_variance_portfolio = {
-            "volatility": float(min_var_vol),
-            "return": float(min_var_ret),
-            "sharpe_ratio": float(min_var_sharpe),
-            "weights": {ticker: float(w) for ticker, w in zip(tickers, min_var_weights)}
-        }
+    # NOTE: min_variance_portfolio is already calculated explicitly above.
+    # We do NOT overwrite it here.
+    if min_variance_portfolio is None and frontier_points:
+         min_variance_portfolio = min(frontier_points, key=lambda x: x['volatility'])
     
     monte_carlo_points = []
     
