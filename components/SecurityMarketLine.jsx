@@ -145,7 +145,7 @@ export default function SecurityMarketLine({ data }) {
             {/* Chart */}
             <div className="p-4 sm:p-8">
                 <ResponsiveContainer width="100%" height={500}>
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                    <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 50 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
                         <XAxis
                             type="number"
@@ -195,9 +195,9 @@ export default function SecurityMarketLine({ data }) {
                         <Scatter
                             name="SML"
                             data={smlPoints}
-                            line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '6 4' }}
+                            line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
                             lineType="linear"
-                            fill="none"
+                            shape={<></>}
                             isAnimationActive={false}
                             legendType="line"
                             tooltipType="none"

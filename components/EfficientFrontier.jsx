@@ -236,17 +236,8 @@ export default function EfficientFrontier({ data }) {
             {/* Chart */}
             <div className="p-4 sm:p-8">
                 <ResponsiveContainer width="100%" height={500}>
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                    <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 50 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                        <defs>
-                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                        </defs>
                         <XAxis
                             type="number"
                             dataKey="volatility"
@@ -307,9 +298,9 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Capital Market Line"
                                 data={cmlPoints}
-                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '6 4' }}
+                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
                                 lineType="linear"
-                                fill="none"
+                                shape={<></>}
                                 isAnimationActive={false}
                                 legendType="line"
                                 tooltipType="none"
@@ -320,12 +311,10 @@ export default function EfficientFrontier({ data }) {
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
-                            line={{ stroke: '#3b82f6', strokeWidth: 3 }}
-                            lineType="natural"
-                            fill="none"
-                            isAnimationActive={true}
-                            animationDuration={1000}
-                            style={{ filter: 'url(#glow)' }}
+                            line={{ stroke: '#3b82f6', strokeWidth: 4 }}
+                            lineType="monotone"
+                            shape={<></>}
+                            isAnimationActive={false}
                         />
 
                         {/* 4. Individual Assets */}
