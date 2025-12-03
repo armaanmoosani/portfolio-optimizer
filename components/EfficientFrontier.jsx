@@ -123,43 +123,19 @@ export default function EfficientFrontier({ data }) {
             // Sort payload by distance to cursor to ensure the closest point is always selected
             const sortedPayload = [...payload].map(entry => {
                 // Robustly find coordinates
-                // Recharts payload structure can vary; sometimes cx/cy are on the entry, sometimes in payload, sometimes in props
-                const x = entry.cx ?? entry.payload?.cx ?? entry.props?.cx ?? entry.x ?? 0;
-                const y = entry.cy ?? entry.payload?.cy ?? entry.props?.cy ?? entry.y ?? 0;
+                const cx = entry.cx ?? entry.payload?.cx ?? entry.props?.cx;
+                const cy = entry.cy ?? entry.payload?.cy ?? entry.props?.cy;
 
-                // Calculate distance
-                // If coordinate is missing, use Infinity to push to bottom
-                const dist = coordinate ? Math.hypot(x - coordinate.x, y - coordinate.y) : Infinity;
-
-                return { ...entry, dist, _debug_coords: { x, y } };
-            }).sort((a, b) => {
-                // Primary sort: Distance (closest first)
-                // Use a smaller tolerance (e.g., 5px) to favor the truly closest point
-                // But if one is Infinity (missing coords), it goes last
-                if (a.dist === Infinity) return 1;
-                if (b.dist === Infinity) return -1;
-
-                const diff = a.dist - b.dist;
-                if (Math.abs(diff) > 2) { // 2px tolerance
-                    return diff;
+                // Calculate distance strictly using pixels
+                let dist = Infinity;
+                if (typeof cx === 'number' && typeof cy === 'number' && coordinate) {
+                    dist = Math.hypot(cx - coordinate.x, cy - coordinate.y);
                 }
 
-                // Secondary sort: Priority (if distances are extremely close)
-                // We prioritize Assets over Key Portfolios because Assets are smaller and more specific.
-                // If the user hovers an Asset that is "under" the Optimal point, they likely want the Asset details.
-                const typePriority = {
-                    'Asset': 15,
-                    'Optimal Portfolio': 10,
-                    'Minimum Variance Portfolio': 10,
-                    'Efficient Frontier': 2,
-                    'Monte Carlo': 1,
-                    'CML': -1
-                };
-                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
-            });
-
-            // Debugging
-            // console.log("Tooltip Payload:", payload, "Sorted:", sortedPayload, "Cursor:", coordinate);
+                return { ...entry, dist };
+            })
+                .filter(entry => entry.dist < 40) // Only show points within 40px radius
+                .sort((a, b) => a.dist - b.dist); // Strict distance sort
 
             const point = sortedPayload[0]?.payload;
             if (!point) return null; // If no point is selected after filtering and sorting
