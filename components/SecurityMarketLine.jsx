@@ -14,7 +14,7 @@ export default function SecurityMarketLine({ data }) {
         beta: p.beta,
         return: p.return * 100,
         type: 'SML'
-    }));
+    })).sort((a, b) => a.beta - b.beta);
 
     // 2. Format Individual Assets
     const assets = (data.individual_assets || []).map(p => ({

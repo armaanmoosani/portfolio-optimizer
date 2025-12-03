@@ -17,7 +17,7 @@ export default function EfficientFrontier({ data }) {
         weights: p.weights || {},
         name: 'Efficient Frontier',
         type: 'Efficient Frontier'
-    }));
+    })).sort((a, b) => a.volatility - b.volatility);
 
     // 2. Format Monte Carlo Points (The Cloud)
     // Downsample if too many points to improve performance
@@ -238,6 +238,15 @@ export default function EfficientFrontier({ data }) {
                 <ResponsiveContainer width="100%" height={500}>
                     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                        <defs>
+                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
                         <XAxis
                             type="number"
                             dataKey="volatility"
@@ -313,6 +322,7 @@ export default function EfficientFrontier({ data }) {
                             shape={() => null} // Don't show dots on the line
                             isAnimationActive={true}
                             animationDuration={1000}
+                            style={{ filter: 'url(#glow)' }}
                         />
 
                         {/* 4. Individual Assets */}
