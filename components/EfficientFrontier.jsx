@@ -120,62 +120,22 @@ export default function EfficientFrontier({ data }) {
     // Custom Tooltip
     const CustomTooltip = ({ active, payload, coordinate }) => {
         if (active && payload && payload.length > 0) {
-            // DEBUG: Log payload to find pixel coordinates
-            // console.log("PAYLOAD ITEM KEYS:", Object.keys(payload[0]));
+            // Sort payload to prioritize points over lines
+            // We want to show the point data (Asset, Optimal, MinVar) if available
+            const sortedPayload = [...payload].sort((a, b) => {
+                // Priority: Optimal/MinVar > Asset > Frontier > CML
+                const typePriority = {
+                    'Optimal Portfolio': 4,
+                    'Minimum Variance Portfolio': 4,
+                    'Asset': 3,
+                    'Efficient Frontier': 2,
+                    'Monte Carlo': 1,
+                    'CML': -1
+                };
+                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
+            });
 
-            // Check if both portfolios are in the payload
-            const optimalItem = payload.find(p => p.payload?.type === 'Optimal Portfolio');
-            const minVarItem = payload.find(p => p.payload?.type === 'Minimum Variance Portfolio');
-
-            let point;
-
-            if (optimalItem && minVarItem && coordinate) {
-                // Both detected: calculate distance using PIXEL coordinates
-                // Recharts Scatter items usually have cx/cy or x/y for screen coordinates
-                const getCoords = (item) => ({
-                    x: item.cx ?? item.x ?? 0,
-                    y: item.cy ?? item.y ?? 0
-                });
-
-                const optCoords = getCoords(optimalItem);
-                const minCoords = getCoords(minVarItem);
-
-                const distOptimal = Math.sqrt(
-                    Math.pow(optCoords.x - coordinate.x, 2) +
-                    Math.pow(optCoords.y - coordinate.y, 2)
-                );
-
-                const distMinVar = Math.sqrt(
-                    Math.pow(minCoords.x - coordinate.x, 2) +
-                    Math.pow(minCoords.y - coordinate.y, 2)
-                );
-
-                console.log(`Distances - Optimal: ${distOptimal.toFixed(2)}px, MinVar: ${distMinVar.toFixed(2)}px`);
-
-                point = distMinVar < distOptimal ? minVarItem.payload : optimalItem.payload;
-            } else {
-                // Only one or neither: filter and sort by priority
-                const seen = new Set();
-                const filteredPayload = payload.filter(p => {
-                    if (p.payload?.type === 'CML') return false;
-                    const key = `${p.payload?.type}-${p.payload?.volatility}-${p.payload?.return}`;
-                    if (seen.has(key)) return false;
-                    seen.add(key);
-                    return true;
-                });
-
-                const sortedPayload = [...filteredPayload].sort((a, b) => {
-                    const typePriority = {
-                        'Minimum Variance Portfolio': 5,
-                        'Optimal Portfolio': 5,
-                        'Asset': 3,
-                        'Efficient Frontier': 2,
-                        'Monte Carlo': 1
-                    };
-                    return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
-                });
-                point = sortedPayload[0]?.payload;
-            }
+            const point = sortedPayload[0]?.payload;
             if (!point) return null; // If no point is selected after filtering and sorting
             if (point.type === 'CML') return null; // Don't show tooltip for CML line
 
@@ -402,77 +362,35 @@ export default function EfficientFrontier({ data }) {
                             <LabelList dataKey="name" position="top" offset={5} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: 'bold' }} />
                         </Scatter>
 
-                        {/* 5. Optimal Portfolio (Star) */}
-                        {optimalPortfolio && (
-                            <ReferenceDot
-                                x={optimalPortfolio.volatility}
-                                y={optimalPortfolio.return}
-                                r={6}
-                                fill="#10b981"
-                                stroke="#fff"
-                                strokeWidth={2}
-                                isFront={true}
-                            >
-                                <Label
-                                    value="Max Sharpe"
-                                    position="top"
-                                    fill="#10b981"
-                                    fontSize={12}
-                                    fontWeight="bold"
-                                    offset={10}
-                                />
-                            </ReferenceDot>
-                        )}
-
-                        {/* 6. Min Variance Portfolio (Diamond) */}
-                        {minVariancePortfolio && (
-                            <ReferenceDot
-                                x={minVariancePortfolio.volatility}
-                                y={minVariancePortfolio.return}
-                                r={5}
-                                fill="#f59e0b"
-                                stroke="#fff"
-                                strokeWidth={2}
-                                isFront={true}
-                            >
-                                <Label
-                                    value="Min Vol"
-                                    position="bottom"
-                                    fill="#f59e0b"
-                                    fontSize={11}
-                                    fontWeight="bold"
-                                    offset={10}
-                                />
-                            </ReferenceDot>
-                        )}
-
-                        {/* 7. Invisible Scatter for Tooltips (Optimal & MinVar) */}
-                        {optimalPortfolio && (
-                            <Scatter
-                                name="Optimal Portfolio"
-                                data={[optimalPortfolio]}
-                                fill="rgba(255,255,255,0.01)"
-                                stroke="none"
-                                shape="circle"
-                                legendType="none"
-                                style={{ pointerEvents: 'all' }}
-                            >
-                                <Cell r={4} />
-                            </Scatter>
-                        )}
-                        {minVariancePortfolio && (
-                            <Scatter
-                                name="Minimum Variance Portfolio"
-                                data={[minVariancePortfolio]}
-                                fill="rgba(255,255,255,0.01)"
-                                stroke="none"
-                                shape="circle"
-                                legendType="none"
-                                style={{ pointerEvents: 'all' }}
-                            >
-                                <Cell r={4} />
-                            </Scatter>
-                        )}
+                        {/* 5. Optimal & Min Variance Portfolios (Combined Scatter for Tooltips) */}
+                        {/* We use a single Scatter for both to ensure Recharts handles them as distinct points in the same series */}
+                        <Scatter
+                            name="Key Portfolios"
+                            data={[
+                                ...(optimalPortfolio ? [optimalPortfolio] : []),
+                                ...(minVariancePortfolio ? [minVariancePortfolio] : [])
+                            ]}
+                            shape={(props) => {
+                                const { cx, cy, payload } = props;
+                                if (payload.type === 'Optimal Portfolio') {
+                                    return (
+                                        <g>
+                                            <circle cx={cx} cy={cy} r={6} fill="#10b981" stroke="#fff" strokeWidth={2} />
+                                            <text x={cx} y={cy - 15} textAnchor="middle" fill="#10b981" fontSize={12} fontWeight="bold">Max Sharpe</text>
+                                        </g>
+                                    );
+                                }
+                                if (payload.type === 'Minimum Variance Portfolio') {
+                                    return (
+                                        <g>
+                                            <circle cx={cx} cy={cy} r={5} fill="#f59e0b" stroke="#fff" strokeWidth={2} />
+                                            <text x={cx} y={cy + 15} textAnchor="middle" dy={5} fill="#f59e0b" fontSize={11} fontWeight="bold">Min Vol</text>
+                                        </g>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
                     </ScatterChart>
                 </ResponsiveContainer>
 
