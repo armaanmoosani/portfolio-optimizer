@@ -9,6 +9,9 @@ export default function SecurityMarketLine({ data }) {
         );
     }
 
+    // Debugging
+    console.log("SML Data:", data);
+
     // 1. Format SML Line Points
     const smlPoints = data.sml_points.map(p => ({
         beta: p.beta,
@@ -190,7 +193,13 @@ export default function SecurityMarketLine({ data }) {
                                 dx: -25
                             }}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }} />
+                        <Tooltip
+                            content={<CustomTooltip />}
+                            cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }}
+                            position={{ x: 0, y: 0 }}
+                            allowEscapeViewBox={{ x: true, y: true }}
+                            wrapperStyle={{ top: -10, left: 0, right: 0, zIndex: 100 }}
+                        />
 
                         {/* 1. SML Line - Reference Line */}
                         <ReferenceLine

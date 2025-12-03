@@ -110,21 +110,20 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // --- Enhanced Tooltip ---
+    // Custom Tooltip
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length > 0) {
-            // Filter out CML lines from tooltip hover if they interfere, 
-            // but usually we want to see the closest point.
-            // Prioritize: Optimal > Asset > Frontier > Monte Carlo
-
-            // Find the most relevant point in the payload
+            // Sort payload to prioritize points over lines
+            // We want to show the point data (Asset, Optimal, MinVar) if available
+            // CML line usually has type 'CML', we want to ignore it or deprioritize it
             const sortedPayload = [...payload].sort((a, b) => {
+                // Priority: Optimal/MinVar > Asset > Frontier > CML
                 const typePriority = {
                     'Optimal Portfolio': 4,
-                    'Minimum Variance Portfolio': 3,
-                    'Asset': 2,
-                    'Efficient Frontier': 1,
-                    'Monte Carlo': 0,
+                    'Minimum Variance Portfolio': 4,
+                    'Asset': 3,
+                    'Efficient Frontier': 2,
+                    'Monte Carlo': 1,
                     'CML': -1
                 };
                 return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
@@ -134,66 +133,68 @@ export default function EfficientFrontier({ data }) {
 
             if (point.type === 'CML') return null; // Don't show tooltip for CML line
 
-            const hasWeights = point.weights && Object.keys(point.weights).length > 0;
-            const topAllocations = hasWeights
-                ? Object.entries(point.weights)
-                    .filter(([_, weight]) => weight > 0.001)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5)
-                : [];
+            // Determine badge type
+            let badge = null;
+            if (point.type === 'Optimal Portfolio') {
+                badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">Max Sharpe</span>;
+            } else if (point.type === 'Minimum Variance Portfolio') {
+                badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">Min Vol</span>;
+            } else if (point.type === 'Asset') {
+                badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">Asset</span>;
+            }
 
             return (
-                <div className="bg-slate-900/98 border-2 border-slate-600/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50" style={{ minWidth: '260px' }}>
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-3 border-b border-slate-600/50 flex justify-between items-center">
-                        <p className="text-white font-bold text-sm tracking-wide">
+                <div className="bg-slate-900/95 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50" style={{ minWidth: '240px' }}>
+                    <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
+                        <p className="text-white font-bold text-sm tracking-wide truncate pr-2">
                             {point.name || point.type}
                         </p>
-                        {point.type === 'Asset' && (
-                            <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">Asset</span>
-                        )}
+                        {badge}
                     </div>
 
                     {/* Metrics */}
-                    <div className="p-4 space-y-2.5">
+                    <div className="p-4 space-y-3">
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-300 text-xs font-medium">Expected Return</span>
+                            <span className="text-slate-400 text-xs font-medium">Expected Return</span>
                             <span className="text-emerald-400 font-mono font-bold text-sm">{point.return.toFixed(2)}%</span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-300 text-xs font-medium">Volatility (Risk)</span>
+                            <span className="text-slate-400 text-xs font-medium">Volatility (Risk)</span>
                             <span className="text-sky-400 font-mono font-bold text-sm">{point.volatility.toFixed(2)}%</span>
                         </div>
                         {point.sharpe_ratio !== undefined && point.sharpe_ratio !== 0 && (
                             <div className="flex justify-between items-center">
-                                <span className="text-slate-300 text-xs font-medium">Sharpe Ratio</span>
+                                <span className="text-slate-400 text-xs font-medium">Sharpe Ratio</span>
                                 <span className="text-amber-400 font-mono font-bold text-sm">{point.sharpe_ratio.toFixed(3)}</span>
                             </div>
                         )}
 
                         {/* Allocations (Only for portfolios) */}
-                        {topAllocations.length > 0 && (
+                        {point.weights && Object.keys(point.weights).length > 0 && (
                             <>
                                 <div className="border-t border-slate-700/50 my-3" />
                                 <div>
-                                    <p className="text-slate-400 font-semibold mb-2.5 text-xs uppercase tracking-wider">Top Allocations</p>
+                                    <p className="text-slate-500 font-semibold mb-2.5 text-[10px] uppercase tracking-wider">Top Allocations</p>
                                     <div className="space-y-2">
-                                        {topAllocations.map(([ticker, weight]) => (
-                                            <div key={ticker} className="flex items-center gap-2.5">
-                                                <span className="text-slate-200 font-semibold text-xs w-12">
-                                                    {ticker}
-                                                </span>
-                                                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-blue-500 rounded-full"
-                                                        style={{ width: `${(weight * 100).toFixed(1)}%` }}
-                                                    />
+                                        {Object.entries(point.weights)
+                                            .sort(([, a], [, b]) => b - a)
+                                            .slice(0, 5)
+                                            .map(([ticker, weight]) => (
+                                                <div key={ticker} className="flex items-center gap-2.5">
+                                                    <span className="text-slate-300 font-medium text-xs w-10">
+                                                        {ticker}
+                                                    </span>
+                                                    <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-blue-500 rounded-full"
+                                                            style={{ width: `${(weight * 100).toFixed(1)}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-blue-400 font-mono text-xs font-bold w-10 text-right">
+                                                        {(weight * 100).toFixed(0)}%
+                                                    </span>
                                                 </div>
-                                                <span className="text-blue-400 font-mono text-xs font-bold w-12 text-right">
-                                                    {(weight * 100).toFixed(1)}%
-                                                </span>
-                                            </div>
-                                        ))}
+                                            ))}
                                     </div>
                                 </div>
                             </>
@@ -202,7 +203,6 @@ export default function EfficientFrontier({ data }) {
                 </div>
             );
         }
-        return null;
     };
 
     return (
@@ -281,7 +281,13 @@ export default function EfficientFrontier({ data }) {
                                 dx: -25
                             }}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }} />
+                        <Tooltip
+                            content={<CustomTooltip />}
+                            cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }}
+                            position={{ x: 0, y: 0 }}
+                            allowEscapeViewBox={{ x: true, y: true }}
+                            wrapperStyle={{ top: -10, left: 0, right: 0, zIndex: 100 }}
+                        />
 
                         {/* 1. Monte Carlo Cloud (Background) */}
                         <Scatter
@@ -452,8 +458,8 @@ export default function EfficientFrontier({ data }) {
                         <span>Feasible Portfolios</span>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
 
