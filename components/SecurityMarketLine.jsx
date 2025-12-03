@@ -61,7 +61,8 @@ export default function SecurityMarketLine({ data }) {
     const allPoints = [
         ...smlPoints,
         ...assets,
-        ...(optimalPortfolio ? [optimalPortfolio] : []),
+        ...smlPoints,
+        ...assets,
         marketPortfolio
     ];
 
@@ -203,20 +204,7 @@ export default function SecurityMarketLine({ data }) {
                             ifOverflow="extendDomain"
                         />
 
-                        {/* Invisible Layers for Tooltips */}
-                        {optimalPortfolio && (
-                            <Scatter
-                                name="Optimal Portfolio"
-                                data={[optimalPortfolio]}
-                                fill="rgba(255,255,255,0.01)"
-                                stroke="none"
-                                shape="circle"
-                                legendType="none"
-                                style={{ pointerEvents: 'all' }}
-                            >
-                                <Cell r={10} />
-                            </Scatter>
-                        )}
+
                         <Scatter
                             name="Market"
                             data={[marketPortfolio]} // We need to access marketPortfolio from scope
@@ -263,27 +251,7 @@ export default function SecurityMarketLine({ data }) {
                             />
                         </ReferenceDot>
 
-                        {/* 4. Optimal Portfolio */}
-                        {optimalPortfolio && (
-                            <ReferenceDot
-                                x={optimalPortfolio.beta}
-                                y={optimalPortfolio.return}
-                                r={6}
-                                fill="#10b981"
-                                stroke="#fff"
-                                strokeWidth={2}
-                                isFront={true}
-                            >
-                                <Label
-                                    value="Max Sharpe"
-                                    position="top"
-                                    fill="#10b981"
-                                    fontSize={12}
-                                    fontWeight="bold"
-                                    offset={10}
-                                />
-                            </ReferenceDot>
-                        )}
+
                     </ScatterChart>
                 </ResponsiveContainer>
 
@@ -293,10 +261,7 @@ export default function SecurityMarketLine({ data }) {
                         <div className="w-4 h-0.5 bg-slate-400 border-dashed border-t border-slate-400"></div>
                         <span>Security Market Line (SML)</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></div>
-                        <span>Optimal Portfolio</span>
-                    </div>
+
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-blue-500 border border-white"></div>
                         <span>Market (Beta=1)</span>
