@@ -134,19 +134,33 @@ export default function EfficientFrontier({ data }) {
                 return true;
             });
 
-            // Sort by priority with MinVar prioritized over Optimal
-            const sortedPayload = [...filteredPayload].sort((a, b) => {
-                const typePriority = {
-                    'Minimum Variance Portfolio': 5,  // Higher priority than Optimal
-                    'Optimal Portfolio': 4,
-                    'Asset': 3,
-                    'Efficient Frontier': 2,
-                    'Monte Carlo': 1
-                };
-                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
-            });
+            // Check if both portfolios are in the payload
+            const hasOptimal = filteredPayload.some(p => p.payload?.type === 'Optimal Portfolio');
+            const hasMinVar = filteredPayload.some(p => p.payload?.type === 'Minimum Variance Portfolio');
 
-            const point = sortedPayload[0]?.payload;
+            let point;
+
+            if (hasOptimal && hasMinVar) {
+                // Both portfolios detected: use the FIRST one (Recharts orders by proximity)
+                const portfolioPoint = filteredPayload.find(p =>
+                    p.payload?.type === 'Optimal Portfolio' ||
+                    p.payload?.type === 'Minimum Variance Portfolio'
+                );
+                point = portfolioPoint?.payload;
+            } else {
+                // Only one or neither portfolio: use priority sorting
+                const sortedPayload = [...filteredPayload].sort((a, b) => {
+                    const typePriority = {
+                        'Minimum Variance Portfolio': 5,
+                        'Optimal Portfolio': 5,  // Equal priority when solo
+                        'Asset': 3,
+                        'Efficient Frontier': 2,
+                        'Monte Carlo': 1
+                    };
+                    return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
+                });
+                point = sortedPayload[0]?.payload;
+            }
             if (!point) return null; // If no point is selected after filtering and sorting
             if (point.type === 'CML') return null; // Don't show tooltip for CML line
 
