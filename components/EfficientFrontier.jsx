@@ -118,28 +118,41 @@ export default function EfficientFrontier({ data }) {
     ];
 
     // Custom Tooltip
-    const CustomTooltip = ({ active, payload }) => {
+    const CustomTooltip = ({ active, payload, coordinate }) => {
         if (active && payload && payload.length > 0) {
-            // DEBUG: Log the entire payload to see what Recharts is passing
-            console.log("TOOLTIP PAYLOAD:", payload);
-            console.log("TOOLTIP PAYLOAD TYPES:", payload.map(p => p.payload?.type || p.payload?.name));
+            // DEBUG: Log payload to find pixel coordinates
+            // console.log("PAYLOAD ITEM KEYS:", Object.keys(payload[0]));
 
-            // Check if both portfolios are in the original payload
-            const optimalIndex = payload.findIndex(p => p.payload?.type === 'Optimal Portfolio');
-            const minVarIndex = payload.findIndex(p => p.payload?.type === 'Minimum Variance Portfolio');
+            // Check if both portfolios are in the payload
+            const optimalItem = payload.find(p => p.payload?.type === 'Optimal Portfolio');
+            const minVarItem = payload.find(p => p.payload?.type === 'Minimum Variance Portfolio');
 
             let point;
 
-            if (optimalIndex !== -1 && minVarIndex !== -1) {
-                // Both detected: use whichever appears FIRST in payload (Recharts orders by proximity)
-                console.log("Both portfolios detected. Optimal index:", optimalIndex, "MinVar index:", minVarIndex);
-                if (optimalIndex < minVarIndex) {
-                    point = payload[optimalIndex].payload;
-                    console.log("Using Optimal (closer)");
-                } else {
-                    point = payload[minVarIndex].payload;
-                    console.log("Using MinVar (closer)");
-                }
+            if (optimalItem && minVarItem && coordinate) {
+                // Both detected: calculate distance using PIXEL coordinates
+                // Recharts Scatter items usually have cx/cy or x/y for screen coordinates
+                const getCoords = (item) => ({
+                    x: item.cx ?? item.x ?? 0,
+                    y: item.cy ?? item.y ?? 0
+                });
+
+                const optCoords = getCoords(optimalItem);
+                const minCoords = getCoords(minVarItem);
+
+                const distOptimal = Math.sqrt(
+                    Math.pow(optCoords.x - coordinate.x, 2) +
+                    Math.pow(optCoords.y - coordinate.y, 2)
+                );
+
+                const distMinVar = Math.sqrt(
+                    Math.pow(minCoords.x - coordinate.x, 2) +
+                    Math.pow(minCoords.y - coordinate.y, 2)
+                );
+
+                console.log(`Distances - Optimal: ${distOptimal.toFixed(2)}px, MinVar: ${distMinVar.toFixed(2)}px`);
+
+                point = distMinVar < distOptimal ? minVarItem.payload : optimalItem.payload;
             } else {
                 // Only one or neither: filter and sort by priority
                 const seen = new Set();
