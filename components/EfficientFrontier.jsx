@@ -123,19 +123,41 @@ export default function EfficientFrontier({ data }) {
             // Sort payload by distance to cursor to ensure the closest point is always selected
             const sortedPayload = [...payload].map(entry => {
                 // Robustly find coordinates
-                const cx = entry.cx ?? entry.payload?.cx ?? entry.props?.cx;
-                const cy = entry.cy ?? entry.payload?.cy ?? entry.props?.cy;
+                // Recharts payload structure can vary; sometimes cx/cy are on the entry, sometimes in payload
+                const x = entry.cx ?? entry.payload?.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.payload?.cy ?? entry.y ?? 0;
 
-                // Calculate distance strictly using pixels
-                let dist = Infinity;
-                if (typeof cx === 'number' && typeof cy === 'number' && coordinate) {
-                    dist = Math.hypot(cx - coordinate.x, cy - coordinate.y);
+                // Calculate distance
+                // If coordinate is missing, use Infinity to push to bottom
+                const dist = coordinate ? Math.hypot(x - coordinate.x, y - coordinate.y) : Infinity;
+
+                return { ...entry, dist, _debug_coords: { x, y } };
+            }).sort((a, b) => {
+                // Primary sort: Distance (closest first)
+                // Use a smaller tolerance (e.g., 5px) to favor the truly closest point
+                // But if one is Infinity (missing coords), it goes last
+                if (a.dist === Infinity) return 1;
+                if (b.dist === Infinity) return -1;
+
+                const diff = a.dist - b.dist;
+                if (Math.abs(diff) > 2) { // 2px tolerance
+                    return diff;
                 }
 
-                return { ...entry, dist };
-            })
-                .filter(entry => entry.dist < 40) // Only show points within 40px radius
-                .sort((a, b) => a.dist - b.dist); // Strict distance sort
+                // Secondary sort: Priority (if distances are extremely close)
+                const typePriority = {
+                    'Optimal Portfolio': 10,
+                    'Minimum Variance Portfolio': 10,
+                    'Asset': 5, // Assets should be high priority if they are the specific target
+                    'Efficient Frontier': 2,
+                    'Monte Carlo': 1,
+                    'CML': -1
+                };
+                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
+            });
+
+            // Debugging
+            // console.log("Tooltip Payload:", payload, "Sorted:", sortedPayload, "Cursor:", coordinate);
 
             const point = sortedPayload[0]?.payload;
             if (!point) return null; // If no point is selected after filtering and sorting
@@ -356,9 +378,11 @@ export default function EfficientFrontier({ data }) {
                             name="Assets"
                             data={individualAssets}
                             fill="#f8fafc"
-                            stroke="#475569"
                             shape="circle"
                         >
+                            {individualAssets.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" />
+                            ))}
                             <LabelList dataKey="name" position="top" offset={5} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: 'bold' }} />
                         </Scatter>
 

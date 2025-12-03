@@ -97,19 +97,33 @@ export default function SecurityMarketLine({ data }) {
             // Sort payload by distance to cursor to ensure the closest point is always selected
             const sortedPayload = [...payload].map(entry => {
                 // Robustly find coordinates
-                const cx = entry.cx ?? entry.payload?.cx ?? entry.props?.cx;
-                const cy = entry.cy ?? entry.payload?.cy ?? entry.props?.cy;
+                const x = entry.cx ?? entry.payload?.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.payload?.cy ?? entry.y ?? 0;
 
-                // Calculate distance strictly using pixels
-                let dist = Infinity;
-                if (typeof cx === 'number' && typeof cy === 'number' && coordinate) {
-                    dist = Math.hypot(cx - coordinate.x, cy - coordinate.y);
-                }
+                // Calculate distance
+                const dist = coordinate ? Math.hypot(x - coordinate.x, y - coordinate.y) : Infinity;
 
                 return { ...entry, dist };
-            })
-                .filter(entry => entry.dist < 40) // Only show points within 40px radius
-                .sort((a, b) => a.dist - b.dist); // Strict distance sort
+            }).sort((a, b) => {
+                // Primary sort: Distance (closest first)
+                if (a.dist === Infinity) return 1;
+                if (b.dist === Infinity) return -1;
+
+                const diff = a.dist - b.dist;
+                if (Math.abs(diff) > 2) { // 2px tolerance
+                    return diff;
+                }
+
+                // Secondary sort: Priority
+                // Assets should be high priority if they are the specific target
+                const typePriority = {
+                    'Optimal Portfolio': 10,
+                    'Market': 8,
+                    'Asset': 5,
+                    'SML': -1
+                };
+                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
+            });
 
             const point = sortedPayload[0]?.payload;
             if (!point) return null;
@@ -330,10 +344,11 @@ export default function SecurityMarketLine({ data }) {
                             name="Assets"
                             data={assets}
                             fill="#f8fafc"
-                            stroke="#475569"
-                            strokeWidth={1}
                             shape="circle"
                         >
+                            {assets.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1} />
+                            ))}
                             <LabelList dataKey="name" position="top" offset={8} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: '600' }} />
                         </Scatter>
 
