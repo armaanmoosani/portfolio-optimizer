@@ -583,7 +583,19 @@ ${aggregatedNews.slice(0, 15000)}
                                                     ? <ArrowUpRight className="w-6 h-6" />
                                                     : <ArrowDownRight className="w-6 h-6" />
                                                 }
-                                                {Math.abs(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent || 0)).toFixed(2)}%
+                                                {/* Price Change */}
+                                                <span>
+                                                    {afterHoursData
+                                                        ? (afterHoursData.change >= 0 ? '+' : '') + afterHoursData.change.toFixed(2)
+                                                        : (timeRange === '1D'
+                                                            ? (stockData.change >= 0 ? '+' : '') + stockData.change.toFixed(2)
+                                                            : (periodChange?.change >= 0 ? '+' : '') + (periodChange?.change || 0).toFixed(2))
+                                                    }
+                                                </span>
+                                                {/* Percent Change */}
+                                                <span>
+                                                    ({Math.abs(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent || 0)).toFixed(2)}%)
+                                                </span>
                                             </div>
                                             <span className="text-slate-500 text-base font-normal">
                                                 {afterHoursData ? 'After hours' : (timeRange === '1D' ? 'Today' : timeRange)}
