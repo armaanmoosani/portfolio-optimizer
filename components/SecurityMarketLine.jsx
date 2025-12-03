@@ -97,8 +97,8 @@ export default function SecurityMarketLine({ data }) {
             // Sort payload by distance to cursor to ensure the closest point is always selected
             const sortedPayload = [...payload].map(entry => {
                 // Robustly find coordinates
-                const x = entry.cx ?? entry.payload?.cx ?? entry.x ?? 0;
-                const y = entry.cy ?? entry.payload?.cy ?? entry.y ?? 0;
+                const x = entry.cx ?? entry.payload?.cx ?? entry.props?.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.payload?.cy ?? entry.props?.cy ?? entry.y ?? 0;
 
                 // Calculate distance
                 const dist = coordinate ? Math.hypot(x - coordinate.x, y - coordinate.y) : Infinity;
@@ -117,9 +117,9 @@ export default function SecurityMarketLine({ data }) {
                 // Secondary sort: Priority
                 // Assets should be high priority if they are the specific target
                 const typePriority = {
+                    'Asset': 15,
                     'Optimal Portfolio': 10,
                     'Market': 8,
-                    'Asset': 5,
                     'SML': -1
                 };
                 return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
@@ -151,8 +151,8 @@ export default function SecurityMarketLine({ data }) {
                             {point.name}
                         </p>
                         <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${point.type === 'Asset' ? 'bg-slate-700 text-slate-300' :
-                                point.type === 'Market' ? 'bg-blue-900/50 text-blue-300 border border-blue-700/30' :
-                                    'bg-emerald-900/50 text-emerald-300 border border-emerald-700/30'
+                            point.type === 'Market' ? 'bg-blue-900/50 text-blue-300 border border-blue-700/30' :
+                                'bg-emerald-900/50 text-emerald-300 border border-emerald-700/30'
                             }`}>
                             {point.type === 'Optimal Portfolio' ? 'Max Sharpe' : point.type}
                         </span>
@@ -344,11 +344,10 @@ export default function SecurityMarketLine({ data }) {
                             name="Assets"
                             data={assets}
                             fill="#f8fafc"
+                            stroke="#475569"
+                            strokeWidth={1}
                             shape="circle"
                         >
-                            {assets.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1} />
-                            ))}
                             <LabelList dataKey="name" position="top" offset={8} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: '600' }} />
                         </Scatter>
 

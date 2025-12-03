@@ -123,9 +123,9 @@ export default function EfficientFrontier({ data }) {
             // Sort payload by distance to cursor to ensure the closest point is always selected
             const sortedPayload = [...payload].map(entry => {
                 // Robustly find coordinates
-                // Recharts payload structure can vary; sometimes cx/cy are on the entry, sometimes in payload
-                const x = entry.cx ?? entry.payload?.cx ?? entry.x ?? 0;
-                const y = entry.cy ?? entry.payload?.cy ?? entry.y ?? 0;
+                // Recharts payload structure can vary; sometimes cx/cy are on the entry, sometimes in payload, sometimes in props
+                const x = entry.cx ?? entry.payload?.cx ?? entry.props?.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.payload?.cy ?? entry.props?.cy ?? entry.y ?? 0;
 
                 // Calculate distance
                 // If coordinate is missing, use Infinity to push to bottom
@@ -145,10 +145,12 @@ export default function EfficientFrontier({ data }) {
                 }
 
                 // Secondary sort: Priority (if distances are extremely close)
+                // We prioritize Assets over Key Portfolios because Assets are smaller and more specific.
+                // If the user hovers an Asset that is "under" the Optimal point, they likely want the Asset details.
                 const typePriority = {
+                    'Asset': 15,
                     'Optimal Portfolio': 10,
                     'Minimum Variance Portfolio': 10,
-                    'Asset': 5, // Assets should be high priority if they are the specific target
                     'Efficient Frontier': 2,
                     'Monte Carlo': 1,
                     'CML': -1
@@ -378,11 +380,9 @@ export default function EfficientFrontier({ data }) {
                             name="Assets"
                             data={individualAssets}
                             fill="#f8fafc"
+                            stroke="#475569"
                             shape="circle"
                         >
-                            {individualAssets.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" />
-                            ))}
                             <LabelList dataKey="name" position="top" offset={5} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: 'bold' }} />
                         </Scatter>
 
