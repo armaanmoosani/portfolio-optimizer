@@ -152,17 +152,19 @@ export default function SecurityMarketLine({ data }) {
                             dataKey="beta"
                             name="Beta"
                             stroke="#94a3b8"
-                            tick={{ fill: '#cbd5e1', fontSize: 11 }}
+                            strokeWidth={2}
+                            tick={{ fill: '#e2e8f0', fontSize: 12, fontWeight: 500 }}
+                            tickLine={{ stroke: '#94a3b8', strokeWidth: 2 }}
                             domain={betaDomain}
                             tickCount={8}
                             label={{
                                 value: 'Beta (Systematic Risk)',
                                 position: 'bottom',
                                 offset: 0,
-                                fill: '#e2e8f0',
-                                fontSize: 13,
-                                fontWeight: 500,
-                                dy: 20
+                                fill: '#f8fafc',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                dy: 25
                             }}
                         />
                         <YAxis
@@ -171,7 +173,9 @@ export default function SecurityMarketLine({ data }) {
                             name="Return"
                             unit="%"
                             stroke="#94a3b8"
-                            tick={{ fill: '#cbd5e1', fontSize: 11 }}
+                            strokeWidth={2}
+                            tick={{ fill: '#e2e8f0', fontSize: 12, fontWeight: 500 }}
+                            tickLine={{ stroke: '#94a3b8', strokeWidth: 2 }}
                             domain={retDomain}
                             tickCount={8}
                             label={{
@@ -179,10 +183,10 @@ export default function SecurityMarketLine({ data }) {
                                 angle: -90,
                                 position: 'left',
                                 offset: 10,
-                                fill: '#e2e8f0',
-                                fontSize: 13,
-                                fontWeight: 500,
-                                dx: -20
+                                fill: '#f8fafc',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                dx: -25
                             }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#64748b', strokeWidth: 1 }} />
@@ -194,9 +198,8 @@ export default function SecurityMarketLine({ data }) {
                             line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '6 4' }}
                             lineType="linear"
                             fill="none"
-                            shape={() => null}
                             isAnimationActive={false}
-                            legendType="none"
+                            legendType="line"
                             tooltipType="none"
                         />
 
