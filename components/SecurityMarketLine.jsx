@@ -195,13 +195,40 @@ export default function SecurityMarketLine({ data }) {
                         <Scatter
                             name="SML"
                             data={smlPoints}
-                            line={{ stroke: '#22d3ee', strokeWidth: 2, strokeDasharray: '5 5' }}
+                            line={{ stroke: '#ffffff', strokeWidth: 2, strokeDasharray: '5 5' }}
                             lineType="linear"
                             shape={false}
+                            stroke="#ffffff"
                             isAnimationActive={false}
                             legendType="line"
                             tooltipType="none"
                         />
+
+                        {/* Invisible Layers for Tooltips */}
+                        {optimalPortfolio && (
+                            <Scatter
+                                name="Optimal Portfolio"
+                                data={[optimalPortfolio]}
+                                fill="rgba(255,255,255,0.01)"
+                                stroke="none"
+                                shape="circle"
+                                legendType="none"
+                                style={{ pointerEvents: 'all' }}
+                            >
+                                <Cell r={10} />
+                            </Scatter>
+                        )}
+                        <Scatter
+                            name="Market"
+                            data={[marketPortfolio]} // We need to access marketPortfolio from scope
+                            fill="rgba(255,255,255,0.01)"
+                            stroke="none"
+                            shape="circle"
+                            legendType="none"
+                            style={{ pointerEvents: 'all' }}
+                        >
+                            <Cell r={10} />
+                        </Scatter>
 
                         {/* 2. Individual Assets */}
                         <Scatter

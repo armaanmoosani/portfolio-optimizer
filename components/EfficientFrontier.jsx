@@ -298,9 +298,10 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Capital Market Line"
                                 data={cmlPoints}
-                                line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
+                                line={{ stroke: '#ffffff', strokeWidth: 2, strokeDasharray: '5 5' }}
                                 lineType="linear"
                                 shape={false}
+                                stroke="#ffffff"
                                 isAnimationActive={false}
                                 legendType="line"
                                 tooltipType="none"
@@ -314,6 +315,7 @@ export default function EfficientFrontier({ data }) {
                             line={{ stroke: '#22d3ee', strokeWidth: 4 }}
                             lineType="natural"
                             shape={false}
+                            stroke="#22d3ee"
                             isAnimationActive={false}
                         />
 
@@ -379,21 +381,27 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Optimal Portfolio"
                                 data={[optimalPortfolio]}
-                                fill="transparent"
+                                fill="rgba(255,255,255,0.01)"
+                                stroke="none"
                                 shape="circle"
                                 legendType="none"
-                                tooltipType="none" // We want the custom tooltip to pick it up, but not show a separate entry
-                                style={{ pointerEvents: 'none' }} // Actually we want pointer events
-                            />
+                                style={{ pointerEvents: 'all' }}
+                            >
+                                <Cell r={10} />
+                            </Scatter>
                         )}
                         {minVariancePortfolio && (
                             <Scatter
                                 name="Minimum Variance Portfolio"
                                 data={[minVariancePortfolio]}
-                                fill="transparent"
+                                fill="rgba(255,255,255,0.01)"
+                                stroke="none"
                                 shape="circle"
                                 legendType="none"
-                            />
+                                style={{ pointerEvents: 'all' }}
+                            >
+                                <Cell r={10} />
+                            </Scatter>
                         )}
                     </ScatterChart>
                 </ResponsiveContainer>
