@@ -575,17 +575,19 @@ ${aggregatedNews.slice(0, 15000)}
                                             ${afterHoursData ? afterHoursData.price.toFixed(2) : stockData.price.toFixed(2)}
                                         </div>
                                         <div className="flex items-center gap-3 mt-2">
-                                            <div className={`flex items-center gap-2 text-xl font-medium ${afterHoursData ? (afterHoursData.percent >= 0 ? 'text-emerald-400' : 'text-rose-400') : (stockData.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400')}`}>
-                                                {afterHoursData
-                                                    ? (afterHoursData.percent >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />)
-                                                    : (stockData.changePercent >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />)
+                                            <div className={`flex items-center gap-2 text-xl font-medium ${(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
+                                                    ? 'text-emerald-400'
+                                                    : 'text-rose-400'
+                                                }`}>
+                                                {(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
+                                                    ? <ArrowUpRight className="w-6 h-6" />
+                                                    : <ArrowDownRight className="w-6 h-6" />
                                                 }
-                                                {afterHoursData
-                                                    ? `${Math.abs(afterHoursData.percent).toFixed(2)}%`
-                                                    : `${Math.abs(stockData.changePercent).toFixed(2)}%`
-                                                }
+                                                {Math.abs(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent || 0)).toFixed(2)}%
                                             </div>
-                                            <span className="text-slate-500 text-base font-normal">{afterHoursData ? 'After hours' : 'Today'}</span>
+                                            <span className="text-slate-500 text-base font-normal">
+                                                {afterHoursData ? 'After hours' : (timeRange === '1D' ? 'Today' : timeRange)}
+                                            </span>
                                         </div>
                                         {afterHoursData && (
                                             <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
