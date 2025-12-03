@@ -8,7 +8,7 @@ git pull
 
 # 2. Build new image
 echo "Building Docker image..."
-docker build -t portfolio-backend .
+docker build --no-cache -t portfolio-backend .
 
 # 3. Stop and remove old container
 echo "Stopping old container..."
