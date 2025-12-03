@@ -120,7 +120,7 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
             print(f"WARNING: Could not fetch benchmark data for {portfolio_request.benchmark}. SML will be disabled.")
             benchmark_prices = None
         else:
-            benchmark_prices = benchmark_data['Close']
+            benchmark_prices = benchmark_data
         
         # 3. Run Optimization
         print(f"Running optimization with objective: {portfolio_request.objective}")
