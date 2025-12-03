@@ -118,30 +118,54 @@ export default function EfficientFrontier({ data }) {
     ];
 
     // Custom Tooltip
-    const CustomTooltip = ({ active, payload }) => {
+    const CustomTooltip = ({ active, payload, coordinate }) => {
         if (active && payload && payload.length > 0) {
             // DEBUG: Log the entire payload to see what Recharts is passing
             console.log("TOOLTIP PAYLOAD:", payload);
             console.log("TOOLTIP PAYLOAD TYPES:", payload.map(p => p.payload?.type || p.payload?.name));
+            console.log("CURSOR COORDINATE:", coordinate);
 
-            // Sort payload to prioritize points over lines
-            // We want to show the point data (Asset, Optimal, MinVar) if available
-            // CML line usually has type 'CML', we want to ignore it or deprioritize it
-            const sortedPayload = [...payload].sort((a, b) => {
-                // Priority: Optimal/MinVar > Asset > Frontier > CML
-                const typePriority = {
-                    'Optimal Portfolio': 4,
-                    'Minimum Variance Portfolio': 4,
-                    'Asset': 3,
-                    'Efficient Frontier': 2,
-                    'Monte Carlo': 1,
-                    'CML': -1
-                };
-                return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
-            });
+            // Filter out CML lines
+            const filteredPayload = payload.filter(p => p.payload?.type !== 'CML');
 
-            const point = sortedPayload[0].payload;
+            // If we have both Optimal and MinVar in the payload, pick the closest one
+            const hasOptimal = filteredPayload.some(p => p.payload?.type === 'Optimal Portfolio');
+            const hasMinVar = filteredPayload.some(p => p.payload?.type === 'Minimum Variance Portfolio');
 
+            let point;
+
+            if (hasOptimal && hasMinVar && coordinate) {
+                // Calculate distance from cursor to each portfolio point
+                const optimalPoint = filteredPayload.find(p => p.payload?.type === 'Optimal Portfolio')?.payload;
+                const minVarPoint = filteredPayload.find(p => p.payload?.type === 'Minimum Variance Portfolio')?.payload;
+
+                const distToOptimal = Math.sqrt(
+                    Math.pow(optimalPoint.volatility - coordinate.x, 2) +
+                    Math.pow(optimalPoint.return - coordinate.y, 2)
+                );
+                const distToMinVar = Math.sqrt(
+                    Math.pow(minVarPoint.volatility - coordinate.x, 2) +
+                    Math.pow(minVarPoint.return - coordinate.y, 2)
+                );
+
+                console.log("Distance to Optimal:", distToOptimal, "Distance to MinVar:", distToMinVar);
+                point = distToMinVar < distToOptimal ? minVarPoint : optimalPoint;
+            } else {
+                // Sort by priority if we don't have both portfolios or coordinate is missing
+                const sortedPayload = [...filteredPayload].sort((a, b) => {
+                    const typePriority = {
+                        'Optimal Portfolio': 4,
+                        'Minimum Variance Portfolio': 4,
+                        'Asset': 3,
+                        'Efficient Frontier': 2,
+                        'Monte Carlo': 1
+                    };
+                    return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
+                });
+                point = sortedPayload[0].payload;
+            }
+
+            if (!point) return null; // If no point is selected after filtering and sorting
             if (point.type === 'CML') return null; // Don't show tooltip for CML line
 
             // Determine badge type
