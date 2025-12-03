@@ -17,7 +17,7 @@ export default function EfficientFrontier({ data }) {
         weights: p.weights || {},
         name: 'Efficient Frontier',
         type: 'Efficient Frontier'
-    })).sort((a, b) => a.volatility - b.volatility);
+    })).sort((a, b) => a.return - b.return);
 
     // 2. Format Monte Carlo Points (The Cloud)
     // Downsample if too many points to improve performance
