@@ -227,9 +227,9 @@ export default function EfficientFrontier({ data }) {
     };
 
     return (
-        <div className="rounded-2xl border border-slate-700/40 overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-800/20 shadow-xl">
+        <div className="rounded-2xl border border-slate-700/40 bg-gradient-to-br from-slate-900/40 to-slate-800/20 shadow-xl">
             {/* Header */}
-            <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/60 px-6 py-5 border-b border-slate-600/30 backdrop-blur-sm">
+            <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/60 px-6 py-5 border-b border-slate-600/30 backdrop-blur-sm rounded-t-2xl">
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier</h3>
