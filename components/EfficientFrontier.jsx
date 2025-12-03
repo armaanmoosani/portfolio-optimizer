@@ -442,7 +442,7 @@ export default function EfficientFrontier({ data }) {
                                 legendType="none"
                                 style={{ pointerEvents: 'all' }}
                             >
-                                <Cell r={6} />
+                                <Cell r={4} />
                             </Scatter>
                         )}
                         {minVariancePortfolio && (
@@ -455,7 +455,7 @@ export default function EfficientFrontier({ data }) {
                                 legendType="none"
                                 style={{ pointerEvents: 'all' }}
                             >
-                                <Cell r={6} />
+                                <Cell r={4} />
                             </Scatter>
                         )}
                     </ScatterChart>
