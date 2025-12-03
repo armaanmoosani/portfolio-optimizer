@@ -571,44 +571,53 @@ ${aggregatedNews.slice(0, 15000)}
                             <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        <div className="text-5xl font-bold text-white tracking-tighter tabular-nums">
-                                            ${afterHoursData ? afterHoursData.price.toFixed(2) : stockData.price.toFixed(2)}
-                                        </div>
-                                        <div className="flex items-center gap-3 mt-2">
-                                            <div className={`flex items-center gap-2 text-xl font-medium ${(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
-                                                    ? 'text-emerald-400'
-                                                    : 'text-rose-400'
-                                                }`}>
-                                                {(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
-                                                    ? <ArrowUpRight className="w-6 h-6" />
-                                                    : <ArrowDownRight className="w-6 h-6" />
-                                                }
-                                                {/* Price Change */}
-                                                <span>
-                                                    {afterHoursData
-                                                        ? (afterHoursData.change >= 0 ? '+' : '') + afterHoursData.change.toFixed(2)
-                                                        : (timeRange === '1D'
-                                                            ? (stockData.change >= 0 ? '+' : '') + stockData.change.toFixed(2)
-                                                            : (periodChange?.change >= 0 ? '+' : '') + (periodChange?.change || 0).toFixed(2))
-                                                    }
-                                                </span>
-                                                {/* Percent Change */}
-                                                <span>
-                                                    ({Math.abs(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent || 0)).toFixed(2)}%)
-                                                </span>
+                                        {chartLoading ? (
+                                            <div className="animate-pulse space-y-4">
+                                                <div className="h-12 w-48 bg-slate-800 rounded-lg"></div>
+                                                <div className="h-6 w-32 bg-slate-800 rounded-lg"></div>
                                             </div>
-                                            <span className="text-slate-500 text-base font-normal">
-                                                {afterHoursData ? 'After hours' : (timeRange === '1D' ? 'Today' : timeRange)}
-                                            </span>
-                                        </div>
-                                        {afterHoursData && (
-                                            <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
-                                                <span className="text-slate-500 font-normal">Market Close:</span>
-                                                ${afterHoursData.regularClosePrice.toFixed(2)}
-                                                <span className={stockData.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                                                    ({stockData.changePercent >= 0 ? '+' : ''}{stockData.changePercent.toFixed(2)}%)
-                                                </span>
-                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="text-5xl font-bold text-white tracking-tighter tabular-nums">
+                                                    ${afterHoursData ? (afterHoursData.price || 0).toFixed(2) : (stockData.price || 0).toFixed(2)}
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <div className={`flex items-center gap-2 text-xl font-medium ${(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
+                                                        ? 'text-emerald-400'
+                                                        : 'text-rose-400'
+                                                        }`}>
+                                                        {(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
+                                                            ? <ArrowUpRight className="w-6 h-6" />
+                                                            : <ArrowDownRight className="w-6 h-6" />
+                                                        }
+                                                        {/* Price Change */}
+                                                        <span>
+                                                            {afterHoursData
+                                                                ? ((afterHoursData.change || 0) >= 0 ? '+' : '') + (afterHoursData.change || 0).toFixed(2)
+                                                                : (timeRange === '1D'
+                                                                    ? ((stockData.change || 0) >= 0 ? '+' : '') + (stockData.change || 0).toFixed(2)
+                                                                    : ((periodChange?.change || 0) >= 0 ? '+' : '') + (periodChange?.change || 0).toFixed(2))
+                                                            }
+                                                        </span>
+                                                        {/* Percent Change */}
+                                                        <span>
+                                                            ({Math.abs(afterHoursData ? (afterHoursData.percent || 0) : (timeRange === '1D' ? (stockData.changePercent || 0) : (periodChange?.percent || 0))).toFixed(2)}%)
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-slate-500 text-base font-normal">
+                                                        {afterHoursData ? 'After hours' : (timeRange === '1D' ? 'Today' : timeRange)}
+                                                    </span>
+                                                </div>
+                                                {afterHoursData && (
+                                                    <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
+                                                        <span className="text-slate-500 font-normal">Market Close:</span>
+                                                        ${(afterHoursData.regularClosePrice || 0).toFixed(2)}
+                                                        <span className={(stockData.changePercent || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                                            ({(stockData.changePercent || 0) >= 0 ? '+' : ''}{(stockData.changePercent || 0).toFixed(2)}%)
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                     <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
