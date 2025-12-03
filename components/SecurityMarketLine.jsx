@@ -245,6 +245,9 @@ export default function SecurityMarketLine({ data }) {
                             <ReferenceLine x={0} stroke="#64748b" strokeWidth={1} strokeDasharray="3 3" />
                         )}
 
+                        {/* Beta=1 Reference Line (Market) */}
+                        <ReferenceLine x={1} stroke="#64748b" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
+
                         {/* 1. SML Line - Reference Line */}
                         <ReferenceLine
                             segment={[

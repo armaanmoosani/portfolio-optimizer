@@ -391,10 +391,12 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         asset_beta = 0.0
         if aligned_benchmark is not None:
             # Calculate Beta: Cov(Ra, Rm) / Var(Rm)
-            # Use aligned data for accurate covariance
-            covariance = aligned_returns[ticker].cov(aligned_benchmark) * annualization_factor
-            if market_variance and market_variance != 0:
-                asset_beta = float(covariance / market_variance)
+            # Note: Annualization factor cancels out in the division, so we can use raw returns
+            covariance = aligned_returns[ticker].cov(aligned_benchmark)
+            market_var_raw = aligned_benchmark.var()
+            
+            if market_var_raw != 0:
+                asset_beta = float(covariance / market_var_raw)
         
         individual_assets.append({
             "name": ticker,
