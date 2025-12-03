@@ -150,7 +150,15 @@ export default function EfficientFrontier({ data }) {
                 return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
             });
 
-            const point = sortedPayload[0]?.payload;
+            const closestPoint = sortedPayload[0];
+
+            // Enforce a maximum hit radius (e.g., 30px)
+            // If the cursor is too far from the point, don't show the tooltip
+            if (!closestPoint || closestPoint.dist > 30) {
+                return null;
+            }
+
+            const point = closestPoint.payload;
             if (!point) return null; // If no point is selected after filtering and sorting
             if (point.type === 'CML') return null; // Don't show tooltip for CML line
 
