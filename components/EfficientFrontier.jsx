@@ -120,10 +120,25 @@ export default function EfficientFrontier({ data }) {
     // Custom Tooltip
     const CustomTooltip = ({ active, payload, coordinate }) => {
         if (active && payload && payload.length > 0) {
-            // Sort payload to prioritize points over lines
-            // We want to show the point data (Asset, Optimal, MinVar) if available
-            const sortedPayload = [...payload].sort((a, b) => {
-                // Priority: Optimal/MinVar > Asset > Frontier > CML
+            // Sort payload by distance to cursor to ensure the closest point is always selected
+            // This fixes the issue where "Optimal" overrides nearby "Frontier" points
+            const sortedPayload = [...payload].map(entry => {
+                // Calculate distance from cursor (coordinate) to the point (entry.cx/cy or entry.x/y)
+                // Recharts provides cx/cy for Scatter points
+                const x = entry.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.y ?? 0;
+
+                // If coordinate is missing (shouldn't happen if active), use large distance
+                const dist = coordinate ? Math.sqrt(Math.pow(x - coordinate.x, 2) + Math.pow(y - coordinate.y, 2)) : Infinity;
+
+                return { ...entry, dist };
+            }).sort((a, b) => {
+                // Primary sort: Distance (closest first)
+                if (Math.abs(a.dist - b.dist) > 1) { // 1px tolerance
+                    return a.dist - b.dist;
+                }
+
+                // Secondary sort: Priority (if distances are very close)
                 const typePriority = {
                     'Optimal Portfolio': 4,
                     'Minimum Variance Portfolio': 4,
