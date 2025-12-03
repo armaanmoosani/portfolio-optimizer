@@ -559,21 +559,7 @@ ${aggregatedNews.slice(0, 15000)}
                             </div>
                             <p className="text-lg text-slate-400 mt-4 max-w-3xl leading-relaxed">{stockData.description}</p>
                         </div>
-                        <div className="text-left md:text-right">
-                            <div className="text-6xl font-bold text-white tracking-tighter tabular-nums">
-                                ${afterHoursData ? afterHoursData.regularClosePrice.toFixed(2) : stockData.price.toFixed(2)}
-                            </div>
-                            <div className={`flex items-center md:justify-end gap-2 mt-2 text-xl font-medium ${stockData.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {stockData.changePercent >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-                                {Math.abs(stockData.changePercent).toFixed(2)}% <span className="text-slate-500 text-base font-normal ml-1">Today</span>
-                            </div>
-                            {afterHoursData && (
-                                <div className={`flex items-center md:justify-end gap-2 mt-1 text-sm font-medium ${afterHoursData.percent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    <span className="text-slate-500 font-normal">After hours:</span>
-                                    ${afterHoursData.price.toFixed(2)} ({afterHoursData.percent >= 0 ? '+' : ''}{afterHoursData.percent.toFixed(2)}%)
-                                </div>
-                            )}
-                        </div>
+
                     </div>
 
                     {/* Main Content Grid */}
@@ -586,12 +572,29 @@ ${aggregatedNews.slice(0, 15000)}
                             <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                            Price Performance
-                                        </h3>
-                                        {periodChange && (
-                                            <div className={`text-sm font-medium mt-1 ${periodChange.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {periodChange.isPositive ? '+' : ''}{periodChange.percent.toFixed(2)}% <span className="text-slate-500">({timeRange})</span>
+                                        <div className="text-5xl font-bold text-white tracking-tighter tabular-nums">
+                                            ${afterHoursData ? afterHoursData.price.toFixed(2) : stockData.price.toFixed(2)}
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <div className={`flex items-center gap-2 text-xl font-medium ${afterHoursData ? (afterHoursData.percent >= 0 ? 'text-emerald-400' : 'text-rose-400') : (stockData.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400')}`}>
+                                                {afterHoursData
+                                                    ? (afterHoursData.percent >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />)
+                                                    : (stockData.changePercent >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />)
+                                                }
+                                                {afterHoursData
+                                                    ? `${Math.abs(afterHoursData.percent).toFixed(2)}%`
+                                                    : `${Math.abs(stockData.changePercent).toFixed(2)}%`
+                                                }
+                                            </div>
+                                            <span className="text-slate-500 text-base font-normal">{afterHoursData ? 'After hours' : 'Today'}</span>
+                                        </div>
+                                        {afterHoursData && (
+                                            <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
+                                                <span className="text-slate-500 font-normal">Market Close:</span>
+                                                ${afterHoursData.regularClosePrice.toFixed(2)}
+                                                <span className={stockData.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                                    ({stockData.changePercent >= 0 ? '+' : ''}{stockData.changePercent.toFixed(2)}%)
+                                                </span>
                                             </div>
                                         )}
                                     </div>
