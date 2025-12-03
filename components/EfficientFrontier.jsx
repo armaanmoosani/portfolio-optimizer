@@ -57,6 +57,13 @@ export default function EfficientFrontier({ data }) {
         type: 'Minimum Variance Portfolio'
     } : null;
 
+    // DEBUG LOGGING
+    console.log("DEBUG: optimalPortfolio:", optimalPortfolio);
+    console.log("DEBUG: minVariancePortfolio:", minVariancePortfolio);
+    console.log("DEBUG: Are they the same object?", optimalPortfolio === minVariancePortfolio);
+    console.log("DEBUG: Raw data.optimal_portfolio:", data.optimal_portfolio);
+    console.log("DEBUG: Raw data.min_variance_portfolio:", data.min_variance_portfolio);
+
     // 5. Capital Market Line (CML)
     // Use backend points if available, otherwise calculate
     let cmlPoints = [];
