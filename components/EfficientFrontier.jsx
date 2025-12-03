@@ -121,34 +121,43 @@ export default function EfficientFrontier({ data }) {
     const CustomTooltip = ({ active, payload, coordinate }) => {
         if (active && payload && payload.length > 0) {
             // Sort payload by distance to cursor to ensure the closest point is always selected
-            // This fixes the issue where "Optimal" overrides nearby "Frontier" points
             const sortedPayload = [...payload].map(entry => {
-                // Calculate distance from cursor (coordinate) to the point (entry.cx/cy or entry.x/y)
-                // Recharts provides cx/cy for Scatter points
-                const x = entry.cx ?? entry.x ?? 0;
-                const y = entry.cy ?? entry.y ?? 0;
+                // Robustly find coordinates
+                // Recharts payload structure can vary; sometimes cx/cy are on the entry, sometimes in payload
+                const x = entry.cx ?? entry.payload?.cx ?? entry.x ?? 0;
+                const y = entry.cy ?? entry.payload?.cy ?? entry.y ?? 0;
 
-                // If coordinate is missing (shouldn't happen if active), use large distance
-                const dist = coordinate ? Math.sqrt(Math.pow(x - coordinate.x, 2) + Math.pow(y - coordinate.y, 2)) : Infinity;
+                // Calculate distance
+                // If coordinate is missing, use Infinity to push to bottom
+                const dist = coordinate ? Math.hypot(x - coordinate.x, y - coordinate.y) : Infinity;
 
-                return { ...entry, dist };
+                return { ...entry, dist, _debug_coords: { x, y } };
             }).sort((a, b) => {
                 // Primary sort: Distance (closest first)
-                if (Math.abs(a.dist - b.dist) > 1) { // 1px tolerance
-                    return a.dist - b.dist;
+                // Use a smaller tolerance (e.g., 5px) to favor the truly closest point
+                // But if one is Infinity (missing coords), it goes last
+                if (a.dist === Infinity) return 1;
+                if (b.dist === Infinity) return -1;
+
+                const diff = a.dist - b.dist;
+                if (Math.abs(diff) > 2) { // 2px tolerance
+                    return diff;
                 }
 
-                // Secondary sort: Priority (if distances are very close)
+                // Secondary sort: Priority (if distances are extremely close)
                 const typePriority = {
-                    'Optimal Portfolio': 4,
-                    'Minimum Variance Portfolio': 4,
-                    'Asset': 3,
+                    'Optimal Portfolio': 10,
+                    'Minimum Variance Portfolio': 10,
+                    'Asset': 5, // Assets should be high priority if they are the specific target
                     'Efficient Frontier': 2,
                     'Monte Carlo': 1,
                     'CML': -1
                 };
                 return (typePriority[b.payload.type] || 0) - (typePriority[a.payload.type] || 0);
             });
+
+            // Debugging
+            // console.log("Tooltip Payload:", payload, "Sorted:", sortedPayload, "Cursor:", coordinate);
 
             const point = sortedPayload[0]?.payload;
             if (!point) return null; // If no point is selected after filtering and sorting
