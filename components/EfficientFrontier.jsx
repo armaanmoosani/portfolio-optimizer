@@ -300,7 +300,7 @@ export default function EfficientFrontier({ data }) {
                                 data={cmlPoints}
                                 line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
                                 lineType="linear"
-                                shape={<></>}
+                                shape={false}
                                 isAnimationActive={false}
                                 legendType="line"
                                 tooltipType="none"
@@ -312,8 +312,8 @@ export default function EfficientFrontier({ data }) {
                             name="Efficient Frontier"
                             data={frontierPoints}
                             line={{ stroke: '#3b82f6', strokeWidth: 4 }}
-                            lineType="monotone"
-                            shape={<></>}
+                            lineType="natural"
+                            shape={false}
                             isAnimationActive={false}
                         />
 

@@ -197,7 +197,7 @@ export default function SecurityMarketLine({ data }) {
                             data={smlPoints}
                             line={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5 5' }}
                             lineType="linear"
-                            shape={<></>}
+                            shape={false}
                             isAnimationActive={false}
                             legendType="line"
                             tooltipType="none"
