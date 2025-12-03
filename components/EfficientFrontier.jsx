@@ -120,6 +120,10 @@ export default function EfficientFrontier({ data }) {
     // Custom Tooltip
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length > 0) {
+            // DEBUG: Log the entire payload to see what Recharts is passing
+            console.log("TOOLTIP PAYLOAD:", payload);
+            console.log("TOOLTIP PAYLOAD TYPES:", payload.map(p => p.payload?.type || p.payload?.name));
+
             // Sort payload to prioritize points over lines
             // We want to show the point data (Asset, Optimal, MinVar) if available
             // CML line usually has type 'CML', we want to ignore it or deprioritize it
