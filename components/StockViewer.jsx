@@ -450,6 +450,24 @@ ${aggregatedNews.slice(0, 15000)}
 
     // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
+        // Sync hover state with tooltip data
+        useEffect(() => {
+            if (active && payload && payload.length) {
+                const newPayload = payload[0].payload;
+                // Only update if the date/price is different to avoid infinite loops
+                if (!hoveredData || hoveredData.date !== newPayload.date || hoveredData.price !== newPayload.price) {
+                    // We need the index for pre-market logic. 
+                    // Recharts payload usually doesn't have index directly in the data item unless we put it there.
+                    // But we can find it or pass it. 
+                    // Actually, let's just rely on the data object itself.
+                    // We can find the index in chartData if needed, or rely on date comparison.
+                    // Let's find the index to be safe for the pre-market logic.
+                    const index = chartData.findIndex(d => d.date === newPayload.date);
+                    setHoveredData({ ...newPayload, index });
+                }
+            }
+        }, [active, payload, label]);
+
         if (active && payload && payload.length) {
             const currentPrice = payload[0].value;
             // Calculate change relative to the baseline price
@@ -729,13 +747,6 @@ ${aggregatedNews.slice(0, 15000)}
                                         <AreaChart
                                             data={chartData}
                                             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-                                            onMouseMove={(data) => {
-                                                if (data && data.activePayload && data.activePayload.length > 0) {
-                                                    const index = data.activeTooltipIndex;
-                                                    const payload = data.activePayload[0].payload;
-                                                    setHoveredData({ ...payload, index });
-                                                }
-                                            }}
                                             onMouseLeave={() => {
                                                 setHoveredData(null);
                                             }}
