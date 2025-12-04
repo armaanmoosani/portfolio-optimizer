@@ -732,11 +732,8 @@ ${aggregatedNews.slice(0, 15000)}
                                             onMouseMove={(data) => {
                                                 if (data && data.activePayload && data.activePayload.length > 0) {
                                                     const index = data.activeTooltipIndex;
-                                                    // Only update if index changed to prevent excessive re-renders
-                                                    if (!hoveredData || hoveredData.index !== index) {
-                                                        const payload = data.activePayload[0].payload;
-                                                        setHoveredData({ ...payload, index });
-                                                    }
+                                                    const payload = data.activePayload[0].payload;
+                                                    setHoveredData({ ...payload, index });
                                                 }
                                             }}
                                             onMouseLeave={() => {
