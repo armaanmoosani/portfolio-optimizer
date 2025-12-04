@@ -351,59 +351,66 @@ def get_stock_info(ticker: str) -> dict:
                 # Process reported
                 for date, row in reported_earnings.iterrows():
                     # Determine Quarter
-                    month = date.month
-                    year = date.year
-                    quarter = "Q?"
-                    if month in [1, 2, 3]: quarter = f"Q4 FY{year-1}" # Approx fiscal offset
-                    elif month in [4, 5, 6]: quarter = f"Q1 FY{year}"
-                    elif month in [7, 8, 9]: quarter = f"Q2 FY{year}"
-                    elif month in [10, 11, 12]: quarter = f"Q3 FY{year}"
-                    
-                    # Revenue
-                    revenue_actual = None
-                    # Try to match with quarterly financials
-                    financials = stock.quarterly_financials
-                    if financials is not None and not financials.empty:
-                        cols = pd.to_datetime(financials.columns)
-                        # Find closest date before report date
-                        potential_dates = [d for d in cols if d < date.replace(tzinfo=None)]
-                        if potential_dates:
-                            closest_date = max(potential_dates)
-                            col_idx = list(cols).index(closest_date)
-                            orig_col = financials.columns[col_idx]
-                            if "Total Revenue" in financials.index:
-                                val = financials.loc["Total Revenue", orig_col]
-                                revenue_actual = val
-                    
-                    history.append({
-                        "quarter": quarter,
-                        "date": date.strftime("%Y-%m-%d"),
-                        "eps": {
-                            "estimate": row.get("EPS Estimate"),
-                            "reported": row.get("Reported EPS"),
-                            "surprise": row.get("Surprise(%)")
-                        },
-                        "revenue": {
-                            "reported": revenue_actual
-                        }
+                    result["earningsHistory"].append({
+                        "date": date.strftime('%Y-%m-%d'),
+                        "quarter": f"Q{(date.month - 1) // 3 + 1} {date.year}",
+                        "epsEstimate": row['EPS Estimate'] if pd.notna(row['EPS Estimate']) else None,
+                        "epsReported": row['Reported EPS'] if pd.notna(row['Reported EPS']) else None,
+                        "surprise": row['Surprise(%)'] * 100 if pd.notna(row['Surprise(%)']) else None
                     })
                 
-                # Sort chronological
-                history.sort(key=lambda x: x['date'])
-                result["earningsHistory"] = history
-                
-                # Populate the legacy "earnings" field with the latest reported
-                if history:
-                    latest = history[-1]
-                    result["earnings"] = {
-                        "quarter": latest["quarter"],
-                        "date": latest["date"],
-                        "eps": latest["eps"],
-                        "revenue": latest["revenue"]
-                    }
+                # Reverse to show oldest to newest
+                result["earningsHistory"].reverse()
+
+                # Add Revenue Data if available (often in financials or quarterly_financials)
+                # yfinance 'earnings_dates' doesn't always have revenue. 
+                # Let's try to get it from quarterly_financials for the same periods if possible
+                try:
+                    financials = stock.quarterly_financials
+                    if not financials.empty and 'Total Revenue' in financials.index:
+                        revenues = financials.loc['Total Revenue']
+                        # Map revenues to the earnings history items by approximate date match
+                        for item in result["earningsHistory"]:
+                            # Parse item date
+                            item_date = datetime.strptime(item['date'], '%Y-%m-%d')
+                            # Find closest revenue date
+                            # This is a bit loose, but revenue dates usually align with quarter ends
+                            # Earnings report date is usually 1-2 months AFTER quarter end.
+                            # So we look for a revenue date that is within 3 months BEFORE the report date.
+                            
+                            for rev_date, rev_val in revenues.items():
+                                # Convert timestamp to datetime if needed
+                                if isinstance(rev_date, pd.Timestamp):
+                                    rev_date = rev_date.to_pydatetime()
+                                
+                                diff = (item_date - rev_date).days
+                                if 0 <= diff <= 100: # Report is usually 0-90 days after quarter end
+                                    item['revenue'] = rev_val
+                                    break
+                except Exception as e:
+                    print(f"Error fetching revenue for {ticker}: {e}")
 
         except Exception as e:
-            print(f"Error fetching earnings for {ticker}: {e}")
+            print(f"Error fetching earnings history for {ticker}: {e}")
+
+        # --- 3. Fetch Analyst Recommendations ---
+        try:
+            recs = stock.recommendations_summary
+            if recs is not None and not recs.empty:
+                # yfinance returns columns: ['period', 'strongBuy', 'buy', 'hold', 'sell', 'strongSell']
+                # We usually want the latest period (0m)
+                latest_rec = recs.iloc[0] # The summary is usually just one row or small table
+                # Check if it's the right format
+                if 'strongBuy' in latest_rec:
+                     result["recommendations"] = {
+                        "strongBuy": int(latest_rec['strongBuy']),
+                        "buy": int(latest_rec['buy']),
+                        "hold": int(latest_rec['hold']),
+                        "sell": int(latest_rec['sell']),
+                        "strongSell": int(latest_rec['strongSell'])
+                     }
+        except Exception as e:
+            print(f"Error fetching recommendations for {ticker}: {e}")
 
         return result
     except Exception as e:

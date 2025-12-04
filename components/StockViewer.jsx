@@ -9,6 +9,9 @@ import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
 import PerformanceCard from './PerformanceCard';
 import EarningsCharts from './EarningsCharts';
+import KeyStatistics from './KeyStatistics';
+import AnalystRatings from './AnalystRatings';
+import CompanyProfile from './CompanyProfile';
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -906,100 +909,11 @@ ${aggregatedNews.slice(0, 15000)}
 
                             {/* Performance Overview */}
                             {stockInfo?.performance && (
-                                <div className="mb-8">
-                                    <PerformanceCard data={stockInfo.performance} ticker={stockData.symbol} />
-                                </div>
+                                <PerformanceCard performance={stockInfo.performance} />
                             )}
 
-                            {/* Key Statistics Grid */}
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
-                                <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Open</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">High</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Low</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Prev Close</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                </div>
-                                {stockInfo && (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Mkt Cap</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {formatLargeNumber(stockInfo.marketCap)}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">P/E Ratio</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk High</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk Low</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">EPS (TTM)</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Volume</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {formatLargeNumber(stockInfo.volume)}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Beta</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
-                                            </p>
-                                        </div>
-
-                                    </div>
-                                )}
-                            </div>
+                            {/* Key Statistics */}
+                            <KeyStatistics stockData={stockData} stockInfo={stockInfo} />
 
                             {/* Earnings Trends */}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
@@ -1009,8 +923,17 @@ ${aggregatedNews.slice(0, 15000)}
 
                         {/* Right Column: AI & News (Span 1) */}
                         <div className="space-y-8">
+                            {/* Company Profile */}
+                            <CompanyProfile stockInfo={stockInfo} description={stockData.description} />
+
+                            {/* Analyst Ratings */}
+                            {stockInfo?.recommendations && (
+                                <AnalystRatings recommendations={stockInfo.recommendations} />
+                            )}
+
                             {/* AI Summary */}
                             <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
+                                {/* ... (existing AI Summary code) ... */}
                                 <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
                                     <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
@@ -1032,6 +955,7 @@ ${aggregatedNews.slice(0, 15000)}
 
                             {/* Recent News */}
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                                {/* ... (existing News code) ... */}
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                                     <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
                                         <Calendar className="w-5 h-5" />
@@ -1066,8 +990,8 @@ ${aggregatedNews.slice(0, 15000)}
                         </div>
                     </div>
                 </div>
-            )
-            }
-        </div >
+            )}
+        </div>
     );
 }
+
