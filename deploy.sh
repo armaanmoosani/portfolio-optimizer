@@ -1,24 +1,39 @@
 #!/bin/bash
 set -e
-export DOCKER_BUILDKIT=0
 
-echo "Starting deployment..."
+echo "🚀 Starting GCP VM deployment..."
 
-# 1. Pull latest changes
-echo "Pulling latest code..."
+echo "📥 Pulling latest code..."
 git pull
 
-# 2. Build new image
-echo "Building Docker image..."
-docker build --no-cache -t portfolio-backend .
+echo "🛑 Stopping existing containers..."
+sudo docker stop portfolio-backend 2>/dev/null || true
+sudo docker rm portfolio-backend 2>/dev/null || true
 
-# 3. Stop and remove old container
-echo "Stopping old container..."
-docker stop backend || true
-docker rm backend || true
+echo "🔨 Building Docker image (with memory limits for e2-micro)..."
+sudo docker build \
+  --memory=512m \
+  --memory-swap=1g \
+  -t portfolio-backend \
+  .
 
-# 4. Run new container
-echo "Starting new container..."
+echo "🚀 Starting container..."
+sudo docker run -d \
+  -p 10000:10000 \
+  --memory=512m \
+  --memory-swap=1g \
+  --restart=unless-stopped \
+  --name portfolio-backend \
+  portfolio-backend
+
+echo "✅ Deployment complete!"
+echo ""
+echo "📊 Container status:"
+sudo docker ps | grep portfolio-backend
+
+echo ""
+echo "📝 View logs with: sudo docker logs -f portfolio-backend"
+echo "🌐 API docs: http://$(curl -s ifconfig.me):10000/api/docs"
 docker run -d -p 8000:10000 --restart always --name backend portfolio-backend
 
 echo "Deployment complete! Server is running."
