@@ -92,28 +92,54 @@ def negative_return(weights, mean_returns, cov_matrix, risk_free_rate, annualiza
 
 def kelly_criterion(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar=None):
     """
-    Kelly Criterion: Maximize expected log returns (geometric growth rate).
+    Kelly Criterion: Maximize expected geometric growth rate (log returns).
     
-    This is the mathematically optimal strategy for long-term wealth growth.
+    This is the mathematically optimal strategy for long-term wealth maximization.
+    
     Formula: max E[log(1 + R_p)]
+    
+    Reference:
+    Kelly, J. L. (1956). "A New Interpretation of Information Rate."
+    Bell System Technical Journal, 35(4), 917-926.
+    
+    Note: Returns must be > -100% (i.e., > -1.0) for log to be defined.
+    The optimizer's weight constraints naturally prevent extreme losses.
     """
     if returns_matrix is None:
         raise ValueError("Kelly Criterion requires historical returns matrix")
     
     portfolio_returns = returns_matrix.dot(weights)
-    # Use log(1 + r) to handle returns properly
-    # Add small epsilon to avoid log(0) in edge cases
-    log_returns = np.log(1 + portfolio_returns + 1e-10)
+    
+    # Check for extreme losses (returns < -100% would make log undefined)
+    # This should never happen with reasonable weight constraints
+    if np.any(portfolio_returns <= -1.0):
+        return 1e10  # Penalize heavily if portfolio has total loss
+    
+    # Calculate log returns: log(1 + R)
+    # NO epsilon needed - proper weight constraints prevent total loss
+    log_returns = np.log(1 + portfolio_returns)
     expected_log_return = np.mean(log_returns)
     
-    return -expected_log_return  # Minimize negative
+    return -expected_log_return  # Minimize negative (maximize positive)
 
 def negative_sortino(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar):
     """
-    Sortino Ratio: Maximize (Return - MAR) / Downside Deviation.
+    Sortino Ratio: Maximize (Return - MAR) / Downside Semi-Deviation.
     
-    Like Sharpe ratio but only penalizes downside volatility.
-    Formula: (E[R] - MAR) / sqrt(E[min(R - MAR, 0)^2])
+    Measures risk-adjusted return using only downside volatility.
+    Superior to Sharpe when return distributions are asymmetric.
+    
+    Formula: (E[R_p] - MAR) / σ_downside
+    
+    Where σ_downside = sqrt(E[min(R - MAR, 0)^2])
+    
+    Reference:
+    Sortino, F. A., & Price, L. N. (1994). "Performance Measurement in a 
+    Downside Risk Framework." Journal of Investing, 3(3), 59-64.
+    
+    Industry Standard:
+    - CFA Institute: "Downside deviation uses only returns below MAR"
+    - GIPS Standards: Recommends Sortino for asymmetric return profiles
     """
     if returns_matrix is None:
         raise ValueError("Sortino Ratio requires historical returns matrix")
@@ -123,27 +149,24 @@ def negative_sortino(weights, mean_returns, cov_matrix, risk_free_rate, annualiz
     # Calculate portfolio daily returns
     portfolio_returns = returns_matrix.dot(weights)
     
-    # Annualized return (Geometric for accuracy, or Arithmetic * 252)
-    # Using Arithmetic * 252 to match standard Sharpe optimization convention
+    # Annualized return (arithmetic mean * 252)
     mean_return = np.mean(portfolio_returns) * annualization_factor
     
-    # Convert annual MAR to daily geometric MAR for accurate downside comparison
+    # Convert annual MAR to daily for comparison
     # (1 + MAR_annual) = (1 + MAR_daily)^252
     mar_daily = (1 + mar) ** (1 / annualization_factor) - 1
     
-    # Calculate downside deviation relative to daily MAR
-    downside_returns = portfolio_returns - mar_daily
-    downside_returns = downside_returns[downside_returns < 0]
+    # Calculate downside deviations (only negative excess returns)
+    downside_diff = portfolio_returns - mar_daily
+    downside_diff = np.minimum(downside_diff, 0)  # Keep only negative values
     
-    if len(downside_returns) == 0:
-        return -1e10  # No downside
-    
-    # LPM2 (Lower Partial Moment order 2)
-    # Sum of squared shortfalls / Total observations (not just downside observations)
-    downside_variance = np.sum(downside_returns**2) / len(portfolio_returns)
+    # Downside semi-deviation (industry standard formula)
+    # Mean of squared downside deviations, using ALL observations (not just downside days)
+    downside_variance = np.mean(downside_diff ** 2)
     downside_deviation = np.sqrt(downside_variance) * np.sqrt(annualization_factor)
     
     if downside_deviation < 1e-10:
+        # No downside risk - return maximum ratio
         return -1e10
     
     sortino = (mean_return - mar) / downside_deviation
@@ -243,10 +266,21 @@ def negative_treynor(weights, mean_returns, cov_matrix, risk_free_rate, annualiz
 
 def negative_calmar(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar):
     """
-    Calmar Ratio: Maximize Annualized Return / Max Drawdown.
+    Calmar Ratio: Maximize Annualized Return / Maximum Drawdown.
     
-    Measures return per unit of maximum drawdown risk.
-    Preferred by hedge funds and CTA strategies.
+    Measures return efficiency relative to worst peak-to-trough decline.
+    Industry-standard metric for hedge funds and CTAs.
+    
+    Formula: CAGR / |Max Drawdown|
+    
+    Reference:
+    Young, T. W. (1991). "Calmar Ratio: A Smoother Tool."
+    Futures Magazine, October 1991.
+    
+    Industry Standard:
+    - CAGR (Compound Annual Growth Rate), not arithmetic mean
+    - Max Drawdown as absolute value (positive denominator)
+    - Widely used in hedge fund industry (Barclay, HFR databases)
     """
     if returns_matrix is None:
         raise ValueError("Calmar Ratio requires historical returns matrix")
@@ -254,23 +288,33 @@ def negative_calmar(weights, mean_returns, cov_matrix, risk_free_rate, annualiza
     # Calculate portfolio daily returns
     portfolio_returns = returns_matrix.dot(weights)
     
-    # Calculate cumulative returns
+    # Calculate cumulative wealth (buy-and-hold)
     cum_returns = (1 + portfolio_returns).cumprod()
     
     # Calculate Max Drawdown
-    peak = np.maximum.accumulate(cum_returns)
-    drawdown = (cum_returns - peak) / peak
-    max_drawdown = np.abs(np.min(drawdown))
+    running_max = np.maximum.accumulate(cum_returns)
+    drawdown = (cum_returns - running_max) / running_max
+    max_drawdown = np.abs(np.min(drawdown))  # Absolute value
     
     if max_drawdown < 1e-10:
-        return -1e10  # Avoid division by zero (or infinite ratio)
+        # Near-zero drawdown (ideal scenario)
+        return -1e10
     
-    # Annualized Return
-    # Using Arithmetic mean * 252 for consistency with other metrics in this file
-    # though Calmar often uses CAGR. We'll stick to the standard here.
-    mean_return = np.mean(portfolio_returns) * annualization_factor
+    # Calculate CAGR (Compound Annual Growth Rate)
+    # CAGR = (End Value / Start Value)^(1/Years) - 1
+    total_return = cum_returns[-1] / cum_returns[0]  # End/Start
+    num_days = len(portfolio_returns)
+    years = num_days / annualization_factor
     
-    calmar = mean_return / max_drawdown
+    if years < 1e-6:
+        # Insufficient data
+        return 1e10
+    
+    cagr = total_return ** (1 / years) - 1
+    
+    # Calmar Ratio = CAGR / Max Drawdown
+    calmar = cagr / max_drawdown
+    
     return -calmar
 
 def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, mar: float = 0.0, benchmark_prices: pd.Series = None):
