@@ -2,9 +2,9 @@ fastapi
 pandas
 numpy
 yfinance>=0.2.66
+lxml
 scipy
 pydantic
 uvicorn
 slowapi==0.1.9
-python-dateutil==2.8.2
 lxml
