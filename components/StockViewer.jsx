@@ -678,12 +678,12 @@ ${aggregatedNews.slice(0, 15000)}
                                                     <div className={`flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                         {displayData.isPositive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
                                                         {/* Price Change */}
-                                                        <span>
-                                                            {displayData.isPositive ? '+' : ''}{(displayData.change || 0).toFixed(2)}
+                                                        <span className="flex items-center">
+                                                            {displayData.isPositive ? '+' : ''}<AnimatedPrice value={displayData.change || 0} />
                                                         </span>
                                                         {/* Percent Change */}
-                                                        <span>
-                                                            ({Math.abs(displayData.percent || 0).toFixed(2)}%)
+                                                        <span className="flex items-center">
+                                                            (<AnimatedPrice value={displayData.percent || 0} />%)
                                                         </span>
                                                     </div>
                                                     <span className="text-slate-500 text-base font-normal">
@@ -731,12 +731,12 @@ ${aggregatedNews.slice(0, 15000)}
                                             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
                                             onMouseMove={(data) => {
                                                 if (data && data.activePayload && data.activePayload.length > 0) {
-                                                    // Find the index of the hovered point
-                                                    // Recharts doesn't always give index directly in activePayload, 
-                                                    // but usually gives it in activeTooltipIndex or we can find it
                                                     const index = data.activeTooltipIndex;
-                                                    const payload = data.activePayload[0].payload;
-                                                    setHoveredData({ ...payload, index });
+                                                    // Only update if index changed to prevent excessive re-renders
+                                                    if (!hoveredData || hoveredData.index !== index) {
+                                                        const payload = data.activePayload[0].payload;
+                                                        setHoveredData({ ...payload, index });
+                                                    }
                                                 }
                                             }}
                                             onMouseLeave={() => {
