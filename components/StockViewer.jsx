@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
@@ -992,57 +992,143 @@ ${aggregatedNews.slice(0, 15000)}
                                 )}
                             </div>
 
-                            {/* Earnings Card */}
-                            {stockInfo?.earnings && (
-                                <div className="glass-panel rounded-3xl p-8 border border-white/5">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                                Earnings
-                                            </h3>
-                                            <p className="text-slate-400 text-sm font-medium mt-1">{stockInfo.earnings.quarter}</p>
-                                        </div>
-                                        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-bold text-slate-400">
-                                            {new Date(stockInfo.earnings.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                        </div>
+                            {/* Earnings Trends Section */}
+                            {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
+                                <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
+                                    <div className="flex justify-between items-center mb-8">
+                                        <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* EPS */}
-                                        <div className="bg-slate-800/40 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">EPS Surprise</p>
-                                            <div className={`text-3xl font-bold tracking-tight mb-1 ${stockInfo.earnings.eps.surprise >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {stockInfo.earnings.eps.surprise >= 0 ? '+' : ''}{stockInfo.earnings.eps.surprise?.toFixed(2)}%
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* EPS Chart */}
+                                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h4 className="text-sm font-bold text-slate-300">Earnings Per Share</h4>
+                                                <div className="flex gap-4 text-xs font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                                                        <span className="text-slate-400">Estimate</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                                        <span className="text-slate-400">Actual</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-white font-medium mb-4">
-                                                {stockInfo.earnings.eps.surprise >= 0 ? 'Beat Estimates' : 'Missed Estimates'}
-                                            </p>
-                                            <div className="pt-4 border-t border-white/5 flex justify-between text-xs text-slate-400 font-medium">
-                                                <span>Est: <span className="text-slate-300">{stockInfo.earnings.eps.estimate?.toFixed(2)}</span></span>
-                                                <span>Act: <span className="text-white">{stockInfo.earnings.eps.reported?.toFixed(2)}</span></span>
+                                            <div className="h-[300px] w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <ComposedChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                        <XAxis
+                                                            dataKey="quarter"
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            dy={10}
+                                                        />
+                                                        <YAxis
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            tickFormatter={(val) => val.toFixed(2)}
+                                                        />
+                                                        <Tooltip
+                                                            content={({ active, payload }) => {
+                                                                if (active && payload && payload.length) {
+                                                                    const data = payload[0].payload;
+                                                                    const surprise = data.epsReported - data.epsEstimate;
+                                                                    const isBeat = surprise >= 0;
+                                                                    return (
+                                                                        <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
+                                                                            <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-slate-300">Est: <span className="text-white font-medium">{data.epsEstimate?.toFixed(2)}</span></p>
+                                                                                <p className="text-slate-300">Act: <span className={`font-medium ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>{data.epsReported?.toFixed(2)}</span></p>
+                                                                                <p className={`font-bold ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                                    {isBeat ? 'Beat' : 'Missed'} by {Math.abs(surprise).toFixed(2)}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            }}
+                                                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                                                        />
+                                                        {/* Estimate Dots (Grey) */}
+                                                        <Scatter name="Estimate" dataKey="epsEstimate" fill="#64748b" shape="circle" />
+
+                                                        {/* Actual Dots (Colored) */}
+                                                        <Scatter name="Actual" dataKey="epsReported" shape="circle">
+                                                            {stockInfo.earningsHistory.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.epsReported >= entry.epsEstimate ? '#34d399' : '#f43f5e'} />
+                                                            ))}
+                                                        </Scatter>
+                                                    </ComposedChart>
+                                                </ResponsiveContainer>
                                             </div>
                                         </div>
 
-                                        {/* Revenue */}
-                                        <div className="bg-slate-800/40 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">Revenue</p>
-                                            {stockInfo.earnings.revenue ? (
-                                                <>
-                                                    <div className="text-3xl font-bold tracking-tight text-white mb-1">
-                                                        {formatLargeNumber(stockInfo.earnings.revenue.reported)}
+                                        {/* Revenue vs Earnings Chart */}
+                                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h4 className="text-sm font-bold text-slate-300">Revenue vs. Earnings</h4>
+                                                <div className="flex gap-4 text-xs font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-sm bg-blue-500"></span>
+                                                        <span className="text-slate-400">Revenue</span>
                                                     </div>
-                                                    <p className="text-sm text-white font-medium mb-4">
-                                                        Reported Revenue
-                                                    </p>
-                                                    <div className="pt-4 border-t border-white/5 text-xs text-slate-400 font-medium">
-                                                        Fiscal Quarter: <span className="text-white">{stockInfo.earnings.quarter}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
+                                                        <span className="text-slate-400">Earnings</span>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <div className="flex items-center justify-center h-full text-slate-500 text-sm">
-                                                    Revenue data unavailable
                                                 </div>
-                                            )}
+                                            </div>
+                                            <div className="h-[300px] w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }} barGap={2}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                        <XAxis
+                                                            dataKey="quarter"
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            dy={10}
+                                                        />
+                                                        <YAxis
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            tickFormatter={(val) => formatLargeNumber(val)}
+                                                            width={45}
+                                                        />
+                                                        <Tooltip
+                                                            content={({ active, payload }) => {
+                                                                if (active && payload && payload.length) {
+                                                                    const data = payload[0].payload;
+                                                                    return (
+                                                                        <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
+                                                                            <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-slate-300">Rev: <span className="text-blue-400 font-medium">{formatLargeNumber(data.revenue)}</span></p>
+                                                                                <p className="text-slate-300">Earn: <span className="text-amber-400 font-medium">{formatLargeNumber(data.earnings)}</span></p>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            }}
+                                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                                        />
+                                                        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                        <Bar dataKey="earnings" fill="#fbbf24" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

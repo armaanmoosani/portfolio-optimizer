@@ -264,67 +264,105 @@ def get_stock_info(ticker: str) -> dict:
         # Fetch Earnings Data
         try:
             earnings_dates = stock.earnings_dates
+            financials = stock.quarterly_financials
+            
+            history = []
+            
             if earnings_dates is not None and not earnings_dates.empty:
-                # Filter for rows with valid Surprise (Reported earnings)
-                # Sort by date descending just in case
+                # Filter for rows with valid data
+                # Sort by date descending
                 earnings_dates = earnings_dates.sort_index(ascending=False)
                 
-                # Find the first row with a valid Surprise value
-                valid_earnings = earnings_dates[earnings_dates['Surprise(%)'].notna()]
+                # Get last 4 quarters (approx)
+                # We look at the last 8 entries and pick the ones that have data
+                recent_earnings = earnings_dates.head(8)
                 
-                if not valid_earnings.empty:
-                    recent = valid_earnings.iloc[0]
-                    date = valid_earnings.index[0]
-                    
-                    # Determine Quarter (approximate)
-                    # If report date is Jan/Feb/Mar -> Q4 Prev Year
-                    # Apr/May/Jun -> Q1 Curr Year
-                    # Jul/Aug/Sep -> Q2 Curr Year
-                    # Oct/Nov/Dec -> Q3 Curr Year
+                for date, row in recent_earnings.iterrows():
+                    # Skip if no reported EPS (future date)
+                    if pd.isna(row.get("Reported EPS")):
+                        continue
+                        
+                    # Determine Quarter Label
                     month = date.month
                     year = date.year
-                    quarter = "Q?"
+                    quarter_label = "Q?"
+                    # Fiscal year logic is complex, we'll use calendar quarters for simplicity
+                    # or try to align with standard "Q3 FY24" format if possible.
+                    # Usually:
+                    # Jan/Feb/Mar report -> Q4 Prev Year
+                    # Apr/May/Jun report -> Q1 Curr Year
+                    # Jul/Aug/Sep report -> Q2 Curr Year
+                    # Oct/Nov/Dec report -> Q3 Curr Year
+                    
+                    fy_year = year
                     if month in [1, 2, 3]:
-                        quarter = f"Q4 {year - 1}"
+                        q_num = 4
+                        fy_year = year - 1
                     elif month in [4, 5, 6]:
-                        quarter = f"Q1 {year}"
+                        q_num = 1
                     elif month in [7, 8, 9]:
-                        quarter = f"Q2 {year}"
+                        q_num = 2
                     elif month in [10, 11, 12]:
-                        quarter = f"Q3 {year}"
-
-                    result["earnings"] = {
-                        "quarter": quarter,
+                        q_num = 3
+                        
+                    quarter_label = f"Q{q_num} FY{str(fy_year)[2:]}"
+                    
+                    entry = {
+                        "quarter": quarter_label,
                         "date": date.strftime("%Y-%m-%d"),
-                        "eps": {
-                            "estimate": recent.get("EPS Estimate"),
-                            "reported": recent.get("Reported EPS"),
-                            "surprise": recent.get("Surprise(%)")
-                        },
-                        "revenue": None
+                        "epsEstimate": row.get("EPS Estimate"),
+                        "epsReported": row.get("Reported EPS"),
+                        "revenue": None,
+                        "earnings": None
                     }
                     
-                    # Try to get Revenue from financials
-                    # Look for a quarter end date ~1-3 months before report date
-                    financials = stock.quarterly_financials
+                    # Try to match with financials (Revenue/Net Income)
                     if financials is not None and not financials.empty:
-                        # Convert columns to datetime if they aren't
+                        # Financials columns are dates (quarter end)
+                        # Earnings report date is usually 1-3 months AFTER quarter end
+                        # So we look for a financial date that is BEFORE the report date
                         cols = pd.to_datetime(financials.columns)
-                        # Find closest date before report date
                         potential_dates = [d for d in cols if d < date.replace(tzinfo=None)]
+                        
                         if potential_dates:
-                            # Get max date (closest to report)
                             closest_date = max(potential_dates)
-                            # Find the column name that matches this date
-                            # (Original columns might be strings or timestamps)
-                            col_idx = list(cols).index(closest_date)
-                            orig_col = financials.columns[col_idx]
-                            
-                            if "Total Revenue" in financials.index:
-                                result["earnings"]["revenue"] = {
-                                    "reported": financials.loc["Total Revenue", orig_col],
-                                    "date": closest_date.strftime("%Y-%m-%d")
-                                }
+                            # Check if it's within reasonable range (e.g. < 4 months)
+                            if (date.replace(tzinfo=None) - closest_date).days < 120:
+                                col_idx = list(cols).index(closest_date)
+                                orig_col = financials.columns[col_idx]
+                                
+                                if "Total Revenue" in financials.index:
+                                    entry["revenue"] = financials.loc["Total Revenue", orig_col]
+                                if "Net Income" in financials.index:
+                                    entry["earnings"] = financials.loc["Net Income", orig_col]
+                    
+                    history.append(entry)
+                    
+                    if len(history) >= 4:
+                        break
+            
+            # Reverse to chronological order for charts (Oldest -> Newest)
+            result["earningsHistory"] = history[::-1]
+            
+            # Keep the "earnings" field for backward compatibility (most recent)
+            if history:
+                latest = history[-1]
+                result["earnings"] = {
+                    "quarter": latest["quarter"],
+                    "date": latest["date"],
+                    "eps": {
+                        "estimate": latest["epsEstimate"],
+                        "reported": latest["epsReported"],
+                        "surprise": ((latest["epsReported"] - latest["epsEstimate"]) / abs(latest["epsEstimate"]) * 100) if latest["epsEstimate"] else 0
+                    },
+                    "revenue": {
+                        "reported": latest["revenue"],
+                        "date": latest["date"] # Approx
+                    }
+                }
+
+        except Exception as e:
+            print(f"Error fetching earnings for {ticker}: {e}")
 
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
