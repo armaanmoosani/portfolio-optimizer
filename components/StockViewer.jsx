@@ -345,6 +345,7 @@ ${aggregatedNews.slice(0, 15000)}
             change,
             percent,
             splitOffset,
+            openIndex,
             endDate: chartData[openIndex].date
         };
     }, [chartData, timeRange, stockData]);
@@ -379,6 +380,7 @@ ${aggregatedNews.slice(0, 15000)}
             change,
             percent,
             splitOffset,
+            closeIndex,
             closeDate: chartData[closeIndex].date
         };
     }, [chartData, timeRange]);
@@ -400,13 +402,13 @@ ${aggregatedNews.slice(0, 15000)}
 
             // Determine context based on hover
             if (timeRange === '1D') {
-                if (preMarketData && hoveredData.index < (preMarketData.splitOffset * (chartData.length - 1))) {
+                if (preMarketData && hoveredData.index < preMarketData.openIndex) {
                     // Hovering Pre-Market
                     label = 'Pre-market';
                     change = price - stockData.prevClose;
                     percent = (change / stockData.prevClose) * 100;
                     isRegular = false;
-                } else if (afterHoursData && hoveredData.index > (afterHoursData.splitOffset * (chartData.length - 1))) {
+                } else if (afterHoursData && hoveredData.index > afterHoursData.closeIndex) {
                     // Hovering After-Hours
                     label = 'After hours';
                     change = price - afterHoursData.regularClosePrice;
@@ -811,7 +813,7 @@ ${aggregatedNews.slice(0, 15000)}
                                             />
                                             {/* We hide the default tooltip content but keep the cursor line */}
                                             <Tooltip
-                                                content={<></>}
+                                                content={<CustomTooltip />}
                                                 cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
                                             />
 
