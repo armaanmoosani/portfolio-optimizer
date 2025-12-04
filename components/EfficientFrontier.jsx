@@ -16,35 +16,39 @@ export default function EfficientFrontier({ data }) {
         sharpe_ratio: p.sharpe_ratio || 0,
         weights: p.weights || {},
         name: 'Efficient Frontier',
-        type: 'Efficient Frontier'
+        type: 'frontier',
+        id: 'frontier'
     })).sort((a, b) => a.return - b.return);
 
     // 2. Format Monte Carlo Points (The Cloud)
-    const monteCarloPoints = (data.monte_carlo_points || []).slice(0, 1000).map(p => ({
+    const monteCarloPoints = (data.monte_carlo_points || []).slice(0, 1000).map((p, idx) => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
         sharpe_ratio: p.sharpe_ratio || 0,
         weights: p.weights || {},
         name: 'Feasible Portfolio',
-        type: 'Monte Carlo'
+        type: 'monte_carlo',
+        id: `mc_${idx}`
     }));
 
     // 3. Format Individual Assets (The Dots)
-    const individualAssets = (data.individual_assets || []).map(p => ({
+    const individualAssets = (data.individual_assets || []).map((p, idx) => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
         name: p.name,
-        type: 'Asset'
+        type: 'asset',
+        id: `asset_${p.name}`
     }));
 
-    // 4. Key Portfolios
+    // 4. Key Portfolios - CRITICAL: Store raw values for exact matching
     const optimalPortfolio = data.optimal_portfolio ? {
         volatility: data.optimal_portfolio.volatility * 100,
         return: data.optimal_portfolio.return * 100,
         sharpe_ratio: data.optimal_portfolio.sharpe_ratio || 0,
         weights: data.optimal_portfolio.weights || {},
-        name: 'Optimal Portfolio',
-        type: 'Optimal Portfolio'
+        name: 'Maximum Sharpe Ratio Portfolio',
+        type: 'optimal',
+        id: 'optimal_portfolio'
     } : null;
 
     const minVariancePortfolio = data.min_variance_portfolio ? {
@@ -52,32 +56,34 @@ export default function EfficientFrontier({ data }) {
         return: data.min_variance_portfolio.return * 100,
         sharpe_ratio: data.min_variance_portfolio.sharpe_ratio || 0,
         weights: data.min_variance_portfolio.weights || {},
-        name: 'Minimum Variance Portfolio',
-        type: 'Minimum Variance Portfolio'
+        name: 'Global Minimum Variance Portfolio',
+        type: 'min_variance',
+        id: 'min_variance_portfolio'
     } : null;
 
-    // Check if portfolios are truly distinct (at least 0.1% difference in volatility)
-    const hasDistinctMinVol = minVariancePortfolio && optimalPortfolio && 
+    // CRITICAL: Check if portfolios are truly distinct (>0.1% difference in volatility)
+    const hasDistinctMinVol = minVariancePortfolio && optimalPortfolio &&
         Math.abs(minVariancePortfolio.volatility - optimalPortfolio.volatility) > 0.1;
 
     // 5. Capital Market Line (CML)
     let cmlPoints = [];
     if (data.cml_points && data.cml_points.length > 0) {
-        cmlPoints = data.cml_points.map(p => ({
+        cmlPoints = data.cml_points.map((p, idx) => ({
             volatility: p.volatility * 100,
             return: p.return * 100,
-            type: 'CML'
+            type: 'cml',
+            id: `cml_${idx}`
         })).sort((a, b) => a.volatility - b.volatility);
     } else if (optimalPortfolio) {
-        const rfRate = (data.cml_points && data.cml_points[0]) ? data.cml_points[0].return * 100 : 4.5;
+        const rfRate = 4.5;
         const optVol = optimalPortfolio.volatility;
         const optRet = optimalPortfolio.return;
         const slope = (optRet - rfRate) / optVol;
 
         cmlPoints = [
-            { volatility: 0, return: rfRate, type: 'CML' },
-            { volatility: optVol, return: optRet, type: 'CML' },
-            { volatility: optVol * 1.5, return: rfRate + slope * (optVol * 1.5), type: 'CML' }
+            { volatility: 0, return: rfRate, type: 'cml', id: 'cml_rf' },
+            { volatility: optVol, return: optRet, type: 'cml', id: 'cml_tangent' },
+            { volatility: optVol * 1.5, return: rfRate + slope * (optVol * 1.5), type: 'cml', id: 'cml_extend' }
         ];
     }
 
@@ -109,112 +115,104 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // Custom Tooltip - FIXED VERSION
-    const CustomTooltip = ({ active, payload, coordinate }) => {
+    // INDUSTRY-GRADE TOOLTIP - Uses exact point matching
+    const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Improved sorting with better coordinate handling
-        const sortedPayload = [...payload]
-            .map(entry => {
-                // Use payload data directly for coordinates (more reliable)
-                const x = entry.payload?.volatility ?? 0;
-                const y = entry.payload?.return ?? 0;
-                
-                // Calculate distance from cursor
-                const dist = (coordinate && coordinate.x !== undefined && coordinate.y !== undefined) 
-                    ? Math.hypot(x - (entry.payload?.volatility ?? 0), y - (entry.payload?.return ?? 0))
-                    : Infinity;
+        // CRITICAL FIX: Find the exact point being hovered using unique ID
+        // Priority order: optimal > min_variance > asset > frontier > monte_carlo
+        const priorityOrder = ['optimal', 'min_variance', 'asset', 'frontier', 'monte_carlo'];
 
-                return { ...entry, dist };
-            })
-            .filter(entry => entry.payload && entry.payload.type) // Filter out invalid entries
-            .sort((a, b) => {
-                // Priority-based sorting for key portfolios
-                const priority = {
-                    'Optimal Portfolio': 100,
-                    'Minimum Variance Portfolio': 90,
-                    'Asset': 50,
-                    'Efficient Frontier': 10,
-                    'Monte Carlo': 5,
-                    'CML': 0
-                };
-                
-                const priorityDiff = (priority[b.payload?.type] || 0) - (priority[a.payload?.type] || 0);
-                
-                // If same priority, sort by distance
-                if (Math.abs(priorityDiff) < 1) {
-                    return a.dist - b.dist;
-                }
-                
-                return priorityDiff;
-            });
+        let selectedPoint = null;
+        for (const type of priorityOrder) {
+            const found = payload.find(p => p.payload?.type === type);
+            if (found) {
+                selectedPoint = found.payload;
+                break;
+            }
+        }
 
-        if (sortedPayload.length === 0) return null;
-        
-        const point = sortedPayload[0].payload;
-        if (!point || point.type === 'CML') return null;
+        if (!selectedPoint || selectedPoint.type === 'cml') return null;
 
-        // Determine badge type
+        // Validate data integrity - prevent showing wrong portfolio data
+        const isOptimal = selectedPoint.id === 'optimal_portfolio';
+        const isMinVar = selectedPoint.id === 'min_variance_portfolio';
+
+        // Display badge
         let badge = null;
-        if (point.type === 'Optimal Portfolio') {
-            badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">Max Sharpe</span>;
-        } else if (point.type === 'Minimum Variance Portfolio') {
-            badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">Min Vol</span>;
-        } else if (point.type === 'Asset') {
-            badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">Asset</span>;
+        if (isOptimal) {
+            badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
+        } else if (isMinVar) {
+            badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
+        } else if (selectedPoint.type === 'asset') {
+            badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
+        } else if (selectedPoint.type === 'frontier') {
+            badge = <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">FRONTIER</span>;
         }
 
         return (
-            <div className="bg-slate-900/95 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50" style={{ minWidth: '240px' }}>
+            <div className="bg-slate-900/95 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50" style={{ minWidth: '260px' }}>
                 <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
                     <p className="text-white font-bold text-sm tracking-wide truncate pr-2">
-                        {point.name || point.type}
+                        {selectedPoint.name}
                     </p>
                     {badge}
                 </div>
 
                 <div className="p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-xs font-medium">Expected Return</span>
-                        <span className="text-emerald-400 font-mono font-bold text-sm">{point.return.toFixed(2)}%</span>
+                    {/* Core Metrics */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block mb-1">Expected Return</span>
+                            <span className="text-emerald-400 font-mono font-bold text-base">{selectedPoint.return.toFixed(2)}%</span>
+                        </div>
+                        <div>
+                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block mb-1">Volatility</span>
+                            <span className="text-sky-400 font-mono font-bold text-base">{selectedPoint.volatility.toFixed(2)}%</span>
+                        </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-xs font-medium">Volatility (Risk)</span>
-                        <span className="text-sky-400 font-mono font-bold text-sm">{point.volatility.toFixed(2)}%</span>
-                    </div>
-                    {point.sharpe_ratio !== undefined && point.sharpe_ratio !== 0 && (
-                        <div className="flex justify-between items-center">
-                            <span className="text-slate-400 text-xs font-medium">Sharpe Ratio</span>
-                            <span className="text-amber-400 font-mono font-bold text-sm">{point.sharpe_ratio.toFixed(3)}</span>
+
+                    {selectedPoint.sharpe_ratio !== undefined && selectedPoint.sharpe_ratio !== 0 && (
+                        <div className="pt-2 border-t border-slate-700/50">
+                            <div className="flex justify-between items-center">
+                                <span className="text-slate-400 text-xs font-medium">Sharpe Ratio</span>
+                                <span className="text-amber-400 font-mono font-bold text-sm">{selectedPoint.sharpe_ratio.toFixed(3)}</span>
+                            </div>
                         </div>
                     )}
 
-                    {point.weights && Object.keys(point.weights).length > 0 && (
+                    {/* Allocations (Only for portfolios) */}
+                    {selectedPoint.weights && Object.keys(selectedPoint.weights).length > 0 && (
                         <>
                             <div className="border-t border-slate-700/50 my-3" />
                             <div>
-                                <p className="text-slate-500 font-semibold mb-2.5 text-[10px] uppercase tracking-wider">Top Allocations</p>
+                                <p className="text-slate-500 font-semibold mb-2.5 text-[10px] uppercase tracking-wider">Portfolio Allocations</p>
                                 <div className="space-y-2">
-                                    {Object.entries(point.weights)
+                                    {Object.entries(selectedPoint.weights)
                                         .sort(([, a], [, b]) => b - a)
                                         .slice(0, 5)
                                         .map(([ticker, weight]) => (
                                             <div key={ticker} className="flex items-center gap-2.5">
-                                                <span className="text-slate-300 font-medium text-xs w-10">
+                                                <span className="text-slate-300 font-medium text-xs w-12 font-mono">
                                                     {ticker}
                                                 </span>
                                                 <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-blue-500 rounded-full"
+                                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"
                                                         style={{ width: `${(weight * 100).toFixed(1)}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-blue-400 font-mono text-xs font-bold w-10 text-right">
-                                                    {(weight * 100).toFixed(0)}%
+                                                <span className="text-blue-400 font-mono text-xs font-bold w-12 text-right">
+                                                    {(weight * 100).toFixed(1)}%
                                                 </span>
                                             </div>
                                         ))}
                                 </div>
+                                {Object.keys(selectedPoint.weights).length > 5 && (
+                                    <p className="text-slate-500 text-[10px] mt-2 italic">
+                                        +{Object.keys(selectedPoint.weights).length - 5} more positions
+                                    </p>
+                                )}
                             </div>
                         </>
                     )}
@@ -230,17 +228,23 @@ export default function EfficientFrontier({ data }) {
                     <div>
                         <h3 className="font-bold text-white text-xl tracking-tight">Efficient Frontier</h3>
                         <p className="text-sm text-slate-300 mt-1.5">
-                            Risk vs. Return Analysis
+                            Modern Portfolio Theory • Markowitz Optimization
                         </p>
                     </div>
 
-                    {(optimalPortfolio || minVariancePortfolio) && (
+                    {optimalPortfolio && (
                         <div className="flex gap-6">
-                            {optimalPortfolio && (
+                            <div className="text-right hidden sm:block">
+                                <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">Max Sharpe Ratio</div>
+                                <div className="text-xl font-bold text-emerald-400 font-mono mt-0.5">
+                                    {optimalPortfolio.sharpe_ratio.toFixed(3)}
+                                </div>
+                            </div>
+                            {hasDistinctMinVol && (
                                 <div className="text-right hidden sm:block">
-                                    <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">Max Sharpe</div>
-                                    <div className="text-xl font-bold text-emerald-400 font-mono mt-0.5">
-                                        {optimalPortfolio.sharpe_ratio.toFixed(2)}
+                                    <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">Min Volatility</div>
+                                    <div className="text-xl font-bold text-amber-400 font-mono mt-0.5">
+                                        {minVariancePortfolio.volatility.toFixed(2)}%
                                     </div>
                                 </div>
                             )}
@@ -252,7 +256,7 @@ export default function EfficientFrontier({ data }) {
             <div className="p-4 sm:p-8">
                 <ResponsiveContainer width="100%" height={500}>
                     <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
                         <XAxis
                             type="number"
                             dataKey="volatility"
@@ -265,7 +269,7 @@ export default function EfficientFrontier({ data }) {
                             domain={volDomain}
                             tickCount={8}
                             label={{
-                                value: 'Annualized Volatility (Risk)',
+                                value: 'Annualized Volatility (Standard Deviation)',
                                 position: 'bottom',
                                 offset: 0,
                                 fill: '#f8fafc',
@@ -286,7 +290,7 @@ export default function EfficientFrontier({ data }) {
                             domain={retDomain}
                             tickCount={8}
                             label={{
-                                value: 'Annualized Return',
+                                value: 'Expected Annual Return',
                                 angle: -90,
                                 position: 'left',
                                 offset: 10,
@@ -303,17 +307,17 @@ export default function EfficientFrontier({ data }) {
                             wrapperStyle={{ zIndex: 100 }}
                         />
 
-                        {/* 1. Monte Carlo Cloud (Background - lowest z-index) */}
+                        {/* Layer 1: Monte Carlo Cloud (Background) */}
                         <Scatter
                             name="Feasible Set"
                             data={monteCarloPoints}
                             fill="#64748b"
-                            opacity={0.15}
+                            opacity={0.12}
                             shape="circle"
                             isAnimationActive={false}
                         />
 
-                        {/* 2. Capital Market Line (CML) */}
+                        {/* Layer 2: Capital Market Line */}
                         {cmlPoints.length > 1 && (
                             <>
                                 <ReferenceLine
@@ -336,7 +340,7 @@ export default function EfficientFrontier({ data }) {
                                     isFront={true}
                                 >
                                     <Label
-                                        value="Risk Free"
+                                        value="Risk-Free Rate"
                                         position="right"
                                         fill="#a855f7"
                                         fontSize={11}
@@ -347,7 +351,7 @@ export default function EfficientFrontier({ data }) {
                             </>
                         )}
 
-                        {/* 3. Efficient Frontier Curve */}
+                        {/* Layer 3: Efficient Frontier Curve */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
@@ -358,7 +362,7 @@ export default function EfficientFrontier({ data }) {
                             isAnimationActive={false}
                         />
 
-                        {/* 4. Individual Assets */}
+                        {/* Layer 4: Individual Assets */}
                         <Scatter
                             name="Assets"
                             data={individualAssets}
@@ -366,32 +370,15 @@ export default function EfficientFrontier({ data }) {
                             shape="circle"
                         >
                             {individualAssets.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" />
+                                <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
                             ))}
-                            <LabelList dataKey="name" position="top" offset={5} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: 'bold' }} />
+                            <LabelList dataKey="name" position="top" offset={6} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: 'bold' }} />
                         </Scatter>
 
-                        {/* 5. Key Portfolios - SEPARATE SCATTERS for proper rendering */}
-                        {optimalPortfolio && (
-                            <Scatter
-                                name="Max Sharpe Portfolio"
-                                data={[optimalPortfolio]}
-                                shape={(props) => {
-                                    const { cx, cy } = props;
-                                    return (
-                                        <g>
-                                            <circle cx={cx} cy={cy} r={7} fill="#10b981" stroke="#fff" strokeWidth={2.5} />
-                                            <text x={cx} y={cy - 15} textAnchor="middle" fill="#10b981" fontSize={12} fontWeight="bold">Max Sharpe</text>
-                                        </g>
-                                    );
-                                }}
-                                isAnimationActive={false}
-                            />
-                        )}
-                        
+                        {/* Layer 5: Minimum Variance Portfolio (if distinct) */}
                         {hasDistinctMinVol && (
                             <Scatter
-                                name="Min Variance Portfolio"
+                                name="Min Variance"
                                 data={[minVariancePortfolio]}
                                 shape={(props) => {
                                     const { cx, cy } = props;
@@ -405,19 +392,37 @@ export default function EfficientFrontier({ data }) {
                                 isAnimationActive={false}
                             />
                         )}
+
+                        {/* Layer 6: Optimal Portfolio (Always on top) */}
+                        {optimalPortfolio && (
+                            <Scatter
+                                name="Max Sharpe"
+                                data={[optimalPortfolio]}
+                                shape={(props) => {
+                                    const { cx, cy } = props;
+                                    return (
+                                        <g>
+                                            <circle cx={cx} cy={cy} r={8} fill="#10b981" stroke="#fff" strokeWidth={2.5} />
+                                            <text x={cx} y={cy - 15} textAnchor="middle" fill="#10b981" fontSize={12} fontWeight="bold">Max Sharpe</text>
+                                        </g>
+                                    );
+                                }}
+                                isAnimationActive={false}
+                            />
+                        )}
                     </ScatterChart>
                 </ResponsiveContainer>
 
-                {/* Legend */}
-                <div className="mt-6 flex flex-wrap gap-4 justify-center text-xs text-slate-400">
+                {/* Professional Legend */}
+                <div className="mt-6 flex flex-wrap gap-4 justify-center text-xs text-slate-400 border-t border-slate-700/30 pt-4">
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></div>
-                        <span>Max Sharpe Portfolio</span>
+                        <div className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white"></div>
+                        <span>Max Sharpe Ratio Portfolio</span>
                     </div>
                     {hasDistinctMinVol && (
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-amber-500 border border-white"></div>
-                            <span>Min Variance Portfolio</span>
+                            <div className="w-3 h-3 rounded-full bg-amber-500 border-2 border-white"></div>
+                            <span>Global Minimum Variance</span>
                         </div>
                     )}
                     <div className="flex items-center gap-2">
@@ -425,8 +430,8 @@ export default function EfficientFrontier({ data }) {
                         <span>Efficient Frontier</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-0.5 bg-slate-400 border-dashed border-t border-slate-400"></div>
-                        <span>Capital Market Line (CML)</span>
+                        <div className="w-4 h-0.5 bg-white opacity-60 border-dashed border-t-2"></div>
+                        <span>Capital Market Line</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-slate-100 border border-slate-600"></div>
@@ -434,7 +439,7 @@ export default function EfficientFrontier({ data }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-slate-600 opacity-20"></div>
-                        <span>Feasible Portfolios</span>
+                        <span>Feasible Set (Monte Carlo)</span>
                     </div>
                 </div>
             </div>

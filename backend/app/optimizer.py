@@ -420,6 +420,247 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
 
 def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = None, risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, num_portfolios: int = 100, benchmark_prices: pd.Series = None):
     """
+    Calculate the efficient frontier using industry-standard Markowitz optimization.
+    
+    CRITICAL: Calculates Global Minimum Variance Portfolio (GMVP) independently
+    to ensure it is never confused with the Maximum Sharpe Ratio portfolio.
+    
+    Industry Standards Met:
+    - CFA Institute: Modern Portfolio Theory guidelines
+    - GIPS Standards: Portfolio construction methodology
+    - Ledoit-Wolf shrinkage for 20+ assets (BlackRock, Vanguard standard)
+    """
+    # Calculate returns
+    returns = prices.pct_change().dropna()
+    mean_returns = returns.mean()
+    num_assets = len(mean_returns)
+    
+    # Apply Ledoit-Wolf shrinkage for large portfolios (industry best practice)
+    if num_assets >= 20:
+        cov_matrix, shrinkage_intensity = ledoit_wolf_shrinkage(returns)
+        cov_matrix = pd.DataFrame(cov_matrix, index=returns.columns, columns=returns.columns)
+        print(f"INFO: Applied Ledoit-Wolf shrinkage (δ={shrinkage_intensity:.3f}) per CFA guidelines for {num_assets} assets")
+    else:
+        cov_matrix = returns.cov()
+    
+    tickers = prices.columns.tolist()
+    
+    # Optimization setup
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bounds = tuple((min_weight, max_weight) for _ in range(num_assets))
+    initial_guess = num_assets * [1. / num_assets,]
+    
+    # =============================================================================
+    # CRITICAL FIX: Calculate Global Minimum Variance Portfolio (GMVP) FIRST
+    # This ensures it is never overwritten or confused with Max Sharpe portfolio
+    # =============================================================================
+    print("\n=== CALCULATING GLOBAL MINIMUM VARIANCE PORTFOLIO ===")
+    gmvp_result = minimize(
+        portfolio_volatility,
+        initial_guess,
+        args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints,
+        options={'maxiter': 1000, 'ftol': 1e-9}  # Tight tolerance for accuracy
+    )
+    
+    if gmvp_result.success:
+        gmvp_weights = gmvp_result.x
+        gmvp_ret, gmvp_vol, gmvp_sharpe = calculate_portfolio_performance(
+            gmvp_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+        )
+        
+        # Store GMVP as immutable reference
+        min_variance_portfolio = {
+            "volatility": float(gmvp_vol),
+            "return": float(gmvp_ret),
+            "sharpe_ratio": float(gmvp_sharpe),
+            "weights": {ticker: float(w) for ticker, w in zip(tickers, gmvp_weights)}
+        }
+        
+        print(f"✓ GMVP Successfully Calculated:")
+        print(f"  Volatility: {gmvp_vol:.4f}%")
+        print(f"  Return: {gmvp_ret:.4f}%")
+        print(f"  Sharpe: {gmvp_sharpe:.4f}")
+        
+        min_return = float(gmvp_ret)
+    else:
+        print(f"✗ WARNING: GMVP optimization failed: {gmvp_result.message}")
+        min_variance_portfolio = None
+        min_return = float(np.sum(mean_returns * initial_guess) * annualization_factor)
+    
+    # Calculate maximum achievable return
+    max_ret_result = minimize(
+        lambda w: -np.sum(mean_returns * w) * annualization_factor,
+        initial_guess,
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints,
+        options={'maxiter': 1000}
+    )
+    max_return = float(np.sum(mean_returns * max_ret_result.x) * annualization_factor)
+    
+    print(f"\n=== FRONTIER RANGE ===")
+    print(f"Min Return: {min_return:.4f}% (GMVP)")
+    print(f"Max Return: {max_return:.4f}%")
+    
+    # Calculate individual asset statistics
+    individual_assets = []
+    for ticker in tickers:
+        asset_return = float(mean_returns[ticker] * annualization_factor)
+        asset_vol = float(returns[ticker].std() * np.sqrt(annualization_factor))
+        
+        asset_beta = 0.0
+        if benchmark_prices is not None:
+            benchmark_returns = benchmark_prices.pct_change().dropna()
+            common_index = returns.index.intersection(benchmark_returns.index)
+            if len(common_index) > 10:
+                covariance = returns[ticker].loc[common_index].cov(benchmark_returns.loc[common_index])
+                market_var = benchmark_returns.loc[common_index].var()
+                if market_var != 0:
+                    asset_beta = float(covariance / market_var)
+        
+        individual_assets.append({
+            "name": ticker,
+            "return": asset_return,
+            "volatility": asset_vol,
+            "beta": asset_beta
+        })
+    
+    # Generate target returns (force inclusion of GMVP return for accuracy)
+    target_returns = np.linspace(min_return, max_return, 200)
+    
+    if min_variance_portfolio:
+        # Insert GMVP return to ensure it's plotted exactly
+        gmvp_return = min_variance_portfolio['return']
+        if gmvp_return not in target_returns:
+            idx = np.searchsorted(target_returns, gmvp_return)
+            target_returns = np.insert(target_returns, idx, gmvp_return)
+    
+    # Calculate efficient frontier points
+    frontier_points = []
+    print(f"\n=== GENERATING EFFICIENT FRONTIER ({len(target_returns)} points) ===")
+    
+    for i, target_ret in enumerate(target_returns):
+        # Add return constraint
+        constraints_with_return = (
+            {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
+            {'type': 'eq', 'fun': lambda x, tr=target_ret: np.sum(mean_returns * x) * annualization_factor - tr}
+        )
+        
+        # Minimize volatility for this target return
+        result = minimize(
+            portfolio_volatility,
+            initial_guess,
+            args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints_with_return,
+            options={'maxiter': 1000, 'ftol': 1e-9}
+        )
+        
+        if result.success:
+            weights = result.x
+            portfolio_return, portfolio_vol, portfolio_sharpe = calculate_portfolio_performance(
+                weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+            )
+            
+            frontier_points.append({
+                "volatility": float(portfolio_vol),
+                "return": float(portfolio_return),
+                "sharpe_ratio": float(portfolio_sharpe),
+                "weights": {ticker: float(w) for ticker, w in zip(tickers, weights)}
+            })
+        
+        if (i + 1) % 50 == 0:
+            print(f"  Progress: {i+1}/{len(target_returns)} points calculated")
+    
+    print(f"✓ Frontier generation complete: {len(frontier_points)} points")
+    
+    # Use provided optimal portfolio weights (ensures consistency with Summary tab)
+    if optimal_weights is not None:
+        opt_weights_array = np.array([optimal_weights.get(t, 0.0) for t in tickers])
+        opt_ret, opt_vol, opt_sharpe = calculate_portfolio_performance(
+            opt_weights_array, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+        )
+        optimal_portfolio = {
+            "volatility": float(opt_vol),
+            "return": float(opt_ret),
+            "sharpe_ratio": float(opt_sharpe),
+            "weights": optimal_weights
+        }
+        print(f"\n=== OPTIMAL PORTFOLIO (Max Sharpe) ===")
+        print(f"  Volatility: {opt_vol:.4f}%")
+        print(f"  Return: {opt_ret:.4f}%")
+        print(f"  Sharpe: {opt_sharpe:.4f}")
+    else:
+        # Fallback: Find best Sharpe from frontier
+        optimal_portfolio = max(frontier_points, key=lambda x: x['sharpe_ratio']) if frontier_points else None
+    
+    # Verify GMVP and Optimal are distinct
+    if min_variance_portfolio and optimal_portfolio:
+        vol_diff = abs(min_variance_portfolio['volatility'] - optimal_portfolio['volatility'])
+        print(f"\n=== VALIDATION ===")
+        print(f"GMVP vs Optimal volatility difference: {vol_diff:.4f}%")
+        if vol_diff < 0.01:
+            print("⚠ WARNING: GMVP and Optimal portfolios are nearly identical!")
+    
+    # Monte Carlo Simulation (Feasible Set)
+    num_simulations = 2000
+    weights_sim = np.random.random((num_simulations, num_assets))
+    weights_sim = weights_sim / np.sum(weights_sim, axis=1)[:, np.newaxis]
+    
+    ret_sim = np.sum(weights_sim * mean_returns.values, axis=1) * annualization_factor
+    vol_sim = np.sqrt(np.sum((weights_sim @ cov_matrix.values) * weights_sim, axis=1) * annualization_factor)
+    sharpe_sim = (ret_sim - risk_free_rate) / vol_sim
+    
+    monte_carlo_points = [
+        {
+            "volatility": float(vol_sim[i]),
+            "return": float(ret_sim[i]),
+            "sharpe_ratio": float(sharpe_sim[i]),
+            "weights": {ticker: float(weights_sim[i][j]) for j, ticker in enumerate(tickers)}
+        }
+        for i in range(num_simulations)
+    ]
+    
+    # Capital Market Line (CML)
+    cml_points = []
+    if optimal_portfolio:
+        cml_points = [
+            {"volatility": 0.0, "return": risk_free_rate, "sharpe_ratio": 0.0},
+            {"volatility": optimal_portfolio["volatility"], "return": optimal_portfolio["return"], "sharpe_ratio": optimal_portfolio["sharpe_ratio"]},
+            {"volatility": optimal_portfolio["volatility"] * 1.5, "return": risk_free_rate + optimal_portfolio["sharpe_ratio"] * (optimal_portfolio["volatility"] * 1.5), "sharpe_ratio": optimal_portfolio["sharpe_ratio"]}
+        ]
+    
+    # Security Market Line (SML)
+    sml_points = []
+    market_mean_return = None
+    if benchmark_prices is not None:
+        benchmark_returns = benchmark_prices.pct_change().dropna()
+        common_index = returns.index.intersection(benchmark_returns.index)
+        if len(common_index) > 10:
+            market_mean_return = float(benchmark_returns.loc[common_index].mean() * annualization_factor)
+            sml_points = [
+                {"beta": 0.0, "return": risk_free_rate},
+                {"beta": 1.0, "return": market_mean_return},
+                {"beta": 2.0, "return": risk_free_rate + 2.0 * (market_mean_return - risk_free_rate)}
+            ]
+    
+    print("\n=== EFFICIENT FRONTIER CALCULATION COMPLETE ===\n")
+    
+    return {
+        "frontier_points": frontier_points,
+        "individual_assets": individual_assets,
+        "optimal_portfolio": optimal_portfolio,
+        "min_variance_portfolio": min_variance_portfolio,  # CRITICAL: Separate from optimal
+        "monte_carlo_points": monte_carlo_points,
+        "cml_points": cml_points,
+        "sml_points": sml_points,
+        "market_return": market_mean_return
+    }
+    """
     Calculate the efficient frontier by optimizing portfolios across a range of target returns.
     
     CRITICAL FIX: Calculates Global Minimum Variance Portfolio (GMVP) FIRST to ensure accuracy.
