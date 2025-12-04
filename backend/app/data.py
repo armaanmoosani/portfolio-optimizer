@@ -371,13 +371,23 @@ def get_stock_info(ticker: str) -> dict:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=5*365 + 20)
             
-            # Fetch each ticker separately to avoid MultiIndex complexity
+            # Fetch each ticker separately
             ticker_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
             spy_data = yf.download("^GSPC", start=start_date, end=end_date, progress=False)
             
-            # Get Close prices (use Close, not Adj Close for compatibility)
-            ticker_prices = ticker_data.get('Close', ticker_data.get('Adj Close'))
-            spy_prices = spy_data.get('Close', spy_data.get('Adj Close'))
+            # Handle MultiIndex columns - yfinance returns ('Close', 'TICKER') format
+            def get_close_prices(df, symbol):
+                if isinstance(df.columns, pd.MultiIndex):
+                    if 'Close' in df.columns.get_level_values(0):
+                        return df['Close'][symbol] if symbol in df['Close'].columns else df['Close'].iloc[:, 0]
+                    elif 'Adj Close' in df.columns.get_level_values(0):
+                        return df['Adj Close'][symbol] if symbol in df['Adj Close'].columns else df['Adj Close'].iloc[:, 0]
+                else:
+                    return df.get('Close', df.get('Adj Close'))
+                return None
+            
+            ticker_prices = get_close_prices(ticker_data, ticker)
+            spy_prices = get_close_prices(spy_data, "^GSPC")
             
             if ticker_prices is not None and spy_prices is not None and len(ticker_prices) > 0 and len(spy_prices) > 0:
                 def get_return(period_days=None, is_ytd=False):
@@ -387,7 +397,7 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Get latest prices
+                        # Get latest prices (use .iloc[0] for Series elements)
                         t_latest = float(ticker_prices.iloc[-1])
                         s_latest = float(spy_prices.iloc[-1])
                         
