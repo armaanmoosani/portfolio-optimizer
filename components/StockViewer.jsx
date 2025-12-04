@@ -421,26 +421,35 @@ ${aggregatedNews.slice(0, 15000)}
                     percent = (change / stockData.prevClose) * 100;
                 }
             } else {
-                // Non-1D views
+                // Non-1D views - calculate change from baseline (start of period)
                 change = price - baselinePrice;
-                percent = (change / baselinePrice) * 100;
+                percent = baselinePrice ? (change / baselinePrice) * 100 : 0;
                 label = hoveredData.dateStr || timeRange;
             }
         } else {
             // Not hovering - show latest appropriate data
-            if (afterHoursData) {
-                price = afterHoursData.price;
-                change = afterHoursData.change;
-                percent = afterHoursData.percent;
-                label = 'After hours';
-                isRegular = false;
-            } else if (preMarketData && !afterHoursData && chartData.length > 0 && !chartData[chartData.length - 1].isRegularMarket) {
-                // Only Pre-market data available so far
-                price = preMarketData.price;
-                change = preMarketData.change;
-                percent = preMarketData.percent;
-                label = 'Pre-market';
-                isRegular = false;
+            if (timeRange === '1D') {
+                // 1D mode - use real-time quote data
+                if (afterHoursData) {
+                    price = afterHoursData.price;
+                    change = afterHoursData.change;
+                    percent = afterHoursData.percent;
+                    label = 'After hours';
+                    isRegular = false;
+                } else if (preMarketData && !afterHoursData && chartData.length > 0 && !chartData[chartData.length - 1].isRegularMarket) {
+                    // Only Pre-market data available so far
+                    price = preMarketData.price;
+                    change = preMarketData.change;
+                    percent = preMarketData.percent;
+                    label = 'Pre-market';
+                    isRegular = false;
+                }
+            } else {
+                // Non-1D mode - calculate change from period start (baseline) to current price
+                if (baselinePrice && baselinePrice > 0) {
+                    change = price - baselinePrice;
+                    percent = (change / baselinePrice) * 100;
+                }
             }
         }
 
