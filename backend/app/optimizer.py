@@ -422,6 +422,73 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
     """
     Calculate the efficient frontier by optimizing portfolios across a range of target returns.
     
+    CRITICAL FIX: Calculates Global Minimum Variance Portfolio (GMVP) FIRST to ensure accuracy.
+    """
+    # Calculate returns
+    returns = prices.pct_change().dropna()
+    mean_returns = returns.mean()
+    num_assets = len(mean_returns)
+    
+    # Apply Ledoit-Wolf shrinkage for large portfolios
+    if num_assets >= 20:
+        cov_matrix, shrinkage_intensity = ledoit_wolf_shrinkage(returns)
+        cov_matrix = pd.DataFrame(cov_matrix, index=returns.columns, columns=returns.columns)
+    else:
+        cov_matrix = returns.cov()
+    
+    tickers = prices.columns.tolist()
+    
+    # Setup optimization constraints
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bounds = tuple((min_weight, max_weight) for _ in range(num_assets))
+    initial_guess = num_assets * [1. / num_assets,]
+    
+    # ===== CRITICAL FIX: Calculate GMVP FIRST =====
+    print("INFO: Calculating Global Minimum Variance Portfolio (GMVP)...")
+    gmvp_result = minimize(
+        portfolio_volatility,
+        initial_guess,
+        args=(mean_returns, cov_matrix, risk_free_rate, annualization_factor),
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints,
+        options={'maxiter': 1000, 'ftol': 1e-9}
+    )
+    
+    if gmvp_result.success:
+        gmvp_weights = gmvp_result.x
+        gmvp_ret, gmvp_vol, gmvp_sharpe = calculate_portfolio_performance(
+            gmvp_weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor
+        )
+        min_variance_portfolio = {
+            "volatility": float(gmvp_vol),
+            "return": float(gmvp_ret),
+            "sharpe_ratio": float(gmvp_sharpe),
+            "weights": {ticker: float(w) for ticker, w in zip(tickers, gmvp_weights)}
+        }
+        print(f"INFO: GMVP found - Vol: {gmvp_vol:.2f}%, Return: {gmvp_ret:.2f}%, Sharpe: {gmvp_sharpe:.3f}")
+        min_return = float(gmvp_ret)
+    else:
+        print(f"WARNING: GMVP optimization failed: {gmvp_result.message}")
+        min_variance_portfolio = None
+        # Fallback
+        min_return = float(np.sum(mean_returns * initial_guess) * annualization_factor)
+    
+    # Calculate max return
+    max_ret_result = minimize(
+        lambda w: -np.sum(mean_returns * w) * annualization_factor,
+        initial_guess,
+        method='SLSQP',
+        bounds=bounds,
+        constraints=constraints,
+        options={'maxiter': 1000}
+    )
+    max_return = float(np.sum(mean_returns * max_ret_result.x) * annualization_factor)
+    
+    # Continue with rest of function...
+    """
+    Calculate the efficient frontier by optimizing portfolios across a range of target returns.
+    
     For portfolios with 20+ assets, applies Ledoit-Wolf shrinkage for better covariance estimation.
     
     Args:
