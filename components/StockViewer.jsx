@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Activity, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
+import PerformanceCard from './PerformanceCard';
+import EarningsCharts from './EarningsCharts';
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -902,6 +904,13 @@ ${aggregatedNews.slice(0, 15000)}
                                 </div>
                             </div>
 
+                            {/* Performance Overview */}
+                            {stockInfo?.performance && (
+                                <div className="mb-8">
+                                    <PerformanceCard data={stockInfo.performance} ticker={stockData.symbol} />
+                                </div>
+                            )}
+
                             {/* Key Statistics Grid */}
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
@@ -992,60 +1001,9 @@ ${aggregatedNews.slice(0, 15000)}
                                 )}
                             </div>
 
-                            {/* Earnings Card */}
-                            {stockInfo?.earnings && (
-                                <div className="glass-panel rounded-3xl p-8 border border-white/5">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                                Earnings
-                                            </h3>
-                                            <p className="text-slate-400 text-sm font-medium mt-1">{stockInfo.earnings.quarter}</p>
-                                        </div>
-                                        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-bold text-slate-400">
-                                            {new Date(stockInfo.earnings.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* EPS */}
-                                        <div className="bg-slate-800/40 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">EPS Surprise</p>
-                                            <div className={`text-3xl font-bold tracking-tight mb-1 ${stockInfo.earnings.eps.surprise >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {stockInfo.earnings.eps.surprise >= 0 ? '+' : ''}{stockInfo.earnings.eps.surprise?.toFixed(2)}%
-                                            </div>
-                                            <p className="text-sm text-white font-medium mb-4">
-                                                {stockInfo.earnings.eps.surprise >= 0 ? 'Beat Estimates' : 'Missed Estimates'}
-                                            </p>
-                                            <div className="pt-4 border-t border-white/5 flex justify-between text-xs text-slate-400 font-medium">
-                                                <span>Est: <span className="text-slate-300">{stockInfo.earnings.eps.estimate?.toFixed(2)}</span></span>
-                                                <span>Act: <span className="text-white">{stockInfo.earnings.eps.reported?.toFixed(2)}</span></span>
-                                            </div>
-                                        </div>
-
-                                        {/* Revenue */}
-                                        <div className="bg-slate-800/40 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">Revenue</p>
-                                            {stockInfo.earnings.revenue ? (
-                                                <>
-                                                    <div className="text-3xl font-bold tracking-tight text-white mb-1">
-                                                        {formatLargeNumber(stockInfo.earnings.revenue.reported)}
-                                                    </div>
-                                                    <p className="text-sm text-white font-medium mb-4">
-                                                        Reported Revenue
-                                                    </p>
-                                                    <div className="pt-4 border-t border-white/5 text-xs text-slate-400 font-medium">
-                                                        Fiscal Quarter: <span className="text-white">{stockInfo.earnings.quarter}</span>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="flex items-center justify-center h-full text-slate-500 text-sm">
-                                                    Revenue data unavailable
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                            {/* Earnings Trends */}
+                            {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
+                                <EarningsCharts data={stockInfo.earningsHistory} ticker={stockData.symbol} />
                             )}
                         </div>
 
