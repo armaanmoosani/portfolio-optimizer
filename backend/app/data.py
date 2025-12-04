@@ -232,8 +232,7 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
 
 def get_stock_info(ticker: str) -> dict:
     """
-    Fetch detailed stock information including Market Cap, P/E, 52-wk High/Low, Dividends,
-    Performance Metrics (YTD, 1Y, 3Y, 5Y), and Earnings History.
+    Fetch detailed stock information including Market Cap, P/E, 52-wk High/Low, Dividends.
     """
     try:
         stock = yf.Ticker(ticker)
@@ -259,158 +258,76 @@ def get_stock_info(ticker: str) -> dict:
             "volume": info.get("regularMarketVolume") or info.get("volume"),
             "averageVolume": info.get("averageVolume"),
             "beta": info.get("beta"),
-            "earnings": None,
-            "performance": {},
-            "earningsHistory": []
+            "earnings": None
         }
 
-        # --- 1. Calculate Performance Metrics ---
-        try:
-            # Fetch 5 years of data for Ticker and Benchmark (SPY)
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
-            
-            # Helper to calculate return
-            def calc_return(series, days_lookback=None, is_ytd=False):
-                if series.empty: return None
-                
-                current_price = series.iloc[-1]
-                start_price = None
-                
-                if is_ytd:
-                    # Find last price of previous year
-                    current_year = series.index[-1].year
-                    prev_year_data = series[series.index.year < current_year]
-                    if not prev_year_data.empty:
-                        start_price = prev_year_data.iloc[-1]
-                elif days_lookback:
-                    target_date = series.index[-1] - timedelta(days=days_lookback)
-                    # Find closest date on or before target
-                    # Use searchsorted to find index
-                    idx = series.index.searchsorted(target_date)
-                    if idx < len(series) and idx > 0:
-                         # Check if exact match or take previous
-                         if series.index[idx] > target_date:
-                             idx -= 1
-                         start_price = series.iloc[idx]
-                    elif idx == 0:
-                         start_price = series.iloc[0]
-                
-                if start_price and start_price > 0:
-                    return ((current_price - start_price) / start_price) * 100
-                return None
-
-            # Fetch Data
-            hist = stock.history(period="5y")
-            if not hist.empty:
-                ticker_prices = hist['Close']
-                
-                # Fetch Benchmark (SPY)
-                spy = yf.Ticker("SPY")
-                spy_hist = spy.history(period="5y")
-                spy_prices = spy_hist['Close'] if not spy_hist.empty else pd.Series()
-
-                metrics = {
-                    "ytd": {"days": None, "ytd": True},
-                    "1y": {"days": 365, "ytd": False},
-                    "3y": {"days": 3*365, "ytd": False},
-                    "5y": {"days": 5*365, "ytd": False}
-                }
-
-                for key, params in metrics.items():
-                    ticker_ret = calc_return(ticker_prices, params["days"], params["ytd"])
-                    spy_ret = calc_return(spy_prices, params["days"], params["ytd"])
-                    
-                    result["performance"][key] = {
-                        "ticker": ticker_ret,
-                        "benchmark": spy_ret
-                    }
-        except Exception as e:
-            print(f"Error calculating performance for {ticker}: {e}")
-
-        # --- 2. Fetch Earnings History ---
+        # Fetch Earnings Data
         try:
             earnings_dates = stock.earnings_dates
             if earnings_dates is not None and not earnings_dates.empty:
-                # Filter for rows with valid data (Estimate or Reported)
-                # Sort by date descending
+                # Filter for rows with valid Surprise (Reported earnings)
+                # Sort by date descending just in case
                 earnings_dates = earnings_dates.sort_index(ascending=False)
                 
-                # Get last 4 reported quarters (where Reported EPS is not NaN)
-                reported_earnings = earnings_dates[earnings_dates['Reported EPS'].notna()].head(4)
+                # Find the first row with a valid Surprise value
+                valid_earnings = earnings_dates[earnings_dates['Surprise(%)'].notna()]
                 
-                # Also get next estimate if available
-                future_earnings = earnings_dates[earnings_dates['Reported EPS'].isna()].tail(1)
-                
-                # Combine for chart (reverse to show chronological left-to-right)
-                # Actually, let's just process the reported ones for now + 1 future if needed
-                # The design shows 4 quarters. Let's try to get last 4.
-                
-                history = []
-                
-                # Process reported
-                for date, row in reported_earnings.iterrows():
-                    # Determine Quarter
-                    result["earningsHistory"].append({
-                        "date": date.strftime('%Y-%m-%d'),
-                        "quarter": f"Q{(date.month - 1) // 3 + 1} {date.year}",
-                        "epsEstimate": row['EPS Estimate'] if pd.notna(row['EPS Estimate']) else None,
-                        "epsReported": row['Reported EPS'] if pd.notna(row['Reported EPS']) else None,
-                        "surprise": row['Surprise(%)'] * 100 if pd.notna(row['Surprise(%)']) else None
-                    })
-                
-                # Reverse to show oldest to newest
-                result["earningsHistory"].reverse()
+                if not valid_earnings.empty:
+                    recent = valid_earnings.iloc[0]
+                    date = valid_earnings.index[0]
+                    
+                    # Determine Quarter (approximate)
+                    # If report date is Jan/Feb/Mar -> Q4 Prev Year
+                    # Apr/May/Jun -> Q1 Curr Year
+                    # Jul/Aug/Sep -> Q2 Curr Year
+                    # Oct/Nov/Dec -> Q3 Curr Year
+                    month = date.month
+                    year = date.year
+                    quarter = "Q?"
+                    if month in [1, 2, 3]:
+                        quarter = f"Q4 {year - 1}"
+                    elif month in [4, 5, 6]:
+                        quarter = f"Q1 {year}"
+                    elif month in [7, 8, 9]:
+                        quarter = f"Q2 {year}"
+                    elif month in [10, 11, 12]:
+                        quarter = f"Q3 {year}"
 
-                # Add Revenue Data if available (often in financials or quarterly_financials)
-                # yfinance 'earnings_dates' doesn't always have revenue. 
-                # Let's try to get it from quarterly_financials for the same periods if possible
-                try:
+                    result["earnings"] = {
+                        "quarter": quarter,
+                        "date": date.strftime("%Y-%m-%d"),
+                        "eps": {
+                            "estimate": recent.get("EPS Estimate"),
+                            "reported": recent.get("Reported EPS"),
+                            "surprise": recent.get("Surprise(%)")
+                        },
+                        "revenue": None
+                    }
+                    
+                    # Try to get Revenue from financials
+                    # Look for a quarter end date ~1-3 months before report date
                     financials = stock.quarterly_financials
-                    if not financials.empty and 'Total Revenue' in financials.index:
-                        revenues = financials.loc['Total Revenue']
-                        # Map revenues to the earnings history items by approximate date match
-                        for item in result["earningsHistory"]:
-                            # Parse item date
-                            item_date = datetime.strptime(item['date'], '%Y-%m-%d')
-                            # Find closest revenue date
-                            # This is a bit loose, but revenue dates usually align with quarter ends
-                            # Earnings report date is usually 1-2 months AFTER quarter end.
-                            # So we look for a revenue date that is within 3 months BEFORE the report date.
+                    if financials is not None and not financials.empty:
+                        # Convert columns to datetime if they aren't
+                        cols = pd.to_datetime(financials.columns)
+                        # Find closest date before report date
+                        potential_dates = [d for d in cols if d < date.replace(tzinfo=None)]
+                        if potential_dates:
+                            # Get max date (closest to report)
+                            closest_date = max(potential_dates)
+                            # Find the column name that matches this date
+                            # (Original columns might be strings or timestamps)
+                            col_idx = list(cols).index(closest_date)
+                            orig_col = financials.columns[col_idx]
                             
-                            for rev_date, rev_val in revenues.items():
-                                # Convert timestamp to datetime if needed
-                                if isinstance(rev_date, pd.Timestamp):
-                                    rev_date = rev_date.to_pydatetime()
-                                
-                                diff = (item_date - rev_date).days
-                                if 0 <= diff <= 100: # Report is usually 0-90 days after quarter end
-                                    item['revenue'] = rev_val
-                                    break
-                except Exception as e:
-                    print(f"Error fetching revenue for {ticker}: {e}")
+                            if "Total Revenue" in financials.index:
+                                result["earnings"]["revenue"] = {
+                                    "reported": financials.loc["Total Revenue", orig_col],
+                                    "date": closest_date.strftime("%Y-%m-%d")
+                                }
 
         except Exception as e:
-            print(f"Error fetching earnings history for {ticker}: {e}")
-
-        # --- 3. Fetch Analyst Recommendations ---
-        try:
-            recs = stock.recommendations_summary
-            if recs is not None and not recs.empty:
-                # yfinance returns columns: ['period', 'strongBuy', 'buy', 'hold', 'sell', 'strongSell']
-                # We usually want the latest period (0m)
-                latest_rec = recs.iloc[0] # The summary is usually just one row or small table
-                # Check if it's the right format
-                if 'strongBuy' in latest_rec:
-                     result["recommendations"] = {
-                        "strongBuy": int(latest_rec['strongBuy']),
-                        "buy": int(latest_rec['buy']),
-                        "hold": int(latest_rec['hold']),
-                        "sell": int(latest_rec['sell']),
-                        "strongSell": int(latest_rec['strongSell'])
-                     }
-        except Exception as e:
-            print(f"Error fetching recommendations for {ticker}: {e}")
+            print(f"Error fetching earnings for {ticker}: {e}")
 
         return result
     except Exception as e:
