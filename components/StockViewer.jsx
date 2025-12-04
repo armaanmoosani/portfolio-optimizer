@@ -992,6 +992,13 @@ ${aggregatedNews.slice(0, 15000)}
                                 )}
                             </div>
 
+                            {/* Temp debug */}
+                            {stockInfo && (
+                                <div className="mb-2 p-2 bg-yellow-900/20 border border-yellow-500/20 rounded text-xs text-yellow-200 font-mono">
+                                    returns key exists: {stockInfo.returns ? 'YES' : 'NO'} |
+                                    returns value: {JSON.stringify(stockInfo.returns)}
+                                </div>
+                            )}
 
                             {/* Performance Comparison Cards */}
                             {stockInfo?.returns && (
