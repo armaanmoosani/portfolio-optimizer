@@ -6,6 +6,7 @@ import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } f
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
+import AnimatedPrice from "./AnimatedPrice";
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -30,302 +31,45 @@ export default function StockViewer() {
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [error, setError] = useState("");
     const [chartLoading, setChartLoading] = useState(false);
+    const [hoveredData, setHoveredData] = useState(null);
     const searchContainerRef = useRef(null);
 
-    // Click outside to close suggestions
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
-                setShowSuggestions(false);
-            }
+    // ... (existing code) ...
+
+    // Calculate Pre-Market Data
+    const preMarketData = useMemo(() => {
+        if (timeRange !== '1D' || chartData.length === 0) return null;
+
+        // Find the first point that is "Regular Market"
+        const openIndex = chartData.findIndex(d => d.isRegularMarket);
+
+        // If no regular market data or it starts at 0, no pre-market
+        if (openIndex <= 0) return null;
+
+        const regularOpenPrice = chartData[openIndex].price;
+        const currentPrice = chartData[openIndex - 1].price; // Last pre-market price
+
+        // Pre-market change is usually vs Prev Close
+        const change = currentPrice - (stockData.prevClose || regularOpenPrice);
+        const percent = (change / (stockData.prevClose || regularOpenPrice)) * 100;
+
+        // Calculate offset for gradient (0 to 1)
+        const splitOffset = openIndex / (chartData.length - 1);
+
+        return {
+            price: currentPrice,
+            change,
+            percent,
+            splitOffset,
+            endDate: chartData[openIndex].date
         };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Fetch chart data when time range or stock data changes
-    useEffect(() => {
-        const fetchChartData = async () => {
-            if (!stockData?.symbol) return;
-
-            // Only show loading state if we don't have chart data or if the data doesn't match the current view
-            // This prevents the "regeneration" flash on reload
-            if (chartData.length === 0) {
-                setChartLoading(true);
-            }
-
-            try {
-                const symbol = stockData.symbol;
-                const { period, interval } = TIME_RANGES[timeRange];
-
-                // Call the backend via the Next.js proxy
-                const res = await fetch(`/api/history?ticker=${symbol}&period=${period}&interval=${interval}`);
-                if (!res.ok) throw new Error("Failed to fetch history");
-
-                const data = await res.json();
-
-                // Sync last point with live price for 1D view
-                if (timeRange === '1D' && stockData?.price && data.length > 0) {
-                    const lastPoint = data[data.length - 1];
-                    // Update the last point's price to match the live quote
-                    // This ensures the chart line connects to the big number at the top
-                    lastPoint.price = stockData.price;
-                }
-
-                updateStockState({ chartData: data });
-            } catch (err) {
-                console.error("Chart fetch error:", err);
-                // Only clear chart data on error if we were loading from scratch
-                if (chartData.length === 0) {
-                    updateStockState({ chartData: [] });
-                }
-            } finally {
-                setChartLoading(false);
-            }
-        };
-
-        // Only fetch if chartData is empty or if the ticker/timeRange changed from what's cached
-        // This check is a bit loose, but prevents infinite loops. 
-        // Ideally we'd track "lastFetchedParams" in state.
-        // For now, we rely on the fact that updateStockState will trigger re-render.
-        // To avoid loop, we should check if current chartData matches expectation? 
-        // Actually, let's just fetch if we need to.
-
-        // Simple optimization: If we already have data and it looks "fresh" (handled by GlobalState mount), skip?
-        // But user might change timeRange.
-
-        // We need to know if the current chartData corresponds to the current timeRange.
-        // Since we don't store "chartDataTimeRange", we might re-fetch.
-        // Let's just fetch. The backend is fast.
-        fetchChartData();
-    }, [stockData?.symbol, timeRange]);
-
-    const handleInputChange = async (e) => {
-        const value = e.target.value.toUpperCase();
-        updateStockState({ ticker: value });
-        setSelectedIndex(-1);
-
-        if (!value) {
-            setSuggestions([]);
-            setShowSuggestions(false);
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(value)}`);
-            if (res.ok) {
-                const data = await res.json();
-                setSuggestions(data.result || []);
-                setShowSuggestions(true);
-            }
-        } catch (err) {
-            console.error("Autocomplete error:", err);
-        }
-    };
-
-    const handleSuggestionClick = (symbol) => {
-        updateStockState({ ticker: symbol });
-        setSuggestions([]);
-        setShowSuggestions(false);
-        setSelectedIndex(-1);
-        handleSearch(symbol);
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            if (selectedIndex >= 0 && suggestions[selectedIndex]) {
-                handleSuggestionClick(suggestions[selectedIndex].symbol);
-            } else {
-                handleSearch();
-            }
-        } else if (e.key === "ArrowDown") {
-            e.preventDefault();
-            if (showSuggestions && suggestions.length > 0) {
-                setSelectedIndex(prev => (prev + 1) % Math.min(suggestions.length, 6));
-            }
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            if (showSuggestions && suggestions.length > 0) {
-                setSelectedIndex(prev => (prev - 1 + Math.min(suggestions.length, 6)) % Math.min(suggestions.length, 6));
-            }
-        }
-    };
-
-    // Modified to accept an optional overrideTicker
-    const handleSearch = async (overrideTicker) => {
-        const searchTicker = typeof overrideTicker === 'string' ? overrideTicker : ticker;
-        if (!searchTicker) return;
-
-        updateStockState({ loading: true });
-        setError("");
-        setShowSuggestions(false);
-        setSelectedIndex(-1);
-
-        try {
-            // Fetch Metadata
-            const metaRes = await fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`);
-            const meta = await metaRes.json();
-
-            // Fetch Quote
-            const quoteRes = await fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`);
-            const quote = await quoteRes.json();
-
-            if (!quote.c) throw new Error("Invalid ticker or no data found");
-
-            const newStockData = {
-                symbol: searchTicker,
-                price: quote.c,
-                change: quote.c && quote.pc ? quote.c - quote.pc : 0,
-                changePercent: quote.c && quote.pc ? ((quote.c - quote.pc) / quote.pc) * 100 : 0,
-                name: meta.name || searchTicker,
-                description: meta.description || "No description available.",
-                open: quote.o,
-                high: quote.h,
-                low: quote.l,
-                prevClose: quote.pc
-            };
-
-            // Update state with stock data immediately
-            updateStockState({
-                stockData: newStockData,
-                ticker: searchTicker,
-                // Clear previous secondary data while loading new
-                news: [],
-                aiSummary: "",
-                chartData: [],
-                stockInfo: null
-            });
-
-            // Fetch Extended Stock Info
-            const infoRes = await fetch(`/api/stock_info?ticker=${searchTicker}`);
-            const infoData = await infoRes.json();
-            updateStockState({ stockInfo: infoData });
-
-            // Fetch News
-            const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
-            const newsData = await newsRes.json();
-            const newsArr = Array.isArray(newsData) ? newsData : [];
-
-            let newAiSummary = "AI summary unavailable.";
-
-            if (newsArr.length === 0) {
-                newAiSummary = "AI summary unavailable — no news data.";
-                updateStockState({ news: [], aiSummary: newAiSummary });
-            } else {
-                const slicedNews = newsArr.slice(0, 5);
-                updateStockState({ news: slicedNews });
-
-                // Generate AI Summary
-                const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
-                const companyName = meta.name ? `${meta.name} (${searchTicker})` : searchTicker;
-
-                const prompt = `
-You are an AI assistant that writes investor summaries. Here's an example:
-
-Robinhood shares rise ahead of Q3 earnings report after market close today, fueled by strong growth expectations. Analysts expect EPS of $0.54 versus $0.17 a year ago, and revenues rising 88% to $1.21 billion. Options traders anticipate a 9.45% price swing. Product expansion and crypto trading growth are driving revenue diversification. Why this matters: Investors are weighing growth potential against valuation risks.
-
-Now, based on the recent headlines and the latest price change for ${companyName}, generate a summary with these rules:
-- Exactly 3 concise bullet points explaining the main drivers of the stock's movement
-- Use the "•" character for bullet points (do not use asterisks)
-- 1-line "Why this matters" conclusion
-- Plain-language, easy to understand for investors of all experience levels
-- Include important metrics or context if available
-- Do not use Markdown formatting (no bold, italics, etc.)
-- Output ready to display directly on a web page
-- Only summarize the provided news content; do not add unrelated information
-
-Recent headlines and summaries:
-${aggregatedNews.slice(0, 15000)}
-`;
-
-                const aiRes = await fetch(`/api/proxy?service=gemini&ticker=${searchTicker}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2, maxOutputTokens: 400 }
-                    })
-                });
-
-                if (!aiRes.ok) throw new Error("AI Fetch failed");
-
-                const aiData = await aiRes.json();
-                const candidate = aiData.candidates?.[0];
-                newAiSummary = candidate?.content?.parts?.[0]?.text ||
-                    candidate?.content ||
-                    aiData.output_text ||
-                    "Summary unavailable.";
-
-                updateStockState({ aiSummary: newAiSummary });
-            }
-
-            // Show success toast with click-to-scroll AFTER all data is loaded
-            toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
-                // Navigate to stocks page first
-                router.push('/stocks');
-                // Then scroll after a short delay to ensure page has loaded
-                setTimeout(() => {
-                    document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-                }, 300);
-            });
-
-            // Auto-scroll to results AFTER all data is loaded
-            setTimeout(() => {
-                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-            }, 300);
-
-        } catch (err) {
-            setError("Failed to fetch stock data. Please check the ticker and try again.");
-            console.error(err);
-            updateStockState({ aiSummary: "AI summary unavailable." });
-        } finally {
-            updateStockState({ loading: false });
-        }
-    };
-
-    // Calculate baseline price based on time range
-    const baselinePrice = useMemo(() => {
-        if (timeRange === '1D' && stockData?.prevClose) return stockData.prevClose;
-        return chartData.length > 0 ? chartData[0].price : 0;
-    }, [timeRange, stockData, chartData]);
-
-    // Calculate period change for header
-    const periodChange = useMemo(() => {
-        if (chartData.length === 0 || !baselinePrice) return null;
-        const currentPrice = chartData[chartData.length - 1].price;
-        const change = currentPrice - baselinePrice;
-        const percent = (change / baselinePrice) * 100;
-        return { change, percent, isPositive: change >= 0 };
-    }, [chartData, baselinePrice]);
-
-    // Calculate Y-axis domain to ensure reference line is visible
-    // Calculate Y-axis domain to ensure reference line is visible
-    const yDomain = useMemo(() => {
-        if (chartData.length === 0) return ['auto', 'auto'];
-
-        let min = Math.min(...chartData.map(d => d.price));
-        let max = Math.max(...chartData.map(d => d.price));
-
-        // If we have a baseline price (prevClose) in 1D view, ensure it's included in the domain
-        if (timeRange === '1D' && baselinePrice > 0) {
-            min = Math.min(min, baselinePrice);
-            max = Math.max(max, baselinePrice);
-        }
-
-        // Add some padding (2%)
-        const padding = (max - min) * 0.02;
-        return [min - padding, max + padding];
-    }, [chartData, baselinePrice, timeRange]);
+    }, [chartData, timeRange, stockData]);
 
     // Calculate After Hours Data
     const afterHoursData = useMemo(() => {
         if (timeRange !== '1D' || chartData.length === 0) return null;
 
         // Find the last point that is "Regular Market"
-        // We iterate backwards or findLastIndex if supported, or just find index
-        // Since data is sorted, we find the last index where isRegularMarket is true
         let closeIndex = -1;
         for (let i = chartData.length - 1; i >= 0; i--) {
             if (chartData[i].isRegularMarket) {
@@ -334,7 +78,7 @@ ${aggregatedNews.slice(0, 15000)}
             }
         }
 
-        // If no regular market data (e.g. pre-market only) or all regular, handle gracefully
+        // If no regular market data or all regular, handle gracefully
         if (closeIndex === -1 || closeIndex === chartData.length - 1) return null;
 
         const regularClosePrice = chartData[closeIndex].price;
@@ -351,10 +95,70 @@ ${aggregatedNews.slice(0, 15000)}
             change,
             percent,
             splitOffset,
-            closeDate: chartData[closeIndex].date // For reference line
+            closeDate: chartData[closeIndex].date
         };
-
     }, [chartData, timeRange]);
+
+    // Calculate Display Data (Dynamic based on Hover)
+    const displayData = useMemo(() => {
+        // Default to latest data
+        let price = stockData.price;
+        let change = stockData.change;
+        let percent = stockData.changePercent;
+        let label = timeRange === '1D' ? 'Today' : timeRange;
+        let isRegular = true;
+
+        // If hovering, use hovered data
+        if (hoveredData) {
+            price = hoveredData.price;
+
+            // Determine context based on hover
+            if (timeRange === '1D') {
+                if (preMarketData && hoveredData.index < (preMarketData.splitOffset * (chartData.length - 1))) {
+                    // Hovering Pre-Market
+                    label = 'Pre-market';
+                    change = price - stockData.prevClose;
+                    percent = (change / stockData.prevClose) * 100;
+                    isRegular = false;
+                } else if (afterHoursData && hoveredData.index > (afterHoursData.splitOffset * (chartData.length - 1))) {
+                    // Hovering After-Hours
+                    label = 'After hours';
+                    change = price - afterHoursData.regularClosePrice;
+                    percent = (change / afterHoursData.regularClosePrice) * 100;
+                    isRegular = false;
+                } else {
+                    // Hovering Regular Market
+                    label = 'Regular';
+                    change = price - stockData.prevClose;
+                    percent = (change / stockData.prevClose) * 100;
+                }
+            } else {
+                // Non-1D views
+                change = price - baselinePrice;
+                percent = (change / baselinePrice) * 100;
+                label = hoveredData.dateStr || timeRange;
+            }
+        } else {
+            // Not hovering - show latest appropriate data
+            if (afterHoursData) {
+                price = afterHoursData.price;
+                change = afterHoursData.change;
+                percent = afterHoursData.percent;
+                label = 'After hours';
+                isRegular = false;
+            } else if (preMarketData && !afterHoursData && chartData.length > 0 && !chartData[chartData.length - 1].isRegularMarket) {
+                // Only Pre-market data available so far
+                price = preMarketData.price;
+                change = preMarketData.change;
+                percent = preMarketData.percent;
+                label = 'Pre-market';
+                isRegular = false;
+            }
+        }
+
+        return { price, change, percent, label, isPositive: (change || 0) >= 0, isRegular };
+    }, [hoveredData, stockData, preMarketData, afterHoursData, timeRange, baselinePrice, chartData]);
+
 
     // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
@@ -579,37 +383,27 @@ ${aggregatedNews.slice(0, 15000)}
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="text-5xl font-bold text-white tracking-tighter tabular-nums">
-                                                    ${afterHoursData ? (afterHoursData.price || 0).toFixed(2) : (stockData.price || 0).toFixed(2)}
+                                                <div className="text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center">
+                                                    $<AnimatedPrice value={displayData.price || 0} />
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-2">
-                                                    <div className={`flex items-center gap-2 text-xl font-medium ${(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
-                                                        ? 'text-emerald-400'
-                                                        : 'text-rose-400'
-                                                        }`}>
-                                                        {(afterHoursData ? afterHoursData.percent : (timeRange === '1D' ? stockData.changePercent : periodChange?.percent)) >= 0
-                                                            ? <ArrowUpRight className="w-6 h-6" />
-                                                            : <ArrowDownRight className="w-6 h-6" />
-                                                        }
+                                                    <div className={`flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {displayData.isPositive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
                                                         {/* Price Change */}
                                                         <span>
-                                                            {afterHoursData
-                                                                ? ((afterHoursData.change || 0) >= 0 ? '+' : '') + (afterHoursData.change || 0).toFixed(2)
-                                                                : (timeRange === '1D'
-                                                                    ? ((stockData.change || 0) >= 0 ? '+' : '') + (stockData.change || 0).toFixed(2)
-                                                                    : ((periodChange?.change || 0) >= 0 ? '+' : '') + (periodChange?.change || 0).toFixed(2))
-                                                            }
+                                                            {displayData.isPositive ? '+' : ''}{(displayData.change || 0).toFixed(2)}
                                                         </span>
                                                         {/* Percent Change */}
                                                         <span>
-                                                            ({Math.abs(afterHoursData ? (afterHoursData.percent || 0) : (timeRange === '1D' ? (stockData.changePercent || 0) : (periodChange?.percent || 0))).toFixed(2)}%)
+                                                            ({Math.abs(displayData.percent || 0).toFixed(2)}%)
                                                         </span>
                                                     </div>
                                                     <span className="text-slate-500 text-base font-normal">
-                                                        {afterHoursData ? 'After hours' : (timeRange === '1D' ? 'Today' : timeRange)}
+                                                        {displayData.label}
                                                     </span>
                                                 </div>
-                                                {afterHoursData && (
+                                                {/* Secondary Info (e.g. Regular Close when showing After Hours) */}
+                                                {!displayData.isRegular && afterHoursData && displayData.label === 'After hours' && (
                                                     <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
                                                         <span className="text-slate-500 font-normal">Market Close:</span>
                                                         ${(afterHoursData.regularClosePrice || 0).toFixed(2)}
@@ -644,25 +438,58 @@ ${aggregatedNews.slice(0, 15000)}
                                         </div>
                                     )}
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+                                        <AreaChart
+                                            data={chartData}
+                                            margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+                                            onMouseMove={(data) => {
+                                                if (data && data.activePayload && data.activePayload.length > 0) {
+                                                    // Find the index of the hovered point
+                                                    // Recharts doesn't always give index directly in activePayload, 
+                                                    // but usually gives it in activeTooltipIndex or we can find it
+                                                    const index = data.activeTooltipIndex;
+                                                    const payload = data.activePayload[0].payload;
+                                                    setHoveredData({ ...payload, index });
+                                                }
+                                            }}
+                                            onMouseLeave={() => {
+                                                setHoveredData(null);
+                                            }}
+                                        >
                                             <defs>
                                                 {/* Dynamic Color Gradient for Fill */}
                                                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} stopOpacity={0.1} />
-                                                    <stop offset="95%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} stopOpacity={0} />
+                                                    <stop offset="5%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} stopOpacity={0.1} />
+                                                    <stop offset="95%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} stopOpacity={0} />
                                                 </linearGradient>
 
-                                                {/* Split Gradient for Stroke (1D View) */}
-                                                {afterHoursData ? (
+                                                {/* Multi-Segment Gradient for Stroke (1D View) */}
+                                                {timeRange === '1D' && (preMarketData || afterHoursData) ? (
                                                     <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
-                                                        <stop offset={afterHoursData.splitOffset} stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
-                                                        <stop offset={afterHoursData.splitOffset} stopColor="#94a3b8" />
+                                                        {/* Pre-Market Segment */}
+                                                        {preMarketData && (
+                                                            <>
+                                                                <stop offset={0} stopColor="#94a3b8" />
+                                                                <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
+                                                            </>
+                                                        )}
+
+                                                        {/* Regular Market Segment */}
+                                                        <stop offset={preMarketData ? preMarketData.splitOffset : 0} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                        <stop offset={afterHoursData ? afterHoursData.splitOffset : 1} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+
+                                                        {/* After-Hours Segment */}
+                                                        {afterHoursData && (
+                                                            <>
+                                                                <stop offset={afterHoursData.splitOffset} stopColor="#94a3b8" />
+                                                                <stop offset={1} stopColor="#94a3b8" />
+                                                            </>
+                                                        )}
                                                     </linearGradient>
                                                 ) : (
                                                     /* Standard Gradient for Stroke (Other Views - solid color) */
                                                     <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
-                                                        <stop offset="0%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
-                                                        <stop offset="100%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
+                                                        <stop offset="0%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
+                                                        <stop offset="100%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
                                                     </linearGradient>
                                                 )}
 
@@ -696,7 +523,12 @@ ${aggregatedNews.slice(0, 15000)}
                                                 width={50}
                                                 dx={-10}
                                             />
-                                            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }} />
+                                            {/* We hide the default tooltip content but keep the cursor line */}
+                                            <Tooltip
+                                                content={<></>}
+                                                cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+                                            />
+
                                             {timeRange === '1D' && baselinePrice > 0 && (
                                                 <ReferenceLine
                                                     y={baselinePrice}
@@ -705,6 +537,16 @@ ${aggregatedNews.slice(0, 15000)}
                                                     strokeOpacity={0.5}
                                                 />
                                             )}
+                                            {/* Pre-Market End Line */}
+                                            {preMarketData && (
+                                                <ReferenceLine
+                                                    x={preMarketData.endDate}
+                                                    stroke="#94a3b8"
+                                                    strokeDasharray="3 3"
+                                                    strokeOpacity={0.3}
+                                                />
+                                            )}
+                                            {/* After-Hours Start Line */}
                                             {afterHoursData && (
                                                 <ReferenceLine
                                                     x={afterHoursData.closeDate}
@@ -716,7 +558,7 @@ ${aggregatedNews.slice(0, 15000)}
                                             <Area
                                                 type="monotone"
                                                 dataKey="price"
-                                                stroke={afterHoursData ? "url(#splitColor)" : "url(#standardColor)"}
+                                                stroke={(timeRange === '1D' && (preMarketData || afterHoursData)) ? "url(#splitColor)" : "url(#standardColor)"}
                                                 strokeWidth={2}
                                                 fillOpacity={1}
                                                 fill="url(#colorPrice)"
@@ -724,26 +566,22 @@ ${aggregatedNews.slice(0, 15000)}
                                                     const { cx, cy, payload } = props;
                                                     // Determine color based on the specific point being hovered
                                                     const isRegular = payload.isRegularMarket;
-                                                    // If it's 1D view and we have after hours data:
-                                                    // Regular points -> Green/Red
-                                                    // After hours points -> Grey
-                                                    // For other views, always Green/Red
                                                     const isAfterHoursPoint = timeRange === '1D' && !isRegular;
-                                                    const color = isAfterHoursPoint ? '#94a3b8' : (periodChange?.isPositive ? '#34d399' : '#f43f5e');
+                                                    const color = isAfterHoursPoint ? '#94a3b8' : (displayData.isPositive ? '#34d399' : '#f43f5e');
 
                                                     return (
                                                         <circle cx={cx} cy={cy} r={6} stroke={color} strokeWidth={2} fill="#fff" />
                                                     );
                                                 }}
                                             />
-                                            {/* Live Price Glowing Dot */}
-                                            {chartData.length > 0 && (
+                                            {/* Live Price Glowing Dot - Only show when NOT hovering */}
+                                            {chartData.length > 0 && !hoveredData && (
                                                 <ReferenceDot
                                                     x={chartData[chartData.length - 1].date}
                                                     y={chartData[chartData.length - 1].price}
                                                     shape={(props) => {
                                                         const { cx, cy } = props;
-                                                        const color = periodChange?.isPositive ? '#34d399' : '#f43f5e';
+                                                        const color = displayData.isPositive ? '#34d399' : '#f43f5e';
                                                         return (
                                                             <g>
                                                                 {/* Outer Diffuse Glow (Blur) */}
