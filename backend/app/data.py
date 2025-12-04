@@ -367,6 +367,67 @@ def get_stock_info(ticker: str) -> dict:
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
 
+        # Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
+        try:
+            # Fetch 5y history for both
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
+            
+            # Download adjusted close prices
+            tickers_list = [ticker, "^GSPC"]
+            data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)['Adj Close']
+            
+            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
+            # But yfinance can be tricky.
+            
+            if not data.empty and isinstance(data, pd.DataFrame):
+                # Ensure we have both columns
+                if ticker not in data.columns:
+                    # Maybe it's under the symbol name?
+                    pass 
+                
+                # Calculate returns
+                def get_return(period_days=None, is_ytd=False):
+                    try:
+                        if is_ytd:
+                            start = datetime(end_date.year, 1, 1)
+                        else:
+                            start = end_date - timedelta(days=period_days)
+                        
+                        # Find closest available date on or before start
+                        # We slice data to be up to 'start'
+                        # Actually, we want the price at 'start'. 
+                        # So we find the index closest to 'start'
+                        
+                        # Get price at end (latest)
+                        latest_prices = data.iloc[-1]
+                        
+                        # Get price at start
+                        # Find index closest to start date
+                        idx = data.index.get_indexer([start], method='nearest')[0]
+                        start_prices = data.iloc[idx]
+                        
+                        # Calculate % change
+                        # Handle missing data (NaN)
+                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
+                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
+                        
+                        return {
+                            "ticker": t_ret if not pd.isna(t_ret) else None,
+                            "spy": s_ret if not pd.isna(s_ret) else None
+                        }
+                    except Exception as ex:
+                        return None
+
+                result["returns"] = {
+                    "ytd": get_return(is_ytd=True),
+                    "1y": get_return(365),
+                    "3y": get_return(365*3),
+                    "5y": get_return(365*5)
+                }
+        except Exception as e:
+            print(f"Error fetching returns comparison: {e}")
+
         return result
     except Exception as e:
         print(f"Error fetching stock info for {ticker}: {e}")

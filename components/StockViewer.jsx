@@ -992,6 +992,39 @@ ${aggregatedNews.slice(0, 15000)}
                                 )}
                             </div>
 
+                            {/* Performance Comparison Cards */}
+                            {stockInfo?.returns && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                    {['ytd', '1y', '3y', '5y'].map((period) => {
+                                        const data = stockInfo.returns[period];
+                                        if (!data) return null;
+
+                                        const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
+                                        const label = labels[period];
+
+                                        return (
+                                            <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
+                                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-bold text-white">{stockData.symbol}</span>
+                                                        <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs font-medium text-slate-500">S&P 500</span>
+                                                        <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* Earnings Trends Section */}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
                                 <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
