@@ -644,7 +644,7 @@ ${aggregatedNews.slice(0, 15000)}
                                         </div>
                                     )}
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                                        <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                                             <defs>
                                                 {/* Dynamic Color Gradient for Fill */}
                                                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -665,6 +665,15 @@ ${aggregatedNews.slice(0, 15000)}
                                                         <stop offset="100%" stopColor={periodChange?.isPositive ? '#34d399' : '#f43f5e'} />
                                                     </linearGradient>
                                                 )}
+
+                                                {/* Glow Filter */}
+                                                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                                                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                                                    <feMerge>
+                                                        <feMergeNode in="coloredBlur" />
+                                                        <feMergeNode in="SourceGraphic" />
+                                                    </feMerge>
+                                                </filter>
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                                             <XAxis
@@ -737,11 +746,13 @@ ${aggregatedNews.slice(0, 15000)}
                                                         const color = periodChange?.isPositive ? '#34d399' : '#f43f5e';
                                                         return (
                                                             <g>
-                                                                <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
-                                                                <circle cx={cx} cy={cy} r={12} fill={color} fillOpacity={0.3}>
-                                                                    <animate attributeName="r" values="12;16;12" dur="2s" repeatCount="indefinite" />
-                                                                    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="2s" repeatCount="indefinite" />
+                                                                {/* Outer Diffuse Glow (Blur) */}
+                                                                <circle cx={cx} cy={cy} r={12} fill={color} opacity={0.4} filter="url(#glow)">
+                                                                    <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite" />
+                                                                    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite" />
                                                                 </circle>
+                                                                {/* Inner Core */}
+                                                                <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
                                                             </g>
                                                         );
                                                     }}
