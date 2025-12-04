@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir numpy && \
     pip install --no-cache-dir scipy && \
     pip install --no-cache-dir -r requirements.txt
 
+# Cache bust to ensure fresh code on every build
+ARG CACHEBUST=1
+
 # Copy application code
 COPY backend ./backend
 

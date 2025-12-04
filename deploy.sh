@@ -12,6 +12,8 @@ sudo docker rm portfolio-backend 2>/dev/null || true
 
 echo "Building Docker image (with memory limits for e2-micro)..."
 sudo docker build \
+  --no-cache \
+  --build-arg CACHEBUST=$(date +%s) \
   --memory=512m \
   --memory-swap=1g \
   -t portfolio-backend \
