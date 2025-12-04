@@ -364,6 +364,7 @@ def get_stock_info(ticker: str) -> dict:
 
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
+            result["debug_earnings_error"] = str(e)
 
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
@@ -428,6 +429,7 @@ def get_stock_info(ticker: str) -> dict:
                 }
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
+            result["debug_returns_error"] = str(e)
 
         return result
     except Exception as e:
