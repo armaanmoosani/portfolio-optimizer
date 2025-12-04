@@ -371,22 +371,15 @@ def get_stock_info(ticker: str) -> dict:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=5*365 + 20)
             
-            tickers_list = [ticker, "^GSPC"]
-            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
+            # Fetch each ticker separately to avoid MultiIndex complexity
+            ticker_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            spy_data = yf.download("^GSPC", start=start_date, end=end_date, progress=False)
             
-            # Handle MultiIndex columns from yfinance - use Close if Adj Close not available
-            if isinstance(raw_data.columns, pd.MultiIndex):
-                level_0 = raw_data.columns.get_level_values(0)
-                if 'Adj Close' in level_0:
-                    data = raw_data['Adj Close']
-                elif 'Close' in level_0:
-                    data = raw_data['Close']
-                else:
-                    raise ValueError(f"No price column found. Available: {list(set(level_0))}")
-            else:
-                data = raw_data.get('Adj Close', raw_data.get('Close', raw_data))
+            # Get Close prices (use Close, not Adj Close for compatibility)
+            ticker_prices = ticker_data.get('Close', ticker_data.get('Adj Close'))
+            spy_prices = spy_data.get('Close', spy_data.get('Adj Close'))
             
-            if not data.empty and isinstance(data, pd.DataFrame) and ticker in data.columns and "^GSPC" in data.columns:
+            if ticker_prices is not None and spy_prices is not None and len(ticker_prices) > 0 and len(spy_prices) > 0:
                 def get_return(period_days=None, is_ytd=False):
                     try:
                         if is_ytd:
@@ -394,16 +387,23 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        latest_prices = data.iloc[-1]
-                        idx = data.index.get_indexer([start], method='nearest')[0]
-                        start_prices = data.iloc[idx]
+                        # Get latest prices
+                        t_latest = float(ticker_prices.iloc[-1])
+                        s_latest = float(spy_prices.iloc[-1])
                         
-                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
-                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
+                        # Find closest start date
+                        t_idx = ticker_prices.index.get_indexer([start], method='nearest')[0]
+                        s_idx = spy_prices.index.get_indexer([start], method='nearest')[0]
+                        
+                        t_start = float(ticker_prices.iloc[t_idx])
+                        s_start = float(spy_prices.iloc[s_idx])
+                        
+                        t_ret = ((t_latest - t_start) / t_start) * 100
+                        s_ret = ((s_latest - s_start) / s_start) * 100
                         
                         return {
-                            "ticker": float(t_ret) if not pd.isna(t_ret) else None,
-                            "spy": float(s_ret) if not pd.isna(s_ret) else None
+                            "ticker": round(t_ret, 2),
+                            "spy": round(s_ret, 2)
                         }
                     except Exception as ex:
                         return None
