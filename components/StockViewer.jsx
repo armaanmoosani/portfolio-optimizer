@@ -322,7 +322,7 @@ ${aggregatedNews.slice(0, 15000)}
 
     // Calculate Pre-Market Data
     const preMarketData = useMemo(() => {
-        if (timeRange !== '1D' || chartData.length === 0) return null;
+        if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
 
         // Find the first point that is "Regular Market"
         const openIndex = chartData.findIndex(d => d.isRegularMarket);
@@ -385,6 +385,8 @@ ${aggregatedNews.slice(0, 15000)}
 
     // Calculate Display Data (Dynamic based on Hover)
     const displayData = useMemo(() => {
+        if (!stockData) return { price: 0, change: 0, percent: 0, label: '', isPositive: false, isRegular: true };
+
         // Default to latest data
         let price = stockData.price;
         let change = stockData.change;
