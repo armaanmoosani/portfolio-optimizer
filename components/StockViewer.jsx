@@ -992,14 +992,6 @@ ${aggregatedNews.slice(0, 15000)}
                                 )}
                             </div>
 
-                            {/* Debug Info - Temporary */}
-                            {stockInfo && (
-                                <div className="mb-4 p-2 bg-red-900/20 border border-red-500/20 rounded text-xs text-red-200 font-mono">
-                                    <p>Debug: Data Keys Available: {Object.keys(stockInfo).join(', ')}</p>
-                                    {stockInfo.debug_earnings_error && <p>Earnings Error: {stockInfo.debug_earnings_error}</p>}
-                                    {stockInfo.debug_returns_error && <p>Returns Error: {stockInfo.debug_returns_error}</p>}
-                                </div>
-                            )}
 
                             {/* Performance Comparison Cards */}
                             {stockInfo?.returns && (

@@ -368,24 +368,25 @@ def get_stock_info(ticker: str) -> dict:
 
         # Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
         try:
-            # Fetch 5y history for both
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
+            start_date = end_date - timedelta(days=5*365 + 20)
             
-            # Download adjusted close prices
             tickers_list = [ticker, "^GSPC"]
-            data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)['Adj Close']
+            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
             
-            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
-            # But yfinance can be tricky.
+            # Handle MultiIndex columns from yfinance - use Close if Adj Close not available
+            if isinstance(raw_data.columns, pd.MultiIndex):
+                level_0 = raw_data.columns.get_level_values(0)
+                if 'Adj Close' in level_0:
+                    data = raw_data['Adj Close']
+                elif 'Close' in level_0:
+                    data = raw_data['Close']
+                else:
+                    raise ValueError(f"No price column found. Available: {list(set(level_0))}")
+            else:
+                data = raw_data.get('Adj Close', raw_data.get('Close', raw_data))
             
-            if not data.empty and isinstance(data, pd.DataFrame):
-                # Ensure we have both columns
-                if ticker not in data.columns:
-                    # Maybe it's under the symbol name?
-                    pass 
-                
-                # Calculate returns
+            if not data.empty and isinstance(data, pd.DataFrame) and ticker in data.columns and "^GSPC" in data.columns:
                 def get_return(period_days=None, is_ytd=False):
                     try:
                         if is_ytd:
@@ -393,27 +394,16 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Find closest available date on or before start
-                        # We slice data to be up to 'start'
-                        # Actually, we want the price at 'start'. 
-                        # So we find the index closest to 'start'
-                        
-                        # Get price at end (latest)
                         latest_prices = data.iloc[-1]
-                        
-                        # Get price at start
-                        # Find index closest to start date
                         idx = data.index.get_indexer([start], method='nearest')[0]
                         start_prices = data.iloc[idx]
                         
-                        # Calculate % change
-                        # Handle missing data (NaN)
                         t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
                         s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
                         return {
-                            "ticker": t_ret if not pd.isna(t_ret) else None,
-                            "spy": s_ret if not pd.isna(s_ret) else None
+                            "ticker": float(t_ret) if not pd.isna(t_ret) else None,
+                            "spy": float(s_ret) if not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
                         return None
@@ -426,7 +416,6 @@ def get_stock_info(ticker: str) -> dict:
                 }
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
-            result["debug_returns_error"] = str(e)
 
         return result
     except Exception as e:
