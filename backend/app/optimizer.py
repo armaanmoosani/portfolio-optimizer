@@ -241,6 +241,38 @@ def negative_treynor(weights, mean_returns, cov_matrix, risk_free_rate, annualiz
     
     return -treynor
 
+def negative_calmar(weights, mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar):
+    """
+    Calmar Ratio: Maximize Annualized Return / Max Drawdown.
+    
+    Measures return per unit of maximum drawdown risk.
+    Preferred by hedge funds and CTA strategies.
+    """
+    if returns_matrix is None:
+        raise ValueError("Calmar Ratio requires historical returns matrix")
+    
+    # Calculate portfolio daily returns
+    portfolio_returns = returns_matrix.dot(weights)
+    
+    # Calculate cumulative returns
+    cum_returns = (1 + portfolio_returns).cumprod()
+    
+    # Calculate Max Drawdown
+    peak = np.maximum.accumulate(cum_returns)
+    drawdown = (cum_returns - peak) / peak
+    max_drawdown = np.abs(np.min(drawdown))
+    
+    if max_drawdown < 1e-10:
+        return -1e10  # Avoid division by zero (or infinite ratio)
+    
+    # Annualized Return
+    # Using Arithmetic mean * 252 for consistency with other metrics in this file
+    # though Calmar often uses CAGR. We'll stick to the standard here.
+    mean_return = np.mean(portfolio_returns) * annualization_factor
+    
+    calmar = mean_return / max_drawdown
+    return -calmar
+
 def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_free_rate: float = 0.045, min_weight: float = 0.0, max_weight: float = 1.0, annualization_factor: int = 252, mar: float = 0.0, benchmark_prices: pd.Series = None):
     """
     Run portfolio optimization based on the selected objective using Scipy.
@@ -293,7 +325,7 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     if objective == "sharpe":
         obj_fun = negative_sharpe
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
-    elif objective == "min_vol":
+    elif objective == "min_vol" or objective == "min_volatility": # Handle both for robustness
         obj_fun = portfolio_volatility
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
     elif objective == "max_return":
@@ -308,6 +340,9 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
     elif objective == "omega":
         obj_fun = negative_omega
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar)
+    elif objective == "calmar":
+        obj_fun = negative_calmar
+        args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, mar)
     elif objective == "treynor":
         if benchmark_returns is None:
             raise ValueError("Treynor optimization requires benchmark_prices parameter")
@@ -315,6 +350,7 @@ def optimize_portfolio(prices: pd.DataFrame, objective: str = "sharpe", risk_fre
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor, returns_matrix, benchmark_returns, mar)
     else:
         # Default to Sharpe
+        print(f"WARNING: Unknown objective '{objective}', defaulting to Sharpe Ratio")
         obj_fun = negative_sharpe
         args = (mean_returns, cov_matrix, risk_free_rate, annualization_factor)
 

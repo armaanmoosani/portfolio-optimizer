@@ -163,7 +163,17 @@ class InputValidator:
     
     @classmethod
     def validate_objective(cls, objective: str) -> bool:
-        valid_objectives = ["sharpe", "min_volatility", "max_return", "sortino", "calmar", "treynor"]
+        # Updated list of valid objectives matching frontend and optimizer.py
+        valid_objectives = [
+            "sharpe", 
+            "min_vol", "min_volatility",  # Allow both for robustness
+            "max_return", 
+            "sortino", 
+            "calmar", 
+            "treynor", 
+            "kelly", 
+            "omega"
+        ]
         
         if objective not in valid_objectives:
             raise HTTPException(
