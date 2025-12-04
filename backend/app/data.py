@@ -366,9 +366,6 @@ def get_stock_info(ticker: str) -> dict:
             print(f"Error fetching earnings for {ticker}: {e}")
             result["debug_earnings_error"] = str(e)
 
-        except Exception as e:
-            print(f"Error fetching earnings for {ticker}: {e}")
-
         # Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
         try:
             # Fetch 5y history for both
