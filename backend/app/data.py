@@ -373,7 +373,12 @@ def get_stock_info(ticker: str) -> dict:
             
             # Fetch each ticker separately
             ticker_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            
+            # Try fetching S&P 500 (^GSPC), fallback to SPY ETF if empty
             spy_data = yf.download("^GSPC", start=start_date, end=end_date, progress=False)
+            if spy_data.empty:
+                print("Warning: ^GSPC data empty, falling back to SPY")
+                spy_data = yf.download("SPY", start=start_date, end=end_date, progress=False)
             
             # Handle MultiIndex columns - yfinance returns ('Close', 'TICKER') format
             def get_close_prices(df, symbol):
