@@ -1,43 +1,41 @@
 #!/bin/bash
+set -e
 
-echo "Starting GCP VM deployment (Aggressive Cleanup Mode)..."
+echo "Starting GCP VM deployment..."
 
-# Pull latest code
 echo "Pulling latest code..."
-git pull origin master
+git pull
 
-# Remove pycache to prevent stale bytecode
-echo "Cleaning up pycache..."
-find . -type d -name "__pycache__" -exec rm -rf {} +
-
-# Stop and remove ALL related containers
 echo "Stopping existing containers..."
-sudo docker stop portfolio-backend backend 2>/dev/null || true
-sudo docker rm portfolio-backend backend 2>/dev/null || true
+sudo docker stop portfolio-backend 2>/dev/null || true
+sudo docker rm portfolio-backend 2>/dev/null || true
 
-# Prune unused images/build cache to force fresh start
-echo "Pruning docker system..."
-sudo docker system prune -f
-
-echo "Building Docker image (V3)..."
-# Use a unique name for the image to avoid cache
+echo "Building Docker image (with memory limits for e2-micro)..."
 sudo docker build \
   --no-cache \
   --build-arg CACHEBUST=$(date +%s) \
-  -t portfolio-backend-v3 \
+  --memory=512m \
+  --memory-swap=1g \
+  -t portfolio-backend \
   .
 
 echo "🚀 Starting container..."
-# Map port 10000 (host) to 10000 (container)
-# Dockerfile CMD specifies port 10000
 sudo docker run -d \
   -p 10000:10000 \
+  --memory=512m \
+  --memory-swap=1g \
   --restart=unless-stopped \
   --name portfolio-backend \
-  portfolio-backend-v3
+  portfolio-backend
 
 echo "Deployment complete!"
+echo ""
 echo "Container status:"
 sudo docker ps | grep portfolio-backend
 
+echo ""
 echo "View logs with: sudo docker logs -f portfolio-backend"
+echo "API docs: http://$(curl -s ifconfig.me):10000/api/docs"
+docker run -d -p 8000:10000 --restart always --name backend portfolio-backend
+
+echo "Deployment complete! Server is running."

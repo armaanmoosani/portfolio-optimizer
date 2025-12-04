@@ -371,49 +371,22 @@ def get_stock_info(ticker: str) -> dict:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=5*365 + 20)
             
-            # Fetch each ticker separately
-            ticker_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            tickers_list = [ticker, "^GSPC"]
+            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
             
-            # Try fetching S&P 500 (^GSPC), fallback to SPY ETF if empty
-            spy_symbol = "^GSPC"
-            spy_data = yf.download(spy_symbol, start=start_date, end=end_date, progress=False)
-            if spy_data.empty:
-                print("Warning: ^GSPC data empty, falling back to SPY")
-                spy_symbol = "SPY"
-                spy_data = yf.download(spy_symbol, start=start_date, end=end_date, progress=False)
+            # Handle MultiIndex columns from yfinance - use Close if Adj Close not available
+            if isinstance(raw_data.columns, pd.MultiIndex):
+                level_0 = raw_data.columns.get_level_values(0)
+                if 'Adj Close' in level_0:
+                    data = raw_data['Adj Close']
+                elif 'Close' in level_0:
+                    data = raw_data['Close']
+                else:
+                    raise ValueError(f"No price column found. Available: {list(set(level_0))}")
+            else:
+                data = raw_data.get('Adj Close', raw_data.get('Close', raw_data))
             
-            # Handle MultiIndex columns - yfinance returns ('Close', 'TICKER') format
-            def get_close_prices(df, symbol):
-                if df.empty:
-                    return None
-                
-                try:
-                    if isinstance(df.columns, pd.MultiIndex):
-                        # Check level 0 for 'Close' or 'Adj Close'
-                        level_0 = df.columns.get_level_values(0)
-                        if 'Close' in level_0:
-                            # If symbol is in level 1, select it. Otherwise take first column.
-                            if symbol in df['Close'].columns:
-                                return df['Close'][symbol]
-                            else:
-                                return df['Close'].iloc[:, 0]
-                        elif 'Adj Close' in level_0:
-                            if symbol in df['Adj Close'].columns:
-                                return df['Adj Close'][symbol]
-                            else:
-                                return df['Adj Close'].iloc[:, 0]
-                    else:
-                        # Flat index
-                        return df.get('Close', df.get('Adj Close'))
-                except Exception as e:
-                    print(f"Error extracting close prices for {symbol}: {e}")
-                    return None
-                return None
-            
-            ticker_prices = get_close_prices(ticker_data, ticker)
-            spy_prices = get_close_prices(spy_data, spy_symbol)
-            
-            if ticker_prices is not None and spy_prices is not None and len(ticker_prices) > 0 and len(spy_prices) > 0:
+            if not data.empty and isinstance(data, pd.DataFrame) and ticker in data.columns and "^GSPC" in data.columns:
                 def get_return(period_days=None, is_ytd=False):
                     try:
                         if is_ytd:
@@ -421,23 +394,16 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Get latest prices (use .iloc[-1] for Series elements)
-                        t_latest = float(ticker_prices.iloc[-1])
-                        s_latest = float(spy_prices.iloc[-1])
+                        latest_prices = data.iloc[-1]
+                        idx = data.index.get_indexer([start], method='nearest')[0]
+                        start_prices = data.iloc[idx]
                         
-                        # Find closest start date
-                        t_idx = ticker_prices.index.get_indexer([start], method='nearest')[0]
-                        s_idx = spy_prices.index.get_indexer([start], method='nearest')[0]
-                        
-                        t_start = float(ticker_prices.iloc[t_idx])
-                        s_start = float(spy_prices.iloc[s_idx])
-                        
-                        t_ret = ((t_latest - t_start) / t_start) * 100
-                        s_ret = ((s_latest - s_start) / s_start) * 100
+                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
+                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
                         return {
-                            "ticker": round(t_ret, 2),
-                            "spy": round(s_ret, 2)
+                            "ticker": float(t_ret) if not pd.isna(t_ret) else None,
+                            "spy": float(s_ret) if not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
                         return None
@@ -448,11 +414,8 @@ def get_stock_info(ticker: str) -> dict:
                     "3y": get_return(365*3),
                     "5y": get_return(365*5)
                 }
-            else:
-                result["debug_returns_error"] = f"V3: Data missing. Ticker: {ticker_prices is not None}, SPY: {spy_prices is not None}"
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
-            result["debug_returns_error"] = f"V3 Error: {str(e)}"
 
         return result
     except Exception as e:

@@ -1,6 +1,6 @@
 fastapi
 pandas
-numpy<2.0.0
+numpy
 yfinance>=0.2.66
 lxml
 scipy
