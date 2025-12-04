@@ -177,6 +177,7 @@ export default function StockViewer() {
             const newStockData = {
                 symbol: searchTicker,
                 price: quote.c,
+                change: quote.c && quote.pc ? quote.c - quote.pc : 0,
                 changePercent: quote.c && quote.pc ? ((quote.c - quote.pc) / quote.pc) * 100 : 0,
                 name: meta.name || searchTicker,
                 description: meta.description || "No description available.",
@@ -726,6 +727,26 @@ ${aggregatedNews.slice(0, 15000)}
                                                     );
                                                 }}
                                             />
+                                            {/* Live Price Glowing Dot */}
+                                            {chartData.length > 0 && (
+                                                <ReferenceDot
+                                                    x={chartData[chartData.length - 1].date}
+                                                    y={chartData[chartData.length - 1].price}
+                                                    shape={(props) => {
+                                                        const { cx, cy } = props;
+                                                        const color = periodChange?.isPositive ? '#34d399' : '#f43f5e';
+                                                        return (
+                                                            <g>
+                                                                <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
+                                                                <circle cx={cx} cy={cy} r={12} fill={color} fillOpacity={0.3}>
+                                                                    <animate attributeName="r" values="12;16;12" dur="2s" repeatCount="indefinite" />
+                                                                    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="2s" repeatCount="indefinite" />
+                                                                </circle>
+                                                            </g>
+                                                        );
+                                                    }}
+                                                />
+                                            )}
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
