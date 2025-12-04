@@ -375,24 +375,43 @@ def get_stock_info(ticker: str) -> dict:
             ticker_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
             
             # Try fetching S&P 500 (^GSPC), fallback to SPY ETF if empty
-            spy_data = yf.download("^GSPC", start=start_date, end=end_date, progress=False)
+            spy_symbol = "^GSPC"
+            spy_data = yf.download(spy_symbol, start=start_date, end=end_date, progress=False)
             if spy_data.empty:
                 print("Warning: ^GSPC data empty, falling back to SPY")
-                spy_data = yf.download("SPY", start=start_date, end=end_date, progress=False)
+                spy_symbol = "SPY"
+                spy_data = yf.download(spy_symbol, start=start_date, end=end_date, progress=False)
             
             # Handle MultiIndex columns - yfinance returns ('Close', 'TICKER') format
             def get_close_prices(df, symbol):
-                if isinstance(df.columns, pd.MultiIndex):
-                    if 'Close' in df.columns.get_level_values(0):
-                        return df['Close'][symbol] if symbol in df['Close'].columns else df['Close'].iloc[:, 0]
-                    elif 'Adj Close' in df.columns.get_level_values(0):
-                        return df['Adj Close'][symbol] if symbol in df['Adj Close'].columns else df['Adj Close'].iloc[:, 0]
-                else:
-                    return df.get('Close', df.get('Adj Close'))
+                if df.empty:
+                    return None
+                
+                try:
+                    if isinstance(df.columns, pd.MultiIndex):
+                        # Check level 0 for 'Close' or 'Adj Close'
+                        level_0 = df.columns.get_level_values(0)
+                        if 'Close' in level_0:
+                            # If symbol is in level 1, select it. Otherwise take first column.
+                            if symbol in df['Close'].columns:
+                                return df['Close'][symbol]
+                            else:
+                                return df['Close'].iloc[:, 0]
+                        elif 'Adj Close' in level_0:
+                            if symbol in df['Adj Close'].columns:
+                                return df['Adj Close'][symbol]
+                            else:
+                                return df['Adj Close'].iloc[:, 0]
+                    else:
+                        # Flat index
+                        return df.get('Close', df.get('Adj Close'))
+                except Exception as e:
+                    print(f"Error extracting close prices for {symbol}: {e}")
+                    return None
                 return None
             
             ticker_prices = get_close_prices(ticker_data, ticker)
-            spy_prices = get_close_prices(spy_data, "^GSPC")
+            spy_prices = get_close_prices(spy_data, spy_symbol)
             
             if ticker_prices is not None and spy_prices is not None and len(ticker_prices) > 0 and len(spy_prices) > 0:
                 def get_return(period_days=None, is_ytd=False):
@@ -402,7 +421,7 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Get latest prices (use .iloc[0] for Series elements)
+                        # Get latest prices (use .iloc[-1] for Series elements)
                         t_latest = float(ticker_prices.iloc[-1])
                         s_latest = float(spy_prices.iloc[-1])
                         
@@ -429,8 +448,11 @@ def get_stock_info(ticker: str) -> dict:
                     "3y": get_return(365*3),
                     "5y": get_return(365*5)
                 }
+            else:
+                result["debug_returns_error"] = f"V3: Data missing. Ticker: {ticker_prices is not None}, SPY: {spy_prices is not None}"
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
+            result["debug_returns_error"] = f"V3 Error: {str(e)}"
 
         return result
     except Exception as e:
