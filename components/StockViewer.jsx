@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Activity, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Activity, Calendar, Clock, AlertCircle, Search } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
