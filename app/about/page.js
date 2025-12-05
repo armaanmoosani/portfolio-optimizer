@@ -16,7 +16,7 @@ export default function AboutPage() {
                         Investing, <span className="text-blue-500">Simplified</span>
                     </h1>
                     <p className="text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto">
-                        Featuring portoflio analytics everyone.
+                        Featuring portfolio analytics for everyone.
                         Powerful tools, simplified for everyone.
                     </p>
                 </div>
