@@ -372,40 +372,80 @@ def get_stock_info(ticker: str) -> dict:
             start_date = end_date - timedelta(days=5*365 + 20)
             
             tickers_list = [ticker, "^GSPC"]
-            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
+            # Download with auto_adjust=True to get 'Close' as adjusted close directly, simpler structure
+            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False, auto_adjust=True)
             
-            # Handle MultiIndex columns from yfinance - use Close if Adj Close not available
-            if isinstance(raw_data.columns, pd.MultiIndex):
-                level_0 = raw_data.columns.get_level_values(0)
-                if 'Adj Close' in level_0:
-                    data = raw_data['Adj Close']
-                elif 'Close' in level_0:
-                    data = raw_data['Close']
-                else:
-                    raise ValueError(f"No price column found. Available: {list(set(level_0))}")
-            else:
-                data = raw_data.get('Adj Close', raw_data.get('Close', raw_data))
+            # Helper to get series for a ticker
+            def get_ticker_series(df, symbol):
+                # If MultiIndex columns (Price, Ticker)
+                if isinstance(df.columns, pd.MultiIndex):
+                    # Try to find 'Close' for this symbol
+                    try:
+                        return df['Close'][symbol]
+                    except KeyError:
+                        pass
+                
+                # If single level columns, might be just the ticker name if auto_adjust=True and only 1 ticker returned?
+                # Or if it's just 'Close'
+                if symbol in df.columns:
+                    return df[symbol]
+                
+                # Fallback: check if any column contains the symbol
+                for col in df.columns:
+                    if isinstance(col, str) and symbol in col:
+                        return df[col]
+                
+                return None
+
+            # Get series for both
+            t_series = get_ticker_series(raw_data, ticker)
+            s_series = get_ticker_series(raw_data, "^GSPC")
             
-            if not data.empty and isinstance(data, pd.DataFrame) and ticker in data.columns and "^GSPC" in data.columns:
+            # If we failed to get both, try without auto_adjust
+            if t_series is None or s_series is None:
+                 raw_data_alt = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
+                 if isinstance(raw_data_alt.columns, pd.MultiIndex):
+                     # Try Adj Close
+                     try:
+                         t_series = raw_data_alt['Adj Close'][ticker]
+                         s_series = raw_data_alt['Adj Close']["^GSPC"]
+                     except KeyError:
+                         try:
+                             t_series = raw_data_alt['Close'][ticker]
+                             s_series = raw_data_alt['Close']["^GSPC"]
+                         except KeyError:
+                             pass
+
+            if t_series is not None and s_series is not None and not t_series.empty and not s_series.empty:
+                # Align dates
+                df = pd.DataFrame({'ticker': t_series, 'spy': s_series}).dropna()
+                
                 def get_return(period_days=None, is_ytd=False):
                     try:
+                        if df.empty: return None
+                        
+                        latest_price_t = df['ticker'].iloc[-1]
+                        latest_price_s = df['spy'].iloc[-1]
+                        
                         if is_ytd:
-                            start = datetime(end_date.year, 1, 1)
+                            start_dt = datetime(end_date.year, 1, 1)
                         else:
-                            start = end_date - timedelta(days=period_days)
+                            start_dt = end_date - timedelta(days=period_days)
                         
-                        latest_prices = data.iloc[-1]
-                        idx = data.index.get_indexer([start], method='nearest')[0]
-                        start_prices = data.iloc[idx]
+                        # Find index closest to start_dt
+                        # get_indexer method='nearest' works on Index
+                        idx_loc = df.index.get_indexer([start_dt], method='nearest')[0]
+                        start_price_t = df['ticker'].iloc[idx_loc]
+                        start_price_s = df['spy'].iloc[idx_loc]
                         
-                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
-                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
+                        t_ret = ((latest_price_t - start_price_t) / start_price_t) * 100
+                        s_ret = ((latest_price_s - start_price_s) / start_price_s) * 100
                         
                         return {
-                            "ticker": float(t_ret) if not pd.isna(t_ret) else None,
-                            "spy": float(s_ret) if not pd.isna(s_ret) else None
+                            "ticker": float(t_ret),
+                            "spy": float(s_ret)
                         }
-                    except Exception as ex:
+                    except Exception:
                         return None
 
                 result["returns"] = {
