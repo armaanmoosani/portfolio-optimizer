@@ -387,6 +387,8 @@ ${aggregatedNews.slice(0, 15000)}
 
     // Filter Chart Data based on User Request:
     // "When after hours start remove the pre market segment start it from the market open time."
+    // Filter Chart Data based on User Request:
+    // "When after hours start remove the pre market segment start it from the market open time."
     const visibleChartData = useMemo(() => {
         if (timeRange !== '1D') return chartData;
 
@@ -397,6 +399,22 @@ ${aggregatedNews.slice(0, 15000)}
 
         return chartData;
     }, [chartData, timeRange, afterHoursData, preMarketData]);
+
+    // Calculate split offset for the VISIBLE chart data
+    const visibleSplitOffset = useMemo(() => {
+        if (!afterHoursData || !preMarketData || timeRange !== '1D') return 0;
+
+        // If we are hiding pre-market, the new "start" is the original openIndex.
+        // The "close" index (start of after-hours) is afterHoursData.closeIndex.
+        // We need the relative position of the close index in the NEW sliced array.
+
+        const slicedLength = chartData.length - preMarketData.openIndex;
+        const relativeCloseIndex = afterHoursData.closeIndex - preMarketData.openIndex;
+
+        if (slicedLength <= 1) return 1;
+
+        return relativeCloseIndex / (slicedLength - 1);
+    }, [afterHoursData, preMarketData, chartData.length, timeRange]);
 
     // Calculate Display Data (Dynamic based on Hover)
     const displayData = useMemo(() => {
@@ -727,7 +745,8 @@ ${aggregatedNews.slice(0, 15000)}
                                                     </span>
                                                 </div>
                                                 {/* Secondary Info (e.g. Regular Close when showing After Hours) */}
-                                                {!displayData.isRegular && afterHoursData && displayData.label === 'After hours' && (
+                                                {/* Secondary Info (e.g. Regular Close when showing After Hours) */}
+                                                {afterHoursData && (
                                                     <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
                                                         <span className="text-slate-500 font-normal">Market Close:</span>
                                                         ${(afterHoursData.regularClosePrice || 0).toFixed(2)}
@@ -779,8 +798,8 @@ ${aggregatedNews.slice(0, 15000)}
                                                 {/* Multi-Segment Gradient for Stroke (1D View) */}
                                                 {timeRange === '1D' && (preMarketData || afterHoursData) ? (
                                                     <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
-                                                        {/* Pre-Market Segment */}
-                                                        {preMarketData && (
+                                                        {/* Pre-Market Segment - Only show if NOT hiding it (i.e., not in after-hours) */}
+                                                        {preMarketData && !afterHoursData && (
                                                             <>
                                                                 <stop offset={0} stopColor="#94a3b8" />
                                                                 <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
@@ -788,13 +807,16 @@ ${aggregatedNews.slice(0, 15000)}
                                                         )}
 
                                                         {/* Regular Market Segment */}
-                                                        <stop offset={preMarketData ? preMarketData.splitOffset : 0} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
-                                                        <stop offset={afterHoursData ? afterHoursData.splitOffset : 1} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                        {/* Start: 0 if hiding pre-market, else preMarketData.splitOffset */}
+                                                        <stop offset={afterHoursData ? 0 : (preMarketData ? preMarketData.splitOffset : 0)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+
+                                                        {/* End: visibleSplitOffset if hiding pre-market, else afterHoursData.splitOffset */}
+                                                        <stop offset={afterHoursData ? visibleSplitOffset : (afterHoursData ? afterHoursData.splitOffset : 1)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
 
                                                         {/* After-Hours Segment */}
                                                         {afterHoursData && (
                                                             <>
-                                                                <stop offset={afterHoursData.splitOffset} stopColor="#94a3b8" />
+                                                                <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
                                                                 <stop offset={1} stopColor="#94a3b8" />
                                                             </>
                                                         )}
