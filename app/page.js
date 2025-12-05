@@ -15,7 +15,7 @@ export default function Home() {
                 <p className="text-slate-400 mb-8">Navigate using the menu above</p>
 
                 {/* Navigation Hint */}
-                <div className="flex items-center justify-center gap-3 text-slate-500 text-sm animate-pulse">
+                <div className="flex items-center justify-center gap-3 text-slate-500 text-sm">
                     <div className="flex gap-1">
                         <kbd className="px-2 py-1 bg-slate-800 rounded border border-slate-700 font-mono text-xs">←</kbd>
                         <kbd className="px-2 py-1 bg-slate-800 rounded border border-slate-700 font-mono text-xs">→</kbd>
