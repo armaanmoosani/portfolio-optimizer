@@ -366,86 +366,59 @@ def get_stock_info(ticker: str) -> dict:
             print(f"Error fetching earnings for {ticker}: {e}")
             result["debug_earnings_error"] = str(e)
 
+        except Exception as e:
+            print(f"Error fetching earnings for {ticker}: {e}")
+
         # Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
         try:
+            # Fetch 5y history for both
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=5*365 + 20)
+            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
             
+            # Download adjusted close prices
             tickers_list = [ticker, "^GSPC"]
-            # Download with auto_adjust=True to get 'Close' as adjusted close directly, simpler structure
-            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False, auto_adjust=True)
+            data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)['Adj Close']
             
-            # Helper to get series for a ticker
-            def get_ticker_series(df, symbol):
-                # If MultiIndex columns (Price, Ticker)
-                if isinstance(df.columns, pd.MultiIndex):
-                    # Try to find 'Close' for this symbol
-                    try:
-                        return df['Close'][symbol]
-                    except KeyError:
-                        pass
-                
-                # If single level columns, might be just the ticker name if auto_adjust=True and only 1 ticker returned?
-                # Or if it's just 'Close'
-                if symbol in df.columns:
-                    return df[symbol]
-                
-                # Fallback: check if any column contains the symbol
-                for col in df.columns:
-                    if isinstance(col, str) and symbol in col:
-                        return df[col]
-                
-                return None
-
-            # Get series for both
-            t_series = get_ticker_series(raw_data, ticker)
-            s_series = get_ticker_series(raw_data, "^GSPC")
+            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
+            # But yfinance can be tricky.
             
-            # If we failed to get both, try without auto_adjust
-            if t_series is None or s_series is None:
-                 raw_data_alt = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
-                 if isinstance(raw_data_alt.columns, pd.MultiIndex):
-                     # Try Adj Close
-                     try:
-                         t_series = raw_data_alt['Adj Close'][ticker]
-                         s_series = raw_data_alt['Adj Close']["^GSPC"]
-                     except KeyError:
-                         try:
-                             t_series = raw_data_alt['Close'][ticker]
-                             s_series = raw_data_alt['Close']["^GSPC"]
-                         except KeyError:
-                             pass
-
-            if t_series is not None and s_series is not None and not t_series.empty and not s_series.empty:
-                # Align dates
-                df = pd.DataFrame({'ticker': t_series, 'spy': s_series}).dropna()
+            if not data.empty and isinstance(data, pd.DataFrame):
+                # Ensure we have both columns
+                if ticker not in data.columns:
+                    # Maybe it's under the symbol name?
+                    pass 
                 
+                # Calculate returns
                 def get_return(period_days=None, is_ytd=False):
                     try:
-                        if df.empty: return None
-                        
-                        latest_price_t = df['ticker'].iloc[-1]
-                        latest_price_s = df['spy'].iloc[-1]
-                        
                         if is_ytd:
-                            start_dt = datetime(end_date.year, 1, 1)
+                            start = datetime(end_date.year, 1, 1)
                         else:
-                            start_dt = end_date - timedelta(days=period_days)
+                            start = end_date - timedelta(days=period_days)
                         
-                        # Find index closest to start_dt
-                        # get_indexer method='nearest' works on Index
-                        idx_loc = df.index.get_indexer([start_dt], method='nearest')[0]
-                        start_price_t = df['ticker'].iloc[idx_loc]
-                        start_price_s = df['spy'].iloc[idx_loc]
+                        # Find closest available date on or before start
+                        # We slice data to be up to 'start'
+                        # Actually, we want the price at 'start'. 
+                        # So we find the index closest to 'start'
                         
-                        t_ret = ((latest_price_t - start_price_t) / start_price_t) * 100
-                        s_ret = ((latest_price_s - start_price_s) / start_price_s) * 100
+                        # Get price at end (latest)
+                        latest_prices = data.iloc[-1]
+                        
+                        # Get price at start
+                        # Find index closest to start date
+                        idx = data.index.get_indexer([start], method='nearest')[0]
+                        start_prices = data.iloc[idx]
+                        
+                        # Calculate % change
+                        # Handle missing data (NaN)
+                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
+                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
                         return {
-                            "ticker": float(t_ret),
-                            "spy": float(s_ret)
+                            "ticker": t_ret if not pd.isna(t_ret) else None,
+                            "spy": s_ret if not pd.isna(s_ret) else None
                         }
-                    except Exception:
+                    except Exception as ex:
                         return None
 
                 result["returns"] = {
@@ -456,6 +429,7 @@ def get_stock_info(ticker: str) -> dict:
                 }
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
+            result["debug_returns_error"] = str(e)
 
         return result
     except Exception as e:

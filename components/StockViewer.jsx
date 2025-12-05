@@ -421,35 +421,26 @@ ${aggregatedNews.slice(0, 15000)}
                     percent = (change / stockData.prevClose) * 100;
                 }
             } else {
-                // Non-1D views - calculate change from baseline (start of period)
+                // Non-1D views
                 change = price - baselinePrice;
-                percent = baselinePrice ? (change / baselinePrice) * 100 : 0;
+                percent = (change / baselinePrice) * 100;
                 label = hoveredData.dateStr || timeRange;
             }
         } else {
             // Not hovering - show latest appropriate data
-            if (timeRange === '1D') {
-                // 1D mode - use real-time quote data
-                if (afterHoursData) {
-                    price = afterHoursData.price;
-                    change = afterHoursData.change;
-                    percent = afterHoursData.percent;
-                    label = 'After hours';
-                    isRegular = false;
-                } else if (preMarketData && !afterHoursData && chartData.length > 0 && !chartData[chartData.length - 1].isRegularMarket) {
-                    // Only Pre-market data available so far
-                    price = preMarketData.price;
-                    change = preMarketData.change;
-                    percent = preMarketData.percent;
-                    label = 'Pre-market';
-                    isRegular = false;
-                }
-            } else {
-                // Non-1D mode - calculate change from period start (baseline) to current price
-                if (baselinePrice && baselinePrice > 0) {
-                    change = price - baselinePrice;
-                    percent = (change / baselinePrice) * 100;
-                }
+            if (afterHoursData) {
+                price = afterHoursData.price;
+                change = afterHoursData.change;
+                percent = afterHoursData.percent;
+                label = 'After hours';
+                isRegular = false;
+            } else if (preMarketData && !afterHoursData && chartData.length > 0 && !chartData[chartData.length - 1].isRegularMarket) {
+                // Only Pre-market data available so far
+                price = preMarketData.price;
+                change = preMarketData.change;
+                percent = preMarketData.percent;
+                label = 'Pre-market';
+                isRegular = false;
             }
         }
 
@@ -1000,6 +991,15 @@ ${aggregatedNews.slice(0, 15000)}
                                     </div>
                                 )}
                             </div>
+
+                            {/* Debug Info - Temporary */}
+                            {stockInfo && (
+                                <div className="mb-4 p-2 bg-red-900/20 border border-red-500/20 rounded text-xs text-red-200 font-mono">
+                                    <p>Debug: Data Keys Available: {Object.keys(stockInfo).join(', ')}</p>
+                                    {stockInfo.debug_earnings_error && <p>Earnings Error: {stockInfo.debug_earnings_error}</p>}
+                                    {stockInfo.debug_returns_error && <p>Returns Error: {stockInfo.debug_returns_error}</p>}
+                                </div>
+                            )}
 
                             {/* Performance Comparison Cards */}
                             {stockInfo?.returns && (
