@@ -408,6 +408,13 @@ def get_stock_info(ticker: str) -> dict:
                         # Find index closest to start date
                         idx = data.index.get_indexer([start], method='nearest')[0]
                         start_prices = data.iloc[idx]
+                        found_date = data.index[idx]
+                        
+                        # Check if the found date is too far from the requested start date
+                        # This implies the stock wasn't public yet
+                        # Tolerance: 10 days
+                        if abs((found_date - start).days) > 10:
+                            return None
                         
                         # Calculate % change
                         # Handle missing data (NaN)
