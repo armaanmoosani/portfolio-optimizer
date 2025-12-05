@@ -385,6 +385,19 @@ ${aggregatedNews.slice(0, 15000)}
         };
     }, [chartData, timeRange]);
 
+    // Filter Chart Data based on User Request:
+    // "When after hours start remove the pre market segment start it from the market open time."
+    const visibleChartData = useMemo(() => {
+        if (timeRange !== '1D') return chartData;
+
+        // If we are in after-hours (afterHoursData exists), hide pre-market
+        if (afterHoursData && preMarketData && preMarketData.openIndex > 0) {
+            return chartData.slice(preMarketData.openIndex);
+        }
+
+        return chartData;
+    }, [chartData, timeRange, afterHoursData, preMarketData]);
+
     // Calculate Display Data (Dynamic based on Hover)
     const displayData = useMemo(() => {
         if (!stockData) return { price: 0, change: 0, percent: 0, label: '', isPositive: false, isRegular: true };
@@ -750,7 +763,7 @@ ${aggregatedNews.slice(0, 15000)}
                                     )}
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart
-                                            data={chartData}
+                                            data={visibleChartData}
                                             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
                                             onMouseLeave={() => {
                                                 setHoveredData(null);
