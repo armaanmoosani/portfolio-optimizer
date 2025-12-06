@@ -33,6 +33,7 @@ export default function StockViewer() {
     const [chartLoading, setChartLoading] = useState(false);
     const [hoveredData, setHoveredData] = useState(null);
     const searchContainerRef = useRef(null);
+    const inputRef = useRef(null);
 
     // Click outside to close suggestions
     useEffect(() => {
@@ -139,6 +140,7 @@ export default function StockViewer() {
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
+            inputRef.current?.blur();
             setShowSuggestions(false);
             setSuggestions([]);
             setSelectedIndex(-1);
@@ -650,6 +652,7 @@ ${aggregatedNews.slice(0, 15000)}
                                 onFocus={() => ticker && !loading && setShowSuggestions(true)}
                                 placeholder="Search for stocks, ETFs & more..."
                                 className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-lg font-medium"
+                                ref={inputRef}
                             />
                             <button
                                 onClick={() => handleSearch()}
