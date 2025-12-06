@@ -136,8 +136,11 @@ export default function StockViewer() {
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
+            setShowSuggestions(false);
+            setSuggestions([]);
+            setSelectedIndex(-1);
             if (selectedIndex >= 0 && suggestions[selectedIndex]) {
-                handleSuggestionClick(suggestions[selectedIndex].symbol);
+                handleSearch(suggestions[selectedIndex].symbol);
             } else {
                 handleSearch();
             }
