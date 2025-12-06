@@ -1237,6 +1237,9 @@ ${aggregatedNews.slice(0, 15000)}
                                         </div>
                                     )}
                                 </div>
+                                {aiSummary && (
+                                    <p className="text-xs text-slate-500 mt-4">AI-powered, not financial advice.</p>
+                                )}
                             </div>
 
                             {/* Recent News */}
