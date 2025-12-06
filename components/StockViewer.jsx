@@ -107,6 +107,9 @@ export default function StockViewer() {
         updateStockState({ ticker: value });
         setSelectedIndex(-1);
 
+        // Don't fetch suggestions while a search is in progress
+        if (loading) return;
+
         if (!value) {
             setSuggestions([]);
             setShowSuggestions(false);
@@ -644,7 +647,7 @@ ${aggregatedNews.slice(0, 15000)}
                                 value={ticker}
                                 onChange={handleInputChange}
                                 onKeyDown={handleKeyDown}
-                                onFocus={() => ticker && setShowSuggestions(true)}
+                                onFocus={() => ticker && !loading && setShowSuggestions(true)}
                                 placeholder="Search for stocks, ETFs & more..."
                                 className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-lg font-medium"
                             />
