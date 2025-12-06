@@ -301,24 +301,6 @@ ${aggregatedNews.slice(0, 15000)}
         return { change, percent, isPositive: change >= 0 };
     }, [chartData, baselinePrice]);
 
-    // Calculate Y-axis domain to ensure reference line is visible
-    // Calculate Y-axis domain to ensure reference line is visible
-    const yDomain = useMemo(() => {
-        if (chartData.length === 0) return ['auto', 'auto'];
-
-        let min = Math.min(...chartData.map(d => d.price));
-        let max = Math.max(...chartData.map(d => d.price));
-
-        // If we have a baseline price (prevClose) in 1D view, ensure it's included in the domain
-        if (timeRange === '1D' && baselinePrice > 0) {
-            min = Math.min(min, baselinePrice);
-            max = Math.max(max, baselinePrice);
-        }
-
-        // Add some padding (2%)
-        const padding = (max - min) * 0.02;
-        return [min - padding, max + padding];
-    }, [chartData, baselinePrice, timeRange]);
 
     // Calculate Pre-Market Data
     const preMarketData = useMemo(() => {
@@ -399,6 +381,26 @@ ${aggregatedNews.slice(0, 15000)}
 
         return chartData;
     }, [chartData, timeRange, afterHoursData, preMarketData]);
+
+    // Calculate Y-axis domain to ensure reference line is visible
+    const yDomain = useMemo(() => {
+        // Use visibleChartData since that's what the chart displays
+        const dataToUse = visibleChartData.length > 0 ? visibleChartData : chartData;
+        if (dataToUse.length === 0) return ['auto', 'auto'];
+
+        let min = Math.min(...dataToUse.map(d => d.price));
+        let max = Math.max(...dataToUse.map(d => d.price));
+
+        // If we have a baseline price (prevClose) in 1D view, ensure it's included in the domain
+        if (timeRange === '1D' && baselinePrice > 0) {
+            min = Math.min(min, baselinePrice);
+            max = Math.max(max, baselinePrice);
+        }
+
+        // Add some padding (2%)
+        const padding = (max - min) * 0.02;
+        return [min - padding, max + padding];
+    }, [visibleChartData, chartData, baselinePrice, timeRange]);
 
     // Calculate split offset for the VISIBLE chart data
     const visibleSplitOffset = useMemo(() => {
