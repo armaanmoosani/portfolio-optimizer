@@ -1517,7 +1517,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             </div>
                         </motion.div>
                     </div>
-                </motion.div>
+                </div>
             )}
         </motion.div>
     );
