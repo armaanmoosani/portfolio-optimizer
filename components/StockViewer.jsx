@@ -884,6 +884,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             onMouseLeave={() => {
                                                 setHoveredData(null);
                                             }}
+                                            onMouseMove={(e) => {
+                                                if (activeComparables.length === 0 && e.activePayload && e.activePayload.length > 0) {
+                                                    setHoveredData(e.activePayload[0].payload);
+                                                }
+                                            }}
                                         >
                                             <defs>
                                                 {/* Dynamic Color Gradient for Fill */}
@@ -956,20 +961,27 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 tickFormatter={(val) => activeComparables.length > 0 ? `${val.toFixed(2)}%` : `$${val.toFixed(2)}`}
                                                 width={60}
                                             />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
-                                                labelStyle={{ color: '#94a3b8', marginBottom: '8px' }}
-                                                itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
-                                                formatter={(value, name) => [
-                                                    activeComparables.length > 0 ? `${parseFloat(value).toFixed(2)}%` : `$${parseFloat(value).toFixed(2)}`,
-                                                    name === 'value' ? stockData.symbol : name
-                                                ]}
-                                                labelFormatter={(label) => {
-                                                    const date = new Date(label);
-                                                    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) +
-                                                        (timeRange === '1D' ? ` ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '');
-                                                }}
-                                            />
+                                            {activeComparables.length > 0 ? (
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+                                                    labelStyle={{ color: '#94a3b8', marginBottom: '8px' }}
+                                                    itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
+                                                    formatter={(value, name) => [
+                                                        `${parseFloat(value).toFixed(2)}%`,
+                                                        name === 'value' ? stockData.symbol : name
+                                                    ]}
+                                                    labelFormatter={(label) => {
+                                                        const date = new Date(label);
+                                                        return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) +
+                                                            (timeRange === '1D' ? ` ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '');
+                                                    }}
+                                                />
+                                            ) : (
+                                                <Tooltip
+                                                    content={<CustomTooltip />}
+                                                    cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+                                                />
+                                            )}
                                             <Area
                                                 type="monotone"
                                                 dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
