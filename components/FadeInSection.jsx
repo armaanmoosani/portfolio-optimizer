@@ -17,8 +17,8 @@ export default function FadeInSection({ children, delay = 0, className = "" }) {
                 }
             });
         }, {
-            threshold: 0.1, // Trigger when 10% visible
-            rootMargin: "0px 0px -50px 0px" // Trigger slightly before it hits the bottom
+            threshold: 0.05, // Trigger almost immediately
+            rootMargin: "0px 0px 100px 0px" // Trigger 100px BEFORE it enters the viewport (eager load)
         });
 
         const currentRef = domRef.current;
