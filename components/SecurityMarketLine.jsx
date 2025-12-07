@@ -110,16 +110,17 @@ export default function SecurityMarketLine({ data }) {
         // Skip SML line points
         if (selectedPoint.type === 'sml') return null;
 
-        // EXACT COORDINATE MATCHING for special badges
-        const tolerance = 0.001;
+        // Use generous tolerance for percentage values
+        const tolerance = 0.5;
 
+        // Check coordinates for special portfolios
         const isExactOptimal = optimalPortfolio &&
-            Math.abs(selectedPoint.beta - optimalPortfolio.beta) < tolerance &&
+            Math.abs(selectedPoint.beta - optimalPortfolio.beta) < 0.01 &&
             Math.abs(selectedPoint.return - optimalPortfolio.return) < tolerance;
 
         const isExactMarket =
-            Math.abs(selectedPoint.beta - marketPortfolio.beta) < tolerance &&
-            Math.abs(selectedPoint.return - marketPortfolio.return) < tolerance;
+            Math.abs(selectedPoint.beta - 1.0) < 0.01 &&
+            Math.abs(selectedPoint.return - marketReturn) < tolerance;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);
@@ -145,21 +146,26 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge based on EXACT coordinate matching
+        // Display badge - use type field (primary) AND coordinate matching (secondary)
         let badge = null;
-        if (isExactOptimal) {
-            badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
-        } else if (isExactMarket) {
+        let displayName = selectedPoint.name || 'Security';
+
+        if (selectedPoint.type === 'optimal' || isExactOptimal) {
+            badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">PORTFOLIO</span>;
+            displayName = 'Optimal Portfolio';
+        } else if (selectedPoint.type === 'market' || isExactMarket) {
             badge = <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MARKET</span>;
+            displayName = 'Market Portfolio (β=1)';
         } else if (selectedPoint.type === 'asset') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
+            displayName = selectedPoint.name;
         }
 
         return (
             <div className="bg-slate-900/95 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50" style={{ minWidth: '280px' }}>
                 <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
                     <p className="text-white font-bold text-sm tracking-wide truncate pr-2">
-                        {selectedPoint.name}
+                        {displayName}
                     </p>
                     {badge}
                 </div>

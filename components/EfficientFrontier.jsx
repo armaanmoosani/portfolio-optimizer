@@ -116,7 +116,7 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP - Uses exact coordinate matching
+    // INDUSTRY-GRADE TOOLTIP - Uses type-based matching with coordinate verification
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
@@ -129,10 +129,10 @@ export default function EfficientFrontier({ data }) {
         // Skip CML line points
         if (selectedPoint.type === 'cml') return null;
 
-        // EXACT COORDINATE MATCHING: Only show special badges if coordinates match exactly
-        // Use tight tolerance (0.001%) for floating point comparison
-        const tolerance = 0.001;
+        // Use more generous tolerance for percentage values (0.5% difference allowed)
+        const tolerance = 0.5;
 
+        // Check if this point matches the optimal or min variance portfolios
         const isExactOptimal = optimalPortfolio &&
             Math.abs(selectedPoint.volatility - optimalPortfolio.volatility) < tolerance &&
             Math.abs(selectedPoint.return - optimalPortfolio.return) < tolerance;
@@ -141,28 +141,36 @@ export default function EfficientFrontier({ data }) {
             Math.abs(selectedPoint.volatility - minVariancePortfolio.volatility) < tolerance &&
             Math.abs(selectedPoint.return - minVariancePortfolio.return) < tolerance;
 
-        // Display badge based on EXACT coordinate matching
+        // Display badge based on type field (primary) and coordinate matching (secondary)
         let badge = null;
-        let displayName = selectedPoint.name;
+        let displayName = selectedPoint.name || 'Portfolio';
         let displayWeights = selectedPoint.weights;
         let displaySharpe = selectedPoint.sharpe_ratio;
 
-        if (isExactOptimal) {
+        // PRIMARY: Use type field for reliable matching
+        if (selectedPoint.type === 'optimal' || isExactOptimal) {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
             displayName = 'Maximum Sharpe Ratio Portfolio';
-            displayWeights = optimalPortfolio.weights;
-            displaySharpe = optimalPortfolio.sharpe_ratio;
-        } else if (isExactMinVar) {
+            if (optimalPortfolio) {
+                displayWeights = optimalPortfolio.weights;
+                displaySharpe = optimalPortfolio.sharpe_ratio;
+            }
+        } else if (selectedPoint.type === 'min_variance' || isExactMinVar) {
             badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
             displayName = 'Global Minimum Variance Portfolio';
-            displayWeights = minVariancePortfolio.weights;
-            displaySharpe = minVariancePortfolio.sharpe_ratio;
+            if (minVariancePortfolio) {
+                displayWeights = minVariancePortfolio.weights;
+                displaySharpe = minVariancePortfolio.sharpe_ratio;
+            }
         } else if (selectedPoint.type === 'asset') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
+            displayName = selectedPoint.name;
         } else if (selectedPoint.type === 'frontier') {
             badge = <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">FRONTIER</span>;
+            displayName = 'Efficient Frontier Point';
         } else if (selectedPoint.type === 'monte_carlo') {
             badge = <span className="text-xs bg-purple-600/70 text-white px-2 py-0.5 rounded">SIMULATED</span>;
+            displayName = 'Random Portfolio';
         }
 
         return (
