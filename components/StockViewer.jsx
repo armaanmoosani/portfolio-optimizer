@@ -1016,19 +1016,47 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 {activeComparables.length > 0 && (
                                                     <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
                                                 )}
+                                                {/* Legend for quick identification */}
+                                                {activeComparables.length > 0 && (
+                                                    <Legend
+                                                        verticalAlign="top"
+                                                        height={36}
+                                                        iconType="circle"
+                                                        formatter={(value) => <span className="text-slate-300 text-xs font-bold ml-1">{value === 'value' ? stockData.symbol : value}</span>}
+                                                    />
+                                                )}
                                                 {activeComparables.length > 0 ? (
                                                     <Tooltip
-                                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
-                                                        labelStyle={{ color: '#94a3b8', marginBottom: '8px' }}
-                                                        itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
-                                                        formatter={(value, name) => [
-                                                            `${parseFloat(value).toFixed(2)}%`,
-                                                            name === 'value' ? stockData.symbol : name
-                                                        ]}
-                                                        labelFormatter={(label) => {
-                                                            const date = new Date(label);
-                                                            return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) +
-                                                                (timeRange === '1D' ? ` ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '');
+                                                        content={({ active, payload, label }) => {
+                                                            if (active && payload && payload.length) {
+                                                                return (
+                                                                    <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl min-w-[200px]">
+                                                                        <p className="text-slate-400 text-xs font-bold mb-3 border-b border-white/5 pb-2">
+                                                                            {new Date(label).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                            {timeRange === '1D' && ` ${new Date(label).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                                                                        </p>
+                                                                        <div className="space-y-2">
+                                                                            {payload.map((entry, index) => (
+                                                                                <div key={index} className="flex items-center justify-between gap-4 text-sm">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <div
+                                                                                            className="w-2.5 h-2.5 rounded-full"
+                                                                                            style={{ backgroundColor: entry.color }}
+                                                                                        />
+                                                                                        <span className={`${entry.name === stockData.symbol ? 'text-white font-bold' : 'text-slate-300'}`}>
+                                                                                            {entry.name === 'value' ? stockData.symbol : entry.name}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <span className={`font-mono ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                                        {entry.value > 0 ? '+' : ''}{parseFloat(entry.value).toFixed(2)}%
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
                                                         }}
                                                     />
                                                 ) : (
@@ -1042,7 +1070,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
                                                     name={activeComparables.length > 0 ? stockData.symbol : "value"}
                                                     stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && (preMarketData || afterHoursData)) ? "url(#splitColor)" : "url(#standardColor)")}
-                                                    strokeWidth={activeComparables.length > 0 ? 3 : 2}
+                                                    strokeWidth={activeComparables.length > 0 ? 4 : 2}
                                                     fillOpacity={1}
                                                     fill="url(#colorPrice)"
                                                 />
