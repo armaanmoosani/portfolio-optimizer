@@ -97,37 +97,28 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FIXED TOOLTIP with CAPM Validation - Uses payload.type
+    // FIXED TOOLTIP with CAPM Validation - Uses LAST item in payload
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Priority based on point TYPE (from payload.type)
-        // optimal > market > asset
-        const typePriority = {
-            'optimal': 100,
-            'market': 99,
-            'asset': 50
-        };
+        // Recharts orders payload by render sequence
+        // The LAST items are from the topmost Scatter layers (rendered last = on top visually)
 
-        // Find the highest priority point type in the payload
-        let selectedItem = null;
-        let highestPriority = -1;
+        let selectedPoint = null;
 
-        for (const item of payload) {
+        // Iterate from END to find the topmost layer's data
+        for (let i = payload.length - 1; i >= 0; i--) {
+            const item = payload[i];
             if (!item.payload) continue;
             const pointType = item.payload.type;
             if (!pointType || pointType === 'sml') continue;
 
-            const priority = typePriority[pointType] || 0;
-            if (priority > highestPriority) {
-                highestPriority = priority;
-                selectedItem = item;
-            }
+            // Found a valid point from the topmost layer
+            selectedPoint = item.payload;
+            break;
         }
 
-        if (!selectedItem || !selectedItem.payload) return null;
-
-        const selectedPoint = selectedItem.payload;
+        if (!selectedPoint) return null;
 
         // Skip SML line points
         if (selectedPoint.type === 'sml') return null;

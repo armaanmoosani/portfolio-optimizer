@@ -116,39 +116,29 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FIXED TOOLTIP - Uses payload.type for reliable identification
+    // FIXED TOOLTIP - Uses LAST item in payload (topmost rendered layer)
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Priority based on point TYPE (from payload.type)
-        // optimal > min_variance > asset > frontier > monte_carlo
-        const typePriority = {
-            'optimal': 100,
-            'min_variance': 99,
-            'asset': 50,
-            'frontier': 30,
-            'monte_carlo': 10
-        };
+        // Recharts orders payload by render sequence
+        // The LAST items are from the topmost Scatter layers (rendered last = on top visually)
+        // We want to find the last valid item (not CML, and with a valid type)
 
-        // Find the highest priority point type in the payload
-        let selectedItem = null;
-        let highestPriority = -1;
+        let selectedPoint = null;
 
-        for (const item of payload) {
+        // Iterate from END to find the topmost layer's data
+        for (let i = payload.length - 1; i >= 0; i--) {
+            const item = payload[i];
             if (!item.payload) continue;
             const pointType = item.payload.type;
             if (!pointType || pointType === 'cml') continue;
 
-            const priority = typePriority[pointType] || 0;
-            if (priority > highestPriority) {
-                highestPriority = priority;
-                selectedItem = item;
-            }
+            // Found a valid point from the topmost layer
+            selectedPoint = item.payload;
+            break;
         }
 
-        if (!selectedItem || !selectedItem.payload) return null;
-
-        const selectedPoint = selectedItem.payload;
+        if (!selectedPoint) return null;
 
         // Skip CML points
         if (selectedPoint.type === 'cml') return null;
