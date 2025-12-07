@@ -200,40 +200,26 @@ export default function StockViewer() {
 
             const newsArr = Array.isArray(newsData) ? newsData : [];
 
-            // Update state with all primary data immediately and STOP loading
+            // Update state with all primary data immediately
             updateStockState({
                 stockData: newStockData,
                 ticker: searchTicker,
                 stockInfo: infoData,
                 news: newsArr.slice(0, 5),
-                aiSummary: "", // Clear while AI loads (shows skeleton)
-                chartData: [],
-                loading: false // <-- Key change: stop loading early so UI appears
+                aiSummary: "", // Clear while AI loads
+                chartData: []
             });
 
-            // Show toast and scroll IMMEDIATELY after primary data is ready
-            toast.success(`Loaded ${searchTicker}. Click to view.`, 4000, () => {
-                router.push('/stocks');
-                setTimeout(() => {
-                    document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-                }, 300);
-            });
-            setTimeout(() => {
-                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            // PHASE 2: Generate AI Summary (non-blocking - runs after primary data shown)
+            let newAiSummary = "AI summary unavailable.";
 
-            // PHASE 2: Generate AI Summary (COMPLETELY ASYNC - doesn't block UI)
-            // This runs in the background while user sees the chart/news
-            (async () => {
-                let newAiSummary = "AI summary unavailable.";
+            if (newsArr.length === 0) {
+                newAiSummary = "AI summary unavailable — no news data.";
+            } else {
+                const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
+                const companyName = meta.name ? `${meta.name} (${searchTicker})` : searchTicker;
 
-                if (newsArr.length === 0) {
-                    newAiSummary = "AI summary unavailable — no news data.";
-                } else {
-                    const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
-                    const companyName = meta.name ? `${meta.name} (${searchTicker})` : searchTicker;
-
-                    const prompt = `
+                const prompt = `
 You are an AI assistant that writes investor summaries. Here's an example:
 
 Robinhood shares rise ahead of Q3 earnings report after market close today, fueled by strong growth expectations. Analysts expect EPS of $0.54 versus $0.17 a year ago, and revenues rising 88% to $1.21 billion. Options traders anticipate a 9.45% price swing. Product expansion and crypto trading growth are driving revenue diversification. Why this matters: Investors are weighing growth potential against valuation risks.
@@ -252,36 +238,50 @@ Recent headlines and summaries:
 ${aggregatedNews.slice(0, 15000)}
 `;
 
-                    try {
-                        const aiRes = await fetch(`/api/proxy?service=gemini&ticker=${searchTicker}`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                                generationConfig: { temperature: 0.2, maxOutputTokens: 400 }
-                            })
-                        });
+                try {
+                    const aiRes = await fetch(`/api/proxy?service=gemini&ticker=${searchTicker}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ role: "user", parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.2, maxOutputTokens: 400 }
+                        })
+                    });
 
-                        if (aiRes.ok) {
-                            const aiData = await aiRes.json();
-                            const candidate = aiData.candidates?.[0];
-                            newAiSummary = candidate?.content?.parts?.[0]?.text ||
-                                candidate?.content ||
-                                aiData.output_text ||
-                                "Summary unavailable.";
-                        }
-                    } catch (aiErr) {
-                        console.error("AI summary failed:", aiErr);
+                    if (aiRes.ok) {
+                        const aiData = await aiRes.json();
+                        const candidate = aiData.candidates?.[0];
+                        newAiSummary = candidate?.content?.parts?.[0]?.text ||
+                            candidate?.content ||
+                            aiData.output_text ||
+                            "Summary unavailable.";
                     }
+                } catch (aiErr) {
+                    console.error("AI summary failed:", aiErr);
                 }
+            }
 
-                updateStockState({ aiSummary: newAiSummary });
-            })();
+            updateStockState({ aiSummary: newAiSummary });
+
+            // Show success toast with click-to-scroll AFTER all data is loaded
+            toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
+                router.push('/stocks');
+                setTimeout(() => {
+                    document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+                }, 300);
+            });
+
+            // Auto-scroll to results
+            setTimeout(() => {
+                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
 
         } catch (err) {
             setError("Failed to fetch stock data. Please check the ticker and try again.");
             console.error(err);
-            updateStockState({ aiSummary: "AI summary unavailable.", loading: false });
+            updateStockState({ aiSummary: "AI summary unavailable." });
+        } finally {
+            updateStockState({ loading: false });
         }
     };
 
