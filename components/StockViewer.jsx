@@ -34,6 +34,52 @@ export default function StockViewer() {
     const [hoveredData, setHoveredData] = useState(null);
     const searchContainerRef = useRef(null);
 
+    // Helper to normalize data for relative comparison (0% start)
+    // Moved up to avoid ReferenceError initialization issues
+    const getRelativeData = () => {
+        if (!chartData || chartData.length === 0) return [];
+
+        const basePrice0 = chartData[0]?.price || 1;
+
+        // Create lookup maps for all active comparables for faster date matching
+        const compMaps = {};
+        activeComparables.forEach(ticker => {
+            const compPoints = comparableData[ticker];
+            if (compPoints && compPoints.length > 0) {
+                // Map date string to price for O(1) lookup
+                // Using normalized date string/timestamp from the API response
+                compMaps[ticker] = {
+                    data: new Map(compPoints.map(p => [p.date, p.price])),
+                    basePrice: compPoints[0]?.price || 1
+                };
+            }
+        });
+
+        return chartData.map((point) => {
+            const newItem = {
+                date: point.date,
+                [stockData.symbol]: ((point.price / basePrice0) - 1) * 100
+            };
+
+            activeComparables.forEach(ticker => {
+                const compMap = compMaps[ticker];
+                if (compMap) {
+                    const compPrice = compMap.data.get(point.date);
+                    if (compPrice !== undefined) {
+                        newItem[ticker] = ((compPrice / compMap.basePrice) - 1) * 100;
+                    } else {
+                        // If exact date match missing, try to find closest previous (optional, but keep null for now to avoid misleading lines)
+                        newItem[ticker] = null;
+                    }
+                } else {
+                    newItem[ticker] = null;
+                }
+            });
+
+            return newItem;
+        });
+    };
+
     // Click outside to close suggestions
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -680,50 +726,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         return `$${num.toLocaleString()}`;
     };
 
-    // Helper to normalize data for relative comparison (0% start)
-    const getRelativeData = () => {
-        if (!chartData || chartData.length === 0) return [];
 
-        const basePrice0 = chartData[0]?.price || 1;
-
-        // Create lookup maps for all active comparables for faster date matching
-        const compMaps = {};
-        activeComparables.forEach(ticker => {
-            const compPoints = comparableData[ticker];
-            if (compPoints && compPoints.length > 0) {
-                // Map date string to price for O(1) lookup
-                // Using normalized date string/timestamp from the API response
-                compMaps[ticker] = {
-                    data: new Map(compPoints.map(p => [p.date, p.price])),
-                    basePrice: compPoints[0]?.price || 1
-                };
-            }
-        });
-
-        return chartData.map((point) => {
-            const newItem = {
-                date: point.date,
-                [stockData.symbol]: ((point.price / basePrice0) - 1) * 100
-            };
-
-            activeComparables.forEach(ticker => {
-                const compMap = compMaps[ticker];
-                if (compMap) {
-                    const compPrice = compMap.data.get(point.date);
-                    if (compPrice !== undefined) {
-                        newItem[ticker] = ((compPrice / compMap.basePrice) - 1) * 100;
-                    } else {
-                        // If exact date match missing, try to find closest previous (optional, but keep null for now to avoid misleading lines)
-                        newItem[ticker] = null;
-                    }
-                } else {
-                    newItem[ticker] = null;
-                }
-            });
-
-            return newItem;
-        });
-    };
 
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
