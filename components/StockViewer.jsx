@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend, Line } from 'recharts';
@@ -737,8 +738,30 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
 
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    };
+
     return (
-        <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
+        <motion.div
+            className="w-full max-w-7xl mx-auto p-6 space-y-12"
+            onClick={() => setShowSuggestions(false)}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
             {/* Search Section */}
             <div className="flex flex-col items-center relative z-20 min-h-[80vh]">
                 {/* Title Section - At the top */}
@@ -1083,8 +1106,27 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     )}
                                 </div>
 
+
+
+                                {/* Disclaimer - Moved Above Comparables */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="px-6 pb-2 flex justify-end"
+                                >
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        * Prices may be delayed
+                                    </p>
+                                </motion.div>
+
                                 {/* Comparable Securities Control Bar */}
-                                <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="mt-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5"
+                                >
                                     <div className="flex items-center gap-2">
                                         <div className={`p-1.5 rounded-lg ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
                                             {loadingComparables ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
@@ -1142,16 +1184,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             })}
                                         </div>
                                     )}
-                                </div>
-                                <div className="px-6 pb-4 flex justify-end">
-                                    <p className="text-xs text-slate-500 font-medium">
-                                        * Prices may be delayed
-                                    </p>
-                                </div>
+                                </motion.div>
                             </div>
 
                             {/* Key Statistics Grid */}
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                            <motion.div variants={itemVariants} className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
@@ -1238,14 +1275,14 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
 
                             {/* Debug Info - Temporary */}
 
 
                             {/* Performance Comparison Cards */}
                             {stockInfo?.returns && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                                     {['ytd', '1y', '3y', '5y'].map((period) => {
                                         const data = stockInfo.returns[period];
                                         if (!data) return null;
@@ -1273,12 +1310,12 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         );
                                     })}
-                                </div>
+                                </motion.div>
                             )}
 
                             {/* Earnings Trends Section */}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
-                                <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
+                                <motion.div variants={itemVariants} className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
                                     <div className="flex justify-between items-center mb-8">
                                         <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
                                     </div>
@@ -1415,12 +1452,12 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
                         </div>
 
                         {/* Right Column: AI & News (Span 1) */}
-                        <div className="space-y-8">
+                        <motion.div variants={itemVariants} className="space-y-8">
                             {/* AI Summary */}
                             <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
                                 <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
@@ -1478,11 +1515,10 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     ))}
                                 </ul>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
-                </div>
-            )
-            }
-        </div >
+                </motion.div>
+            )}
+        </motion.div>
     );
 }
