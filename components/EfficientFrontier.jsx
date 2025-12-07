@@ -120,6 +120,15 @@ export default function EfficientFrontier({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
+        // DEBUG: Log all payload items to understand structure
+        console.log('Tooltip Payload:', payload.map(item => ({
+            layerName: item.name,
+            dataKey: item.dataKey,
+            pointType: item.payload?.type,
+            pointId: item.payload?.id,
+            pointName: item.payload?.name
+        })));
+
         // Each Scatter component has a 'name' prop that appears in payload items
         // Priority: Max Sharpe > Min Variance > Assets > Frontier > Monte Carlo
         const layerPriority = {
