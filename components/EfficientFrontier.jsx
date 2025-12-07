@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine, LabelList } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
+    // State for managing which point is being hovered
+    const [hoveredPoint, setHoveredPoint] = useState(null);
+
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
         return (
             <div className="flex items-center justify-center h-96 text-slate-400">
@@ -116,47 +120,12 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FIXED TOOLTIP - Uses coordinate matching for special portfolios
-    const CustomTooltip = ({ active, payload }) => {
-        if (!active || !payload || payload.length === 0) return null;
+    // SIMPLE TOOLTIP - Uses hoveredPoint state (set by onMouseEnter on each Scatter)
+    const CustomTooltip = ({ active }) => {
+        // Use hoveredPoint state instead of payload - this is set by individual Scatter onMouseEnter
+        if (!active || !hoveredPoint) return null;
 
-        // Get the hovered coordinates from the first payload item
-        const firstItem = payload[0];
-        if (!firstItem?.payload) return null;
-
-        const hoveredVol = firstItem.payload.volatility;
-        const hoveredRet = firstItem.payload.return;
-
-        // Tight tolerance for coordinate matching (0.5% difference allowed)
-        const tolerance = 0.5;
-
-        // Check if coordinates match special portfolios FIRST
-        let selectedPoint = null;
-
-        // Check if hovering on Optimal Portfolio
-        if (optimalPortfolio &&
-            Math.abs(hoveredVol - optimalPortfolio.volatility) < tolerance &&
-            Math.abs(hoveredRet - optimalPortfolio.return) < tolerance) {
-            selectedPoint = optimalPortfolio;
-        }
-        // Check if hovering on Min Variance Portfolio
-        else if (minVariancePortfolio &&
-            Math.abs(hoveredVol - minVariancePortfolio.volatility) < tolerance &&
-            Math.abs(hoveredRet - minVariancePortfolio.return) < tolerance) {
-            selectedPoint = minVariancePortfolio;
-        }
-        // Otherwise, use the first valid point from payload
-        else {
-            for (const item of payload) {
-                if (!item.payload) continue;
-                const pointType = item.payload.type;
-                if (!pointType || pointType === 'cml') continue;
-                selectedPoint = item.payload;
-                break;
-            }
-        }
-
-        if (!selectedPoint) return null;
+        const selectedPoint = hoveredPoint;
 
         // Skip CML points
         if (selectedPoint.type === 'cml') return null;
@@ -412,6 +381,8 @@ export default function EfficientFrontier({ data }) {
                             data={individualAssets}
                             fill="#f8fafc"
                             shape="circle"
+                            onMouseOver={(data) => setHoveredPoint(data)}
+                            onMouseOut={() => setHoveredPoint(null)}
                         >
                             {individualAssets.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
@@ -424,6 +395,8 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Min Variance"
                                 data={[minVariancePortfolio]}
+                                onMouseOver={() => setHoveredPoint(minVariancePortfolio)}
+                                onMouseOut={() => setHoveredPoint(null)}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     return (
@@ -442,6 +415,8 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Max Sharpe"
                                 data={[optimalPortfolio]}
+                                onMouseOver={() => setHoveredPoint(optimalPortfolio)}
+                                onMouseOut={() => setHoveredPoint(null)}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     return (
