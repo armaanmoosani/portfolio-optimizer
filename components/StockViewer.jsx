@@ -45,6 +45,39 @@ export default function StockViewer() {
     // Client-side only rendering for Chart to avoid SSR issues
     const [isMounted, setIsMounted] = useState(false);
 
+    // Persistence: Load Comparables from LocalStorage on mount/ticker change
+    useEffect(() => {
+        if (!stockData?.symbol) return;
+
+        try {
+            const savedComparables = localStorage.getItem(`comparables_${stockData.symbol}`);
+            const savedActive = localStorage.getItem(`active_comparables_${stockData.symbol}`);
+
+            if (savedComparables) {
+                setComparables(JSON.parse(savedComparables));
+            }
+            if (savedActive) {
+                setActiveComparables(JSON.parse(savedActive));
+            }
+        } catch (e) {
+            console.error("Failed to load comparables from storage", e);
+        }
+    }, [stockData?.symbol]);
+
+    // Persistence: Save Comparables to LocalStorage when they change
+    useEffect(() => {
+        if (!stockData?.symbol) return;
+        if (comparables.length > 0) {
+            localStorage.setItem(`comparables_${stockData.symbol}`, JSON.stringify(comparables));
+        }
+    }, [comparables, stockData?.symbol]);
+
+    // Persistence: Save Active Comparables when they change
+    useEffect(() => {
+        if (!stockData?.symbol) return;
+        localStorage.setItem(`active_comparables_${stockData.symbol}`, JSON.stringify(activeComparables));
+    }, [activeComparables, stockData?.symbol]);
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
