@@ -97,42 +97,39 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP with CAPM Validation
+    // SIMPLE TOOLTIP with CAPM Validation - Uses Scatter layer name
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Find the specific point - check ALL items for special portfolios first
-        let selectedPoint = null;
+        // Each Scatter component has a 'name' prop that appears in payload items
+        // Priority: Optimal > Market > Assets
+        const layerPriority = {
+            'Optimal': 100,
+            'Market': 99,
+            'Assets': 50
+        };
 
-        // First pass: look for special portfolios by ID
+        // Find the highest priority layer in the payload
+        let selectedItem = null;
+        let highestPriority = -1;
+
         for (const item of payload) {
-            const point = item.payload;
-            if (!point) continue;
+            const layerName = item.name;
+            const priority = layerPriority[layerName] || 0;
 
-            if (point.id === 'optimal_portfolio') {
-                selectedPoint = point;
-                break; // Optimal has highest priority
-            }
-            if (point.id === 'market_portfolio' && !selectedPoint) {
-                selectedPoint = point;
-                // Don't break - keep looking for optimal
+            if (priority > highestPriority) {
+                highestPriority = priority;
+                selectedItem = item;
             }
         }
 
-        // Second pass: if no special portfolio found, find highest priority regular point
-        if (!selectedPoint) {
-            for (const item of payload) {
-                const point = item.payload;
-                if (!point || point.type === 'sml') continue;
+        if (!selectedItem || !selectedItem.payload) return null;
 
-                // Prefer assets over undefined types
-                if (!selectedPoint || (point.type === 'asset' && selectedPoint.type !== 'asset')) {
-                    selectedPoint = point;
-                }
-            }
-        }
+        const selectedPoint = selectedItem.payload;
+        const layerName = selectedItem.name;
 
-        if (!selectedPoint) return null;
+        // Skip SML line points
+        if (selectedPoint.type === 'sml') return null;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);
@@ -157,17 +154,17 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge and name based on ID
+        // Display badge and name based on Scatter layer name
         let badge = null;
         let displayName = selectedPoint.name || 'Security';
 
-        if (selectedPoint.id === 'optimal_portfolio') {
+        if (layerName === 'Optimal') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">PORTFOLIO</span>;
             displayName = 'Optimal Portfolio (Max Sharpe)';
-        } else if (selectedPoint.id === 'market_portfolio') {
+        } else if (layerName === 'Market') {
             badge = <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MARKET</span>;
             displayName = 'Market Portfolio (β=1)';
-        } else if (selectedPoint.id?.startsWith('asset_')) {
+        } else if (layerName === 'Assets') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
             displayName = selectedPoint.name;
         }

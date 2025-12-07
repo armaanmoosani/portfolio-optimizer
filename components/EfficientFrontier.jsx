@@ -10,14 +10,14 @@ export default function EfficientFrontier({ data }) {
     }
 
     // 1. Format Frontier Points (The Blue Curve)
-    const frontierPoints = data.frontier_points.map(p => ({
+    const frontierPoints = data.frontier_points.map((p, idx) => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
         sharpe_ratio: p.sharpe_ratio || 0,
         weights: p.weights || {},
         name: 'Efficient Frontier',
         type: 'frontier',
-        id: 'frontier'
+        id: `frontier_${idx}`
     })).sort((a, b) => a.return - b.return);
 
     // 2. Format Monte Carlo Points (The Cloud)
@@ -116,69 +116,69 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP - Uses type-based priority matching
+    // SIMPLE TOOLTIP - Uses Scatter layer name for reliable identification
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // CRITICAL: Iterate through ALL payload items and find the highest-priority type
-        // Also check ID fields for definitive matching
-        const typePriority = { 'optimal': 5, 'min_variance': 4, 'asset': 3, 'frontier': 2, 'monte_carlo': 1, 'cml': 0 };
+        // Each Scatter component has a 'name' prop that appears in payload items
+        // Priority: Max Sharpe > Min Variance > Assets > Frontier > Monte Carlo
+        const layerPriority = {
+            'Max Sharpe': 100,
+            'Min Variance': 99,
+            'Assets': 50,
+            'Efficient Frontier': 30,
+            'Feasible Set': 10
+        };
 
-        let selectedPoint = null;
+        // Find the highest priority layer in the payload
+        let selectedItem = null;
         let highestPriority = -1;
 
         for (const item of payload) {
-            const point = item.payload;
-            if (!point || point.type === 'cml') continue;
+            const layerName = item.name; // This is the Scatter 'name' prop
+            const priority = layerPriority[layerName] || 0;
 
-            // Use ID for definitive matching (highest priority)
-            if (point.id === 'optimal_portfolio') {
-                selectedPoint = point;
-                highestPriority = 100; // Highest priority
-                break;
-            }
-            if (point.id === 'min_variance_portfolio') {
-                selectedPoint = point;
-                highestPriority = 99;
-                continue; // Keep looking in case optimal is also present
-            }
-
-            const priority = typePriority[point.type] || 0;
             if (priority > highestPriority) {
                 highestPriority = priority;
-                selectedPoint = point;
+                selectedItem = item;
             }
         }
 
-        if (!selectedPoint) return null;
+        if (!selectedItem || !selectedItem.payload) return null;
 
-        // Display badge and name based on ID
+        const selectedPoint = selectedItem.payload;
+        const layerName = selectedItem.name;
+
+        // Skip CML points
+        if (selectedPoint.type === 'cml') return null;
+
+        // Display badge and name based on Scatter layer name
         let badge = null;
         let displayName = selectedPoint.name || 'Portfolio';
         let displayWeights = selectedPoint.weights;
         let displaySharpe = selectedPoint.sharpe_ratio;
 
-        if (selectedPoint.id === 'optimal_portfolio') {
+        if (layerName === 'Max Sharpe') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
             displayName = 'Maximum Sharpe Ratio Portfolio';
             if (optimalPortfolio) {
                 displayWeights = optimalPortfolio.weights;
                 displaySharpe = optimalPortfolio.sharpe_ratio;
             }
-        } else if (selectedPoint.id === 'min_variance_portfolio') {
+        } else if (layerName === 'Min Variance') {
             badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
             displayName = 'Global Minimum Variance Portfolio';
             if (minVariancePortfolio) {
                 displayWeights = minVariancePortfolio.weights;
                 displaySharpe = minVariancePortfolio.sharpe_ratio;
             }
-        } else if (selectedPoint.id?.startsWith('asset_')) {
+        } else if (layerName === 'Assets') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
             displayName = selectedPoint.name;
-        } else if (selectedPoint.id?.startsWith('frontier') || selectedPoint.type === 'frontier') {
+        } else if (layerName === 'Efficient Frontier') {
             badge = <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">FRONTIER</span>;
             displayName = 'Efficient Frontier Point';
-        } else if (selectedPoint.id?.startsWith('mc_') || selectedPoint.type === 'monte_carlo') {
+        } else if (layerName === 'Feasible Set') {
             badge = <span className="text-xs bg-purple-600/70 text-white px-2 py-0.5 rounded">SIMULATED</span>;
             displayName = 'Random Portfolio';
         }
