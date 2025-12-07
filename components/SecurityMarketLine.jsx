@@ -101,26 +101,25 @@ export default function SecurityMarketLine({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Get the first payload item - this is the actual point being hovered
-        const hoveredPayload = payload[0];
-        if (!hoveredPayload?.payload) return null;
+        // CRITICAL: Iterate through ALL payload items and find the highest-priority type
+        // Priority order: optimal > market > asset > sml
+        const typePriority = { 'optimal': 4, 'market': 3, 'asset': 2, 'sml': 0 };
 
-        const selectedPoint = hoveredPayload.payload;
+        let selectedPoint = null;
+        let highestPriority = -1;
 
-        // Skip SML line points
-        if (selectedPoint.type === 'sml') return null;
+        for (const item of payload) {
+            const point = item.payload;
+            if (!point || point.type === 'sml') continue;
 
-        // Use generous tolerance for percentage values
-        const tolerance = 0.5;
+            const priority = typePriority[point.type] || 1;
+            if (priority > highestPriority) {
+                highestPriority = priority;
+                selectedPoint = point;
+            }
+        }
 
-        // Check coordinates for special portfolios
-        const isExactOptimal = optimalPortfolio &&
-            Math.abs(selectedPoint.beta - optimalPortfolio.beta) < 0.01 &&
-            Math.abs(selectedPoint.return - optimalPortfolio.return) < tolerance;
-
-        const isExactMarket =
-            Math.abs(selectedPoint.beta - 1.0) < 0.01 &&
-            Math.abs(selectedPoint.return - marketReturn) < tolerance;
+        if (!selectedPoint) return null;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);
@@ -146,14 +145,14 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge - use type field (primary) AND coordinate matching (secondary)
+        // Display badge and name based on type
         let badge = null;
         let displayName = selectedPoint.name || 'Security';
 
-        if (selectedPoint.type === 'optimal' || isExactOptimal) {
+        if (selectedPoint.type === 'optimal') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">PORTFOLIO</span>;
             displayName = 'Optimal Portfolio';
-        } else if (selectedPoint.type === 'market' || isExactMarket) {
+        } else if (selectedPoint.type === 'market') {
             badge = <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MARKET</span>;
             displayName = 'Market Portfolio (β=1)';
         } else if (selectedPoint.type === 'asset') {

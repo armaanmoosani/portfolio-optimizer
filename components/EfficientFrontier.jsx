@@ -116,46 +116,44 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP - Uses type-based matching with coordinate verification
+    // INDUSTRY-GRADE TOOLTIP - Uses type-based priority matching
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Get the first payload item - this is the actual point being hovered
-        const hoveredPayload = payload[0];
-        if (!hoveredPayload?.payload) return null;
+        // CRITICAL: Iterate through ALL payload items and find the highest-priority type
+        // Priority order: optimal > min_variance > asset > frontier > monte_carlo
+        const typePriority = { 'optimal': 5, 'min_variance': 4, 'asset': 3, 'frontier': 2, 'monte_carlo': 1, 'cml': 0 };
 
-        const selectedPoint = hoveredPayload.payload;
+        let selectedPoint = null;
+        let highestPriority = -1;
 
-        // Skip CML line points
-        if (selectedPoint.type === 'cml') return null;
+        for (const item of payload) {
+            const point = item.payload;
+            if (!point || point.type === 'cml') continue;
 
-        // Use more generous tolerance for percentage values (0.5% difference allowed)
-        const tolerance = 0.5;
+            const priority = typePriority[point.type] || 0;
+            if (priority > highestPriority) {
+                highestPriority = priority;
+                selectedPoint = point;
+            }
+        }
 
-        // Check if this point matches the optimal or min variance portfolios
-        const isExactOptimal = optimalPortfolio &&
-            Math.abs(selectedPoint.volatility - optimalPortfolio.volatility) < tolerance &&
-            Math.abs(selectedPoint.return - optimalPortfolio.return) < tolerance;
+        if (!selectedPoint) return null;
 
-        const isExactMinVar = minVariancePortfolio &&
-            Math.abs(selectedPoint.volatility - minVariancePortfolio.volatility) < tolerance &&
-            Math.abs(selectedPoint.return - minVariancePortfolio.return) < tolerance;
-
-        // Display badge based on type field (primary) and coordinate matching (secondary)
+        // Display badge and name based on type
         let badge = null;
         let displayName = selectedPoint.name || 'Portfolio';
         let displayWeights = selectedPoint.weights;
         let displaySharpe = selectedPoint.sharpe_ratio;
 
-        // PRIMARY: Use type field for reliable matching
-        if (selectedPoint.type === 'optimal' || isExactOptimal) {
+        if (selectedPoint.type === 'optimal') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
             displayName = 'Maximum Sharpe Ratio Portfolio';
             if (optimalPortfolio) {
                 displayWeights = optimalPortfolio.weights;
                 displaySharpe = optimalPortfolio.sharpe_ratio;
             }
-        } else if (selectedPoint.type === 'min_variance' || isExactMinVar) {
+        } else if (selectedPoint.type === 'min_variance') {
             badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
             displayName = 'Global Minimum Variance Portfolio';
             if (minVariancePortfolio) {
