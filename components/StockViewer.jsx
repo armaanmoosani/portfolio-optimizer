@@ -1255,251 +1255,251 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                                     </div>
                                 )}
-                        </div>
+                            </motion.div>
 
-                        {/* Debug Info - Temporary */}
+                            {/* Debug Info - Temporary */}
 
 
-                        {/* Performance Comparison Cards */}
-                        {stockInfo?.returns && (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                {['ytd', '1y', '3y', '5y'].map((period) => {
-                                    const data = stockInfo.returns[period];
-                                    if (!data) return null;
+                            {/* Performance Comparison Cards */}
+                            {stockInfo?.returns && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                    {['ytd', '1y', '3y', '5y'].map((period) => {
+                                        const data = stockInfo.returns[period];
+                                        if (!data) return null;
 
-                                    const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
-                                    const label = labels[period];
+                                        const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
+                                        const label = labels[period];
 
-                                    return (
-                                        <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
-                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm font-bold text-white">{stockData.symbol}</span>
-                                                    <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-xs font-medium text-slate-500">S&P 500</span>
-                                                    <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
-                                                    </span>
+                                        return (
+                                            <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
+                                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-bold text-white">{stockData.symbol}</span>
+                                                        <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs font-medium text-slate-500">S&P 500</span>
+                                                        <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {/* Earnings Trends Section */}
-                        {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
-                                <div className="flex justify-between items-center mb-8">
-                                    <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
+                                        );
+                                    })}
                                 </div>
+                            )}
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* EPS Chart */}
-                                    <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h4 className="text-sm font-bold text-slate-300">Earnings Per Share</h4>
-                                            <div className="flex gap-4 text-xs font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                                                    <span className="text-slate-400">Estimate</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                                    <span className="text-slate-400">Actual</span>
+                            {/* Earnings Trends Section */}
+                            {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
+                                <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
+                                    <div className="flex justify-between items-center mb-8">
+                                        <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* EPS Chart */}
+                                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h4 className="text-sm font-bold text-slate-300">Earnings Per Share</h4>
+                                                <div className="flex gap-4 text-xs font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                                                        <span className="text-slate-400">Estimate</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                                        <span className="text-slate-400">Actual</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="h-[300px] w-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <ComposedChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                                    <XAxis
-                                                        dataKey="quarter"
-                                                        stroke="#475569"
-                                                        tick={{ fill: '#64748b', fontSize: 11 }}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                        dy={10}
-                                                    />
-                                                    <YAxis
-                                                        stroke="#475569"
-                                                        tick={{ fill: '#64748b', fontSize: 11 }}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                        tickFormatter={(val) => val.toFixed(2)}
-                                                    />
-                                                    <Tooltip
-                                                        content={({ active, payload }) => {
-                                                            if (active && payload && payload.length) {
-                                                                const data = payload[0].payload;
-                                                                const surprise = data.epsReported - data.epsEstimate;
-                                                                const isBeat = surprise >= 0;
-                                                                return (
-                                                                    <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
-                                                                        <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-slate-300">Est: <span className="text-white font-medium">{data.epsEstimate?.toFixed(2)}</span></p>
-                                                                            <p className="text-slate-300">Act: <span className={`font-medium ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>{data.epsReported?.toFixed(2)}</span></p>
-                                                                            <p className={`font-bold ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                                {isBeat ? 'Beat' : 'Missed'} by {Math.abs(surprise).toFixed(2)}
-                                                                            </p>
+                                            <div className="h-[300px] w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <ComposedChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                        <XAxis
+                                                            dataKey="quarter"
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            dy={10}
+                                                        />
+                                                        <YAxis
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            tickFormatter={(val) => val.toFixed(2)}
+                                                        />
+                                                        <Tooltip
+                                                            content={({ active, payload }) => {
+                                                                if (active && payload && payload.length) {
+                                                                    const data = payload[0].payload;
+                                                                    const surprise = data.epsReported - data.epsEstimate;
+                                                                    const isBeat = surprise >= 0;
+                                                                    return (
+                                                                        <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
+                                                                            <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-slate-300">Est: <span className="text-white font-medium">{data.epsEstimate?.toFixed(2)}</span></p>
+                                                                                <p className="text-slate-300">Act: <span className={`font-medium ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>{data.epsReported?.toFixed(2)}</span></p>
+                                                                                <p className={`font-bold ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                                    {isBeat ? 'Beat' : 'Missed'} by {Math.abs(surprise).toFixed(2)}
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                            return null;
-                                                        }}
-                                                        cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
-                                                    />
-                                                    {/* Estimate Dots (Grey) */}
-                                                    <Scatter name="Estimate" dataKey="epsEstimate" fill="#64748b" shape="circle" />
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            }}
+                                                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                                                        />
+                                                        {/* Estimate Dots (Grey) */}
+                                                        <Scatter name="Estimate" dataKey="epsEstimate" fill="#64748b" shape="circle" />
 
-                                                    {/* Actual Dots (Colored) */}
-                                                    <Scatter name="Actual" dataKey="epsReported" shape="circle">
-                                                        {stockInfo.earningsHistory.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.epsReported >= entry.epsEstimate ? '#34d399' : '#f43f5e'} />
-                                                        ))}
-                                                    </Scatter>
-                                                </ComposedChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </div>
-
-                                    {/* Revenue vs Earnings Chart */}
-                                    <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h4 className="text-sm font-bold text-slate-300">Revenue vs. Earnings</h4>
-                                            <div className="flex gap-4 text-xs font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-sm bg-blue-500"></span>
-                                                    <span className="text-slate-400">Revenue</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
-                                                    <span className="text-slate-400">Earnings</span>
-                                                </div>
+                                                        {/* Actual Dots (Colored) */}
+                                                        <Scatter name="Actual" dataKey="epsReported" shape="circle">
+                                                            {stockInfo.earningsHistory.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.epsReported >= entry.epsEstimate ? '#34d399' : '#f43f5e'} />
+                                                            ))}
+                                                        </Scatter>
+                                                    </ComposedChart>
+                                                </ResponsiveContainer>
                                             </div>
                                         </div>
-                                        <div className="h-[300px] w-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }} barGap={2}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                                    <XAxis
-                                                        dataKey="quarter"
-                                                        stroke="#475569"
-                                                        tick={{ fill: '#64748b', fontSize: 11 }}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                        dy={10}
-                                                    />
-                                                    <YAxis
-                                                        stroke="#475569"
-                                                        tick={{ fill: '#64748b', fontSize: 11 }}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                        tickFormatter={(val) => formatLargeNumber(val)}
-                                                        width={45}
-                                                    />
-                                                    <Tooltip
-                                                        content={({ active, payload }) => {
-                                                            if (active && payload && payload.length) {
-                                                                const data = payload[0].payload;
-                                                                return (
-                                                                    <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
-                                                                        <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-slate-300">Rev: <span className="text-blue-400 font-medium">{formatLargeNumber(data.revenue)}</span></p>
-                                                                            <p className="text-slate-300">Earn: <span className="text-amber-400 font-medium">{formatLargeNumber(data.earnings)}</span></p>
+
+                                        {/* Revenue vs Earnings Chart */}
+                                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h4 className="text-sm font-bold text-slate-300">Revenue vs. Earnings</h4>
+                                                <div className="flex gap-4 text-xs font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-sm bg-blue-500"></span>
+                                                        <span className="text-slate-400">Revenue</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
+                                                        <span className="text-slate-400">Earnings</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="h-[300px] w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }} barGap={2}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                        <XAxis
+                                                            dataKey="quarter"
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            dy={10}
+                                                        />
+                                                        <YAxis
+                                                            stroke="#475569"
+                                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            tickFormatter={(val) => formatLargeNumber(val)}
+                                                            width={45}
+                                                        />
+                                                        <Tooltip
+                                                            content={({ active, payload }) => {
+                                                                if (active && payload && payload.length) {
+                                                                    const data = payload[0].payload;
+                                                                    return (
+                                                                        <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
+                                                                            <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-slate-300">Rev: <span className="text-blue-400 font-medium">{formatLargeNumber(data.revenue)}</span></p>
+                                                                                <p className="text-slate-300">Earn: <span className="text-amber-400 font-medium">{formatLargeNumber(data.earnings)}</span></p>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                            return null;
-                                                        }}
-                                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                    />
-                                                    <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                                    <Bar dataKey="earnings" fill="#fbbf24" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                                </BarChart>
-                                            </ResponsiveContainer>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            }}
+                                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                                        />
+                                                        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                        <Bar dataKey="earnings" fill="#fbbf24" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right Column: AI & News (Span 1) */}
-                    <div className="space-y-8">
-                        {/* AI Summary */}
-                        <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
-                            <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
-                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
-                                <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
-                                    <TrendingUp className="w-5 h-5" />
-                                </div>
-                                AI Analysis
-                            </h3>
-                            <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed relative z-10 font-medium">
-                                {aiSummary || (
-                                    <div className="flex flex-col gap-4">
-                                        <div className="h-4 bg-white/5 rounded w-3/4 animate-pulse"></div>
-                                        <div className="h-4 bg-white/5 rounded w-full animate-pulse"></div>
-                                        <div className="h-4 bg-white/5 rounded w-5/6 animate-pulse"></div>
-                                        <div className="h-4 bg-white/5 rounded w-4/5 animate-pulse"></div>
-                                    </div>
-                                )}
-                            </div>
-                            {aiSummary && (
-                                <p className="text-xs text-slate-500 mt-4">AI-powered, not financial advice.</p>
                             )}
                         </div>
 
-                        {/* Recent News */}
-                        <div className="glass-panel rounded-3xl p-8 border border-white/5">
-                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                                <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
-                                    <Calendar className="w-5 h-5" />
+                        {/* Right Column: AI & News (Span 1) */}
+                        <div className="space-y-8">
+                            {/* AI Summary */}
+                            <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
+                                <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
+                                    <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
+                                        <TrendingUp className="w-5 h-5" />
+                                    </div>
+                                    AI Analysis
+                                </h3>
+                                <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed relative z-10 font-medium">
+                                    {aiSummary || (
+                                        <div className="flex flex-col gap-4">
+                                            <div className="h-4 bg-white/5 rounded w-3/4 animate-pulse"></div>
+                                            <div className="h-4 bg-white/5 rounded w-full animate-pulse"></div>
+                                            <div className="h-4 bg-white/5 rounded w-5/6 animate-pulse"></div>
+                                            <div className="h-4 bg-white/5 rounded w-4/5 animate-pulse"></div>
+                                        </div>
+                                    )}
                                 </div>
-                                Recent News
-                            </h3>
-                            <ul className="space-y-4">
-                                {news.map((item, i) => (
-                                    <li key={i} className="group">
-                                        <a
-                                            href={item.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block hover:bg-white/5 p-5 -mx-5 rounded-2xl transition-all border border-transparent hover:border-white/5 group-hover:shadow-lg group-hover:shadow-black/20"
-                                        >
-                                            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">
-                                                {item.headline}
-                                            </h4>
-                                            <div className="flex items-center justify-between mt-4">
-                                                <p className="text-[10px] font-bold uppercase tracking-wider bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
-                                                    {item.source || new URL(item.url).hostname.replace('www.', '')}
-                                                </p>
-                                                <span className="text-xs text-slate-500 font-medium">
-                                                    {new Date(item.datetime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                </span>
-                                            </div>
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
+                                {aiSummary && (
+                                    <p className="text-xs text-slate-500 mt-4">AI-powered, not financial advice.</p>
+                                )}
+                            </div>
+
+                            {/* Recent News */}
+                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
+                                        <Calendar className="w-5 h-5" />
+                                    </div>
+                                    Recent News
+                                </h3>
+                                <ul className="space-y-4">
+                                    {news.map((item, i) => (
+                                        <li key={i} className="group">
+                                            <a
+                                                href={item.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block hover:bg-white/5 p-5 -mx-5 rounded-2xl transition-all border border-transparent hover:border-white/5 group-hover:shadow-lg group-hover:shadow-black/20"
+                                            >
+                                                <h4 className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">
+                                                    {item.headline}
+                                                </h4>
+                                                <div className="flex items-center justify-between mt-4">
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
+                                                        {item.source || new URL(item.url).hostname.replace('www.', '')}
+                                                    </p>
+                                                    <span className="text-xs text-slate-500 font-medium">
+                                                        {new Date(item.datetime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </div>
-                    </div>
+                    </div >
                 </div >
-                </div >
-    )
-}
+            )
+            }
         </div >
     );
 }
