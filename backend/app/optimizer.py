@@ -658,7 +658,8 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         "monte_carlo_points": monte_carlo_points,
         "cml_points": cml_points,
         "sml_points": sml_points,
-        "market_return": market_mean_return
+        "market_return": market_mean_return,
+        "risk_free_rate": risk_free_rate  # Pass to frontend for accurate CML/SML calculations
     }
     """
     Calculate the efficient frontier by optimizing portfolios across a range of target returns.

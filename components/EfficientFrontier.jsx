@@ -75,7 +75,8 @@ export default function EfficientFrontier({ data }) {
             id: `cml_${idx}`
         })).sort((a, b) => a.volatility - b.volatility);
     } else if (optimalPortfolio) {
-        const rfRate = 4.5;
+        // Use backend risk_free_rate if available, otherwise fallback (in percentage)
+        const rfRate = data.risk_free_rate ? data.risk_free_rate * 100 : 4.5;
         const optVol = optimalPortfolio.volatility;
         const optRet = optimalPortfolio.return;
         const slope = (optRet - rfRate) / optVol;
@@ -115,46 +116,60 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP - Uses exact point matching
+    // INDUSTRY-GRADE TOOLTIP - Uses exact coordinate matching
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // CRITICAL FIX: Find the exact point being hovered using unique ID
-        // Priority order: optimal > min_variance > asset > frontier > monte_carlo
-        const priorityOrder = ['optimal', 'min_variance', 'asset', 'frontier', 'monte_carlo'];
+        // Get the first payload item - this is the actual point being hovered
+        const hoveredPayload = payload[0];
+        if (!hoveredPayload?.payload) return null;
 
-        let selectedPoint = null;
-        for (const type of priorityOrder) {
-            const found = payload.find(p => p.payload?.type === type);
-            if (found) {
-                selectedPoint = found.payload;
-                break;
-            }
-        }
+        const selectedPoint = hoveredPayload.payload;
 
-        if (!selectedPoint || selectedPoint.type === 'cml') return null;
+        // Skip CML line points
+        if (selectedPoint.type === 'cml') return null;
 
-        // Validate data integrity - prevent showing wrong portfolio data
-        const isOptimal = selectedPoint.id === 'optimal_portfolio';
-        const isMinVar = selectedPoint.id === 'min_variance_portfolio';
+        // EXACT COORDINATE MATCHING: Only show special badges if coordinates match exactly
+        // Use tight tolerance (0.001%) for floating point comparison
+        const tolerance = 0.001;
 
-        // Display badge
+        const isExactOptimal = optimalPortfolio &&
+            Math.abs(selectedPoint.volatility - optimalPortfolio.volatility) < tolerance &&
+            Math.abs(selectedPoint.return - optimalPortfolio.return) < tolerance;
+
+        const isExactMinVar = minVariancePortfolio &&
+            Math.abs(selectedPoint.volatility - minVariancePortfolio.volatility) < tolerance &&
+            Math.abs(selectedPoint.return - minVariancePortfolio.return) < tolerance;
+
+        // Display badge based on EXACT coordinate matching
         let badge = null;
-        if (isOptimal) {
+        let displayName = selectedPoint.name;
+        let displayWeights = selectedPoint.weights;
+        let displaySharpe = selectedPoint.sharpe_ratio;
+
+        if (isExactOptimal) {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
-        } else if (isMinVar) {
+            displayName = 'Maximum Sharpe Ratio Portfolio';
+            displayWeights = optimalPortfolio.weights;
+            displaySharpe = optimalPortfolio.sharpe_ratio;
+        } else if (isExactMinVar) {
             badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
+            displayName = 'Global Minimum Variance Portfolio';
+            displayWeights = minVariancePortfolio.weights;
+            displaySharpe = minVariancePortfolio.sharpe_ratio;
         } else if (selectedPoint.type === 'asset') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
         } else if (selectedPoint.type === 'frontier') {
             badge = <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">FRONTIER</span>;
+        } else if (selectedPoint.type === 'monte_carlo') {
+            badge = <span className="text-xs bg-purple-600/70 text-white px-2 py-0.5 rounded">SIMULATED</span>;
         }
 
         return (
             <div className="bg-slate-900/95 border border-slate-700/50 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50" style={{ minWidth: '260px' }}>
                 <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
                     <p className="text-white font-bold text-sm tracking-wide truncate pr-2">
-                        {selectedPoint.name}
+                        {displayName}
                     </p>
                     {badge}
                 </div>
@@ -172,23 +187,23 @@ export default function EfficientFrontier({ data }) {
                         </div>
                     </div>
 
-                    {selectedPoint.sharpe_ratio !== undefined && selectedPoint.sharpe_ratio !== 0 && (
+                    {displaySharpe !== undefined && displaySharpe !== 0 && (
                         <div className="pt-2 border-t border-slate-700/50">
                             <div className="flex justify-between items-center">
                                 <span className="text-slate-400 text-xs font-medium">Sharpe Ratio</span>
-                                <span className="text-amber-400 font-mono font-bold text-sm">{selectedPoint.sharpe_ratio.toFixed(3)}</span>
+                                <span className="text-amber-400 font-mono font-bold text-sm">{displaySharpe.toFixed(3)}</span>
                             </div>
                         </div>
                     )}
 
                     {/* Allocations (Only for portfolios) */}
-                    {selectedPoint.weights && Object.keys(selectedPoint.weights).length > 0 && (
+                    {displayWeights && Object.keys(displayWeights).length > 0 && (
                         <>
                             <div className="border-t border-slate-700/50 my-3" />
                             <div>
                                 <p className="text-slate-500 font-semibold mb-2.5 text-[10px] uppercase tracking-wider">Portfolio Allocations</p>
                                 <div className="space-y-2">
-                                    {Object.entries(selectedPoint.weights)
+                                    {Object.entries(displayWeights)
                                         .sort(([, a], [, b]) => b - a)
                                         .slice(0, 5)
                                         .map(([ticker, weight]) => (
@@ -208,9 +223,9 @@ export default function EfficientFrontier({ data }) {
                                             </div>
                                         ))}
                                 </div>
-                                {Object.keys(selectedPoint.weights).length > 5 && (
+                                {Object.keys(displayWeights).length > 5 && (
                                     <p className="text-slate-500 text-[10px] mt-2 italic">
-                                        +{Object.keys(selectedPoint.weights).length - 5} more positions
+                                        +{Object.keys(displayWeights).length - 5} more positions
                                     </p>
                                 )}
                             </div>

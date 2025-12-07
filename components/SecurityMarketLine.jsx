@@ -101,19 +101,25 @@ export default function SecurityMarketLine({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // CRITICAL: Use priority-based selection with exact ID matching
-        const priorityOrder = ['optimal', 'market', 'asset', 'sml'];
+        // Get the first payload item - this is the actual point being hovered
+        const hoveredPayload = payload[0];
+        if (!hoveredPayload?.payload) return null;
 
-        let selectedPoint = null;
-        for (const type of priorityOrder) {
-            const found = payload.find(p => p.payload?.type === type);
-            if (found) {
-                selectedPoint = found.payload;
-                break;
-            }
-        }
+        const selectedPoint = hoveredPayload.payload;
 
-        if (!selectedPoint || selectedPoint.type === 'sml') return null;
+        // Skip SML line points
+        if (selectedPoint.type === 'sml') return null;
+
+        // EXACT COORDINATE MATCHING for special badges
+        const tolerance = 0.001;
+
+        const isExactOptimal = optimalPortfolio &&
+            Math.abs(selectedPoint.beta - optimalPortfolio.beta) < tolerance &&
+            Math.abs(selectedPoint.return - optimalPortfolio.return) < tolerance;
+
+        const isExactMarket =
+            Math.abs(selectedPoint.beta - marketPortfolio.beta) < tolerance &&
+            Math.abs(selectedPoint.return - marketPortfolio.return) < tolerance;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);
@@ -139,11 +145,11 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge
+        // Display badge based on EXACT coordinate matching
         let badge = null;
-        if (selectedPoint.id === 'optimal_portfolio') {
+        if (isExactOptimal) {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
-        } else if (selectedPoint.id === 'market_portfolio') {
+        } else if (isExactMarket) {
             badge = <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MARKET</span>;
         } else if (selectedPoint.type === 'asset') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
