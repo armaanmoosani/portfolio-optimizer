@@ -97,19 +97,26 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP with CAPM Validation - Uses direct point matching
+    // INDUSTRY-GRADE TOOLTIP with CAPM Validation
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Get the actual hovered point directly
-        const hoveredPoint = payload[0]?.payload;
-        if (!hoveredPoint) return null;
+        // Priority order for overlapping points
+        const priorityOrder = ['optimal', 'market', 'asset'];
 
-        // Skip SML line points in tooltip
-        if (hoveredPoint.type === 'sml') return null;
+        let selectedPoint = null;
 
-        // Use the actual hovered point directly - no type priority matching
-        const selectedPoint = hoveredPoint;
+        // First, try to find a point matching our priority order
+        for (const type of priorityOrder) {
+            const found = payload.find(p => p.payload?.type === type);
+            if (found) {
+                selectedPoint = found.payload;
+                break;
+            }
+        }
+
+        // Skip if nothing to show or if it's just SML line
+        if (!selectedPoint || selectedPoint.type === 'sml') return null;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);

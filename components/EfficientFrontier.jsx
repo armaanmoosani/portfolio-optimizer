@@ -1,15 +1,6 @@
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine, LabelList } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
-    // Debug: Log data to verify Monte Carlo points are arriving
-    console.log('[EfficientFrontier] Data received:', {
-        frontier_points: data?.frontier_points?.length || 0,
-        monte_carlo_points: data?.monte_carlo_points?.length || 0,
-        individual_assets: data?.individual_assets?.length || 0,
-        optimal_portfolio: !!data?.optimal_portfolio,
-        min_variance_portfolio: !!data?.min_variance_portfolio
-    });
-
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
         return (
             <div className="flex items-center justify-center h-96 text-slate-400">
@@ -124,19 +115,36 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP - Uses coordinate-based exact matching
+    // INDUSTRY-GRADE TOOLTIP - Prioritizes key portfolios, then assets, then frontier
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Get the actual hovered coordinates from the first payload
-        const hoveredPoint = payload[0]?.payload;
-        if (!hoveredPoint) return null;
+        // Priority order for overlapping points
+        const priorityOrder = ['optimal', 'min_variance', 'asset', 'frontier'];
 
-        // Skip CML and Monte Carlo points in tooltip (too many to be useful)
-        if (hoveredPoint.type === 'cml' || hoveredPoint.type === 'monte_carlo') return null;
+        let selectedPoint = null;
 
-        // Use the actual hovered point directly - no type priority matching
-        const selectedPoint = hoveredPoint;
+        // First, try to find a point matching our priority order
+        for (const type of priorityOrder) {
+            const found = payload.find(p => p.payload?.type === type);
+            if (found) {
+                selectedPoint = found.payload;
+                break;
+            }
+        }
+
+        // If no priority match, use the first valid non-CML/non-MC point
+        if (!selectedPoint) {
+            const fallback = payload.find(p =>
+                p.payload &&
+                p.payload.type !== 'cml' &&
+                p.payload.type !== 'monte_carlo'
+            );
+            if (fallback) selectedPoint = fallback.payload;
+        }
+
+        // Skip if nothing to show
+        if (!selectedPoint) return null;
 
         // Validate data integrity - prevent showing wrong portfolio data
         const isOptimal = selectedPoint.id === 'optimal_portfolio';
@@ -312,20 +320,13 @@ export default function EfficientFrontier({ data }) {
                         />
 
                         {/* Layer 1: Monte Carlo Cloud (Background) */}
-                        {monteCarloPoints.length > 0 && (
-                            <Scatter
-                                name="Feasible Set"
-                                data={monteCarloPoints}
-                                fill="#475569"
-                                opacity={0.25}
-                                shape="circle"
-                                isAnimationActive={false}
-                            >
-                                {monteCarloPoints.map((entry, index) => (
-                                    <Cell key={`mc-${index}`} fill="#475569" r={2} />
-                                ))}
-                            </Scatter>
-                        )}
+                        <Scatter
+                            name="Feasible Set"
+                            data={monteCarloPoints}
+                            fill="#64748b"
+                            opacity={0.3}
+                            isAnimationActive={false}
+                        />
 
                         {/* Layer 2: Capital Market Line */}
                         {cmlPoints.length > 1 && (
