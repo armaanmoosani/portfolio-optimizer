@@ -32,8 +32,7 @@ export default function StockViewer() {
     const [error, setError] = useState("");
     const [chartLoading, setChartLoading] = useState(false);
     const [hoveredData, setHoveredData] = useState(null);
-    const [chartLoading, setChartLoading] = useState(false);
-    const [hoveredData, setHoveredData] = useState(null);
+
     const searchContainerRef = useRef(null);
 
     // State for Relative Performance (Moved to top)
@@ -251,11 +250,6 @@ export default function StockViewer() {
         }
     };
 
-    // State for Relative Performance
-    const [comparables, setComparables] = useState([]); // List of tickers ["NVDA", "INTC"]
-    const [comparableData, setComparableData] = useState({}); // { NVDA: [...], INTC: [...] }
-    const [activeComparables, setActiveComparables] = useState([]); // Currently toggled on
-    const [loadingComparables, setLoadingComparables] = useState(false);
 
     // Modified to accept an optional overrideTicker
     const handleSearch = async (overrideTicker) => {
