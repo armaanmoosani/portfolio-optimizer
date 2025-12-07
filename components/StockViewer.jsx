@@ -32,7 +32,22 @@ export default function StockViewer() {
     const [error, setError] = useState("");
     const [chartLoading, setChartLoading] = useState(false);
     const [hoveredData, setHoveredData] = useState(null);
+    const [chartLoading, setChartLoading] = useState(false);
+    const [hoveredData, setHoveredData] = useState(null);
     const searchContainerRef = useRef(null);
+
+    // State for Relative Performance (Moved to top)
+    const [comparables, setComparables] = useState([]);
+    const [comparableData, setComparableData] = useState({});
+    const [activeComparables, setActiveComparables] = useState([]);
+    const [loadingComparables, setLoadingComparables] = useState(false);
+
+    // Client-side only rendering for Chart to avoid SSR issues
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Helper to normalize data for relative comparison (0% start)
     // Moved up to avoid ReferenceError initialization issues
@@ -916,156 +931,162 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
                                         </div>
                                     )}
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart
-                                            data={activeComparables.length > 0 ? getRelativeData() : chartData}
-                                            margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-                                            onMouseLeave={() => {
-                                                setHoveredData(null);
-                                            }}
-                                            onMouseMove={(e) => {
-                                                if (activeComparables.length === 0 && e.activePayload && e.activePayload.length > 0) {
-                                                    setHoveredData(e.activePayload[0].payload);
-                                                }
-                                            }}
-                                        >
-                                            <defs>
-                                                {/* Dynamic Color Gradient for Fill */}
-                                                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0.1} />
-                                                    <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0} />
-                                                </linearGradient>
-
-                                                {/* Multi-Segment Gradient for Stroke (1D View) */}
-                                                {timeRange === '1D' && (preMarketData || afterHoursData) ? (
-                                                    <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
-                                                        {preMarketData && !afterHoursData && (
-                                                            <>
-                                                                <stop offset={0} stopColor="#94a3b8" />
-                                                                <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
-                                                            </>
-                                                        )}
-                                                        <stop offset={afterHoursData ? 0 : (preMarketData ? preMarketData.splitOffset : 0)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
-                                                        <stop offset={afterHoursData ? visibleSplitOffset : (afterHoursData ? afterHoursData.splitOffset : 1)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
-                                                        {afterHoursData && (
-                                                            <>
-                                                                <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
-                                                                <stop offset={1} stopColor="#94a3b8" />
-                                                            </>
-                                                        )}
-                                                    </linearGradient>
-                                                ) : (
-                                                    <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
-                                                        <stop offset="0%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
-                                                        <stop offset="100%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
-                                                    </linearGradient>
-                                                )}
-
-                                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')} stopOpacity={0.3} />
-                                                    <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')} stopOpacity={0} />
-                                                </linearGradient>
-
-                                                {/* Glow Filter */}
-                                                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                                                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                                                    <feMerge>
-                                                        <feMergeNode in="coloredBlur" />
-                                                        <feMergeNode in="SourceGraphic" />
-                                                    </feMerge>
-                                                </filter>
-                                            </defs>
-
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
-                                            <XAxis
-                                                dataKey="date"
-                                                stroke="#94a3b8"
-                                                fontSize={12}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                minTickGap={30}
-                                                tickFormatter={(str) => {
-                                                    const date = new Date(str);
-                                                    if (timeRange === '1D') return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                                                    if (timeRange === '1W' || timeRange === '1M') return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                                                    return date.toLocaleDateString([], { month: 'short', year: '2-digit' });
+                                    {isMounted ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <ComposedChart
+                                                data={activeComparables.length > 0 ? getRelativeData() : chartData}
+                                                margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+                                                onMouseLeave={() => {
+                                                    setHoveredData(null);
                                                 }}
-                                            />
-                                            <YAxis
-                                                domain={['auto', 'auto']}
-                                                stroke="#94a3b8"
-                                                fontSize={12}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickFormatter={(val) => activeComparables.length > 0 ? `${val.toFixed(2)}%` : `$${val.toFixed(2)}`}
-                                                width={60}
-                                            />
-                                            {activeComparables.length > 0 && (
-                                                <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
-                                            )}
-                                            {activeComparables.length > 0 ? (
-                                                <Tooltip
-                                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
-                                                    labelStyle={{ color: '#94a3b8', marginBottom: '8px' }}
-                                                    itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
-                                                    formatter={(value, name) => [
-                                                        `${parseFloat(value).toFixed(2)}%`,
-                                                        name === 'value' ? stockData.symbol : name
-                                                    ]}
-                                                    labelFormatter={(label) => {
-                                                        const date = new Date(label);
-                                                        return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) +
-                                                            (timeRange === '1D' ? ` ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '');
+                                                onMouseMove={(e) => {
+                                                    if (activeComparables.length === 0 && e.activePayload && e.activePayload.length > 0) {
+                                                        setHoveredData(e.activePayload[0].payload);
+                                                    }
+                                                }}
+                                            >
+                                                <defs>
+                                                    {/* Dynamic Color Gradient for Fill */}
+                                                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0.1} />
+                                                        <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0} />
+                                                    </linearGradient>
+
+                                                    {/* Multi-Segment Gradient for Stroke (1D View) */}
+                                                    {timeRange === '1D' && (preMarketData || afterHoursData) ? (
+                                                        <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
+                                                            {preMarketData && !afterHoursData && (
+                                                                <>
+                                                                    <stop offset={0} stopColor="#94a3b8" />
+                                                                    <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
+                                                                </>
+                                                            )}
+                                                            <stop offset={afterHoursData ? 0 : (preMarketData ? preMarketData.splitOffset : 0)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                            <stop offset={afterHoursData ? visibleSplitOffset : (afterHoursData ? afterHoursData.splitOffset : 1)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                            {afterHoursData && (
+                                                                <>
+                                                                    <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
+                                                                    <stop offset={1} stopColor="#94a3b8" />
+                                                                </>
+                                                            )}
+                                                        </linearGradient>
+                                                    ) : (
+                                                        <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
+                                                            <stop offset="0%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
+                                                            <stop offset="100%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
+                                                        </linearGradient>
+                                                    )}
+
+                                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')} stopOpacity={0.3} />
+                                                        <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')} stopOpacity={0} />
+                                                    </linearGradient>
+
+                                                    {/* Glow Filter */}
+                                                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                                                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                                                        <feMerge>
+                                                            <feMergeNode in="coloredBlur" />
+                                                            <feMergeNode in="SourceGraphic" />
+                                                        </feMerge>
+                                                    </filter>
+                                                </defs>
+
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    stroke="#94a3b8"
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    minTickGap={30}
+                                                    tickFormatter={(str) => {
+                                                        const date = new Date(str);
+                                                        if (timeRange === '1D') return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                                                        if (timeRange === '1W' || timeRange === '1M') return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                                                        return date.toLocaleDateString([], { month: 'short', year: '2-digit' });
                                                     }}
                                                 />
-                                            ) : (
-                                                <Tooltip
-                                                    content={<CustomTooltip />}
-                                                    cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+                                                <YAxis
+                                                    domain={['auto', 'auto']}
+                                                    stroke="#94a3b8"
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickFormatter={(val) => activeComparables.length > 0 ? `${val.toFixed(2)}%` : `$${val.toFixed(2)}`}
+                                                    width={60}
                                                 />
-                                            )}
-                                            <Area
-                                                type="monotone"
-                                                dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
-                                                name={activeComparables.length > 0 ? stockData.symbol : "value"}
-                                                stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && (preMarketData || afterHoursData)) ? "url(#splitColor)" : "url(#standardColor)")}
-                                                strokeWidth={activeComparables.length > 0 ? 3 : 2}
-                                                fillOpacity={1}
-                                                fill="url(#colorPrice)"
-                                            />
-
-                                            {/* Competitor Lines */}
-                                            {activeComparables.map((ticker, idx) => {
-                                                const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
-                                                const color = colors[idx % colors.length];
-                                                return (
-                                                    <Line
-                                                        key={ticker}
-                                                        type="monotone"
-                                                        dataKey={ticker}
-                                                        stroke={color}
-                                                        strokeWidth={2}
-                                                        dot={false}
-                                                        activeDot={{ r: 6, strokeWidth: 0 }}
-                                                        isAnimationActive={true}
+                                                {activeComparables.length > 0 && (
+                                                    <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
+                                                )}
+                                                {activeComparables.length > 0 ? (
+                                                    <Tooltip
+                                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+                                                        labelStyle={{ color: '#94a3b8', marginBottom: '8px' }}
+                                                        itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
+                                                        formatter={(value, name) => [
+                                                            `${parseFloat(value).toFixed(2)}%`,
+                                                            name === 'value' ? stockData.symbol : name
+                                                        ]}
+                                                        labelFormatter={(label) => {
+                                                            const date = new Date(label);
+                                                            return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) +
+                                                                (timeRange === '1D' ? ` ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '');
+                                                        }}
                                                     />
-                                                );
-                                            })}
-
-                                            {/* Reference Dots for live price (only in price mode) */}
-                                            {activeComparables.length === 0 && stockData.price && chartData.length > 0 && (
-                                                <ReferenceDot
-                                                    x={chartData[chartData.length - 1]?.date}
-                                                    y={stockData.price}
-                                                    r={4}
-                                                    fill={displayData.isPositive ? '#34d399' : '#f43f5e'}
-                                                    stroke="#fff"
-                                                    strokeWidth={2}
-                                                    isFront={true}
+                                                ) : (
+                                                    <Tooltip
+                                                        content={<CustomTooltip />}
+                                                        cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+                                                    />
+                                                )}
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
+                                                    name={activeComparables.length > 0 ? stockData.symbol : "value"}
+                                                    stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && (preMarketData || afterHoursData)) ? "url(#splitColor)" : "url(#standardColor)")}
+                                                    strokeWidth={activeComparables.length > 0 ? 3 : 2}
+                                                    fillOpacity={1}
+                                                    fill="url(#colorPrice)"
                                                 />
-                                            )}
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
+
+                                                {/* Competitor Lines */}
+                                                {activeComparables.map((ticker, idx) => {
+                                                    const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
+                                                    const color = colors[idx % colors.length];
+                                                    return (
+                                                        <Line
+                                                            key={ticker}
+                                                            type="monotone"
+                                                            dataKey={ticker}
+                                                            stroke={color}
+                                                            strokeWidth={2}
+                                                            dot={false}
+                                                            activeDot={{ r: 6, strokeWidth: 0 }}
+                                                            isAnimationActive={true}
+                                                        />
+                                                    );
+                                                })}
+
+                                                {/* Reference Dots for live price (only in price mode) */}
+                                                {activeComparables.length === 0 && stockData.price && chartData.length > 0 && (
+                                                    <ReferenceDot
+                                                        x={chartData[chartData.length - 1]?.date}
+                                                        y={stockData.price}
+                                                        r={4}
+                                                        fill={displayData.isPositive ? '#34d399' : '#f43f5e'}
+                                                        stroke="#fff"
+                                                        strokeWidth={2}
+                                                        isFront={true}
+                                                    />
+                                                )}
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-slate-500">
+                                            Loading Chart...
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Comparable Securities Control Bar */}
