@@ -97,25 +97,44 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FIXED TOOLTIP with CAPM Validation - Uses LAST item in payload
+    // FIXED TOOLTIP with CAPM Validation - Uses coordinate matching
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Recharts orders payload by render sequence
-        // The LAST items are from the topmost Scatter layers (rendered last = on top visually)
+        // Get the hovered coordinates from the first payload item
+        const firstItem = payload[0];
+        if (!firstItem?.payload) return null;
 
+        const hoveredBeta = firstItem.payload.beta;
+        const hoveredRet = firstItem.payload.return;
+
+        // Tight tolerance for coordinate matching
+        const betaTolerance = 0.05;
+        const retTolerance = 0.5;
+
+        // Check if coordinates match special portfolios FIRST
         let selectedPoint = null;
 
-        // Iterate from END to find the topmost layer's data
-        for (let i = payload.length - 1; i >= 0; i--) {
-            const item = payload[i];
-            if (!item.payload) continue;
-            const pointType = item.payload.type;
-            if (!pointType || pointType === 'sml') continue;
-
-            // Found a valid point from the topmost layer
-            selectedPoint = item.payload;
-            break;
+        // Check if hovering on Optimal Portfolio
+        if (optimalPortfolio &&
+            Math.abs(hoveredBeta - optimalPortfolio.beta) < betaTolerance &&
+            Math.abs(hoveredRet - optimalPortfolio.return) < retTolerance) {
+            selectedPoint = optimalPortfolio;
+        }
+        // Check if hovering on Market Portfolio
+        else if (Math.abs(hoveredBeta - 1.0) < betaTolerance &&
+            Math.abs(hoveredRet - marketReturn) < retTolerance) {
+            selectedPoint = marketPortfolio;
+        }
+        // Otherwise, use the first valid point from payload
+        else {
+            for (const item of payload) {
+                if (!item.payload) continue;
+                const pointType = item.payload.type;
+                if (!pointType || pointType === 'sml') continue;
+                selectedPoint = item.payload;
+                break;
+            }
         }
 
         if (!selectedPoint) return null;

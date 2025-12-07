@@ -116,26 +116,44 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FIXED TOOLTIP - Uses LAST item in payload (topmost rendered layer)
+    // FIXED TOOLTIP - Uses coordinate matching for special portfolios
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Recharts orders payload by render sequence
-        // The LAST items are from the topmost Scatter layers (rendered last = on top visually)
-        // We want to find the last valid item (not CML, and with a valid type)
+        // Get the hovered coordinates from the first payload item
+        const firstItem = payload[0];
+        if (!firstItem?.payload) return null;
 
+        const hoveredVol = firstItem.payload.volatility;
+        const hoveredRet = firstItem.payload.return;
+
+        // Tight tolerance for coordinate matching (0.5% difference allowed)
+        const tolerance = 0.5;
+
+        // Check if coordinates match special portfolios FIRST
         let selectedPoint = null;
 
-        // Iterate from END to find the topmost layer's data
-        for (let i = payload.length - 1; i >= 0; i--) {
-            const item = payload[i];
-            if (!item.payload) continue;
-            const pointType = item.payload.type;
-            if (!pointType || pointType === 'cml') continue;
-
-            // Found a valid point from the topmost layer
-            selectedPoint = item.payload;
-            break;
+        // Check if hovering on Optimal Portfolio
+        if (optimalPortfolio &&
+            Math.abs(hoveredVol - optimalPortfolio.volatility) < tolerance &&
+            Math.abs(hoveredRet - optimalPortfolio.return) < tolerance) {
+            selectedPoint = optimalPortfolio;
+        }
+        // Check if hovering on Min Variance Portfolio
+        else if (minVariancePortfolio &&
+            Math.abs(hoveredVol - minVariancePortfolio.volatility) < tolerance &&
+            Math.abs(hoveredRet - minVariancePortfolio.return) < tolerance) {
+            selectedPoint = minVariancePortfolio;
+        }
+        // Otherwise, use the first valid point from payload
+        else {
+            for (const item of payload) {
+                if (!item.payload) continue;
+                const pointType = item.payload.type;
+                if (!pointType || pointType === 'cml') continue;
+                selectedPoint = item.payload;
+                break;
+            }
         }
 
         if (!selectedPoint) return null;
