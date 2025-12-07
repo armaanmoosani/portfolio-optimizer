@@ -102,6 +102,39 @@ export default function StockViewer() {
         fetchChartData();
     }, [stockData?.symbol, timeRange]);
 
+    // FETCH COMPARABLES DATA when timeRange or comparables list changes
+    useEffect(() => {
+        const fetchComparableData = async () => {
+            // Only fetch if we have comparables
+            if (comparables.length === 0) return;
+
+            setLoadingComparables(true);
+            try {
+                const { period, interval } = TIME_RANGES[timeRange];
+
+                const compPromises = comparables.map(t =>
+                    fetch(`/api/history?ticker=${t}&period=${period}&interval=${interval}`)
+                        .then(r => r.ok ? r.json() : [])
+                        .then(d => ({ ticker: t, data: d }))
+                );
+
+                const histories = await Promise.all(compPromises);
+                const historyMap = {};
+                histories.forEach(({ ticker, data }) => {
+                    if (data && data.length > 0) historyMap[ticker] = data;
+                });
+
+                setComparableData(historyMap);
+            } catch (err) {
+                console.error("Error fetching comparable data:", err);
+            } finally {
+                setLoadingComparables(false);
+            }
+        };
+
+        fetchComparableData();
+    }, [comparables, timeRange]);
+
     const handleInputChange = async (e) => {
         const value = e.target.value.toUpperCase();
         updateStockState({ ticker: value });
@@ -323,22 +356,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                     if (!jsonMatch) throw new Error("No JSON found in AI response");
 
                     const competitors = JSON.parse(jsonMatch[0]);
-                    setComparables(competitors); // Triggers loading individual history
-
-                    // Fetch history for these competitors
-                    const compHistoryPromises = competitors.map(t =>
-                        fetch(`/api/history?ticker=${t}&period=${period}&interval=${interval}`)
-                            .then(r => r.ok ? r.json() : [])
-                            .then(d => ({ ticker: t, data: d }))
-                    );
-
-                    const histories = await Promise.all(compHistoryPromises);
-                    const historyMap = {};
-                    histories.forEach(({ ticker, data }) => {
-                        if (data && data.length > 0) historyMap[ticker] = data;
-                    });
-
-                    setComparableData(historyMap);
+                    setComparables(competitors); // Triggers useEffect to load history
                 } catch (err) {
                     console.error("Competitor fetch error:", err);
                 } finally {
@@ -979,6 +997,9 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 tickFormatter={(val) => activeComparables.length > 0 ? `${val.toFixed(2)}%` : `$${val.toFixed(2)}`}
                                                 width={60}
                                             />
+                                            {activeComparables.length > 0 && (
+                                                <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
+                                            )}
                                             {activeComparables.length > 0 ? (
                                                 <Tooltip
                                                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
