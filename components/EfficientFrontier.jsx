@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine, LabelList } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
     // State for managing which point is being hovered
     const [hoveredPoint, setHoveredPoint] = useState(null);
+
+    // Memoized hover handlers to prevent re-renders
+    const handleMouseOver = useCallback((data) => setHoveredPoint(data), []);
+    const handleMouseOut = useCallback(() => setHoveredPoint(null), []);
 
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
         return (
@@ -326,8 +330,8 @@ export default function EfficientFrontier({ data }) {
                             opacity={0.12}
                             shape="circle"
                             isAnimationActive={false}
-                            onMouseOver={(data) => setHoveredPoint(data)}
-                            onMouseOut={() => setHoveredPoint(null)}
+                            onMouseOver={handleMouseOver}
+                            onMouseOut={handleMouseOut}
                         />
 
                         {/* Layer 2: Capital Market Line */}
@@ -374,8 +378,8 @@ export default function EfficientFrontier({ data }) {
                             fill="#3b82f6"
                             stroke="#3b82f6"
                             isAnimationActive={false}
-                            onMouseOver={(data) => setHoveredPoint(data)}
-                            onMouseOut={() => setHoveredPoint(null)}
+                            onMouseOver={handleMouseOver}
+                            onMouseOut={handleMouseOut}
                         >
                             {frontierPoints.map((entry, index) => (
                                 <Cell key={`frontier-${index}`} r={3} fill="#3b82f6" stroke="#3b82f6" />
@@ -388,8 +392,8 @@ export default function EfficientFrontier({ data }) {
                             data={individualAssets}
                             fill="#f8fafc"
                             shape="circle"
-                            onMouseOver={(data) => setHoveredPoint(data)}
-                            onMouseOut={() => setHoveredPoint(null)}
+                            onMouseOver={handleMouseOver}
+                            onMouseOut={handleMouseOut}
                         >
                             {individualAssets.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
@@ -403,7 +407,7 @@ export default function EfficientFrontier({ data }) {
                                 name="Min Variance"
                                 data={[minVariancePortfolio]}
                                 onMouseOver={() => setHoveredPoint(minVariancePortfolio)}
-                                onMouseOut={() => setHoveredPoint(null)}
+                                onMouseOut={handleMouseOut}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     return (
@@ -423,7 +427,7 @@ export default function EfficientFrontier({ data }) {
                                 name="Max Sharpe"
                                 data={[optimalPortfolio]}
                                 onMouseOver={() => setHoveredPoint(optimalPortfolio)}
-                                onMouseOut={() => setHoveredPoint(null)}
+                                onMouseOut={handleMouseOut}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     return (

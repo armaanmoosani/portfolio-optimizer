@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine, LabelList } from 'recharts';
 
 export default function SecurityMarketLine({ data }) {
     // State for managing which point is being hovered
     const [hoveredPoint, setHoveredPoint] = useState(null);
+
+    // Memoized hover handlers to prevent re-renders
+    const handleMouseOver = useCallback((data) => setHoveredPoint(data), []);
+    const handleMouseOut = useCallback(() => setHoveredPoint(null), []);
 
     if (!data || !data.sml_points || data.sml_points.length === 0) {
         return (
@@ -337,8 +341,8 @@ export default function SecurityMarketLine({ data }) {
                             data={assets}
                             fill="#f8fafc"
                             shape="circle"
-                            onMouseOver={(data) => setHoveredPoint(data)}
-                            onMouseOut={() => setHoveredPoint(null)}
+                            onMouseOver={handleMouseOver}
+                            onMouseOut={handleMouseOut}
                         >
                             {assets.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
@@ -351,7 +355,7 @@ export default function SecurityMarketLine({ data }) {
                             name="Market"
                             data={[marketPortfolio]}
                             onMouseOver={() => setHoveredPoint(marketPortfolio)}
-                            onMouseOut={() => setHoveredPoint(null)}
+                            onMouseOut={handleMouseOut}
                             shape={(props) => {
                                 const { cx, cy } = props;
                                 return (
@@ -370,7 +374,7 @@ export default function SecurityMarketLine({ data }) {
                                 name="Optimal"
                                 data={[optimalPortfolio]}
                                 onMouseOver={() => setHoveredPoint(optimalPortfolio)}
-                                onMouseOut={() => setHoveredPoint(null)}
+                                onMouseOut={handleMouseOut}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     // Star shape using polygon
