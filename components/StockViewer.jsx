@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend, Line } from 'recharts';
-import { motion } from "framer-motion";
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
@@ -861,12 +860,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         <div className="lg:col-span-2 space-y-8">
 
                             {/* Chart Card */}
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.98 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.5 }}
-                                className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10"
-                            >
+                            <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
                                         {chartLoading ? (
@@ -1089,20 +1083,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     )}
                                 </div>
 
-                                {/* Disclaimer Moved Above Comparable Analysis */}
-                                <div className="px-6 py-2 flex justify-end">
-                                    <p className="text-[10px] text-slate-500 font-medium opacity-60">
-                                        * Prices may be delayed. Past performance is not indicative of future results.
-                                    </p>
-                                </div>
-
                                 {/* Comparable Securities Control Bar */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="mt-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5"
-                                >
+                                <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className={`p-1.5 rounded-lg ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
                                             {loadingComparables ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
@@ -1143,12 +1125,12 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             );
                                                         }}
                                                         className={`
-                                                                px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
-                                                                ${isActive
+                                                            px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
+                                                            ${isActive
                                                                 ? `bg-[${color}]/10 border-[${color}]/50 text-white shadow-[0_0_10px_-2px_${color}]`
                                                                 : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
                                                             }
-                                                            `}
+                                                        `}
                                                         style={isActive ? { borderColor: color, color: '#fff', backgroundColor: `${color}20` } : {}}
                                                     >
                                                         {isActive ? '✓ ' : '+ '}{comp}
@@ -1160,18 +1142,16 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             })}
                                         </div>
                                     )}
-                                </motion.div>
-                            </motion.div>
-
+                                </div>
+                                <div className="px-6 pb-4 flex justify-end">
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        * Prices may be delayed
+                                    </p>
+                                </div>
+                            </div>
 
                             {/* Key Statistics Grid */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6 }}
-                                className="glass-panel rounded-3xl p-8 border border-white/5"
-                            >
+                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
@@ -1258,7 +1238,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                                     </div>
                                 )}
-                            </motion.div>
+                            </div>
 
                             {/* Debug Info - Temporary */}
 
@@ -1298,13 +1278,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             {/* Earnings Trends Section */}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.6 }}
-                                    className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2"
-                                >
+                                <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
                                     <div className="flex justify-between items-center mb-8">
                                         <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
                                     </div>
@@ -1441,20 +1415,14 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         </div>
                                     </div>
-
-                                </motion.div>
+                                </div>
                             )}
                         </div>
 
                         {/* Right Column: AI & News (Span 1) */}
                         <div className="space-y-8">
                             {/* AI Summary */}
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.6, delay: 0.2 }}
-                                className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5"
-                            >
+                            <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
                                 <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
                                     <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
@@ -1475,15 +1443,10 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 {aiSummary && (
                                     <p className="text-xs text-slate-500 mt-4">AI-powered, not financial advice.</p>
                                 )}
-                            </motion.div>
+                            </div>
 
                             {/* Recent News */}
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.6, delay: 0.4 }}
-                                className="glass-panel rounded-3xl p-8 border border-white/5"
-                            >
+                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                                     <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
                                         <Calendar className="w-5 h-5" />
@@ -1514,7 +1477,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         </li>
                                     ))}
                                 </ul>
-                            </motion.div>
+                            </div>
                         </div>
                     </div>
                 </div>
