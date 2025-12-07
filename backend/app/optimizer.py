@@ -529,8 +529,7 @@ def calculate_efficient_frontier(prices: pd.DataFrame, optimal_weights: dict = N
         })
     
     # Generate target returns (force inclusion of GMVP return for accuracy)
-    # Reduced from 200 to 50 points for faster calculation (still produces smooth curve)
-    target_returns = np.linspace(min_return, max_return, 50)
+    target_returns = np.linspace(min_return, max_return, 200)
     
     if min_variance_portfolio:
         # Insert GMVP return to ensure it's plotted exactly
