@@ -157,6 +157,12 @@ export default function StockViewer() {
         }
     };
 
+    // State for Relative Performance
+    const [comparables, setComparables] = useState([]); // List of tickers ["NVDA", "INTC"]
+    const [comparableData, setComparableData] = useState({}); // { NVDA: [...], INTC: [...] }
+    const [activeComparables, setActiveComparables] = useState([]); // Currently toggled on
+    const [loadingComparables, setLoadingComparables] = useState(false);
+
     // Modified to accept an optional overrideTicker
     const handleSearch = async (overrideTicker) => {
         const searchTicker = typeof overrideTicker === 'string' ? overrideTicker : ticker;
@@ -166,6 +172,12 @@ export default function StockViewer() {
         setError("");
         setShowSuggestions(false);
         setSelectedIndex(-1);
+
+        // Reset Competitor State
+        setComparables([]);
+        setComparableData({});
+        setActiveComparables([]);
+        setLoadingComparables(true);
 
         try {
             // Get current time range settings for chart fetch
@@ -234,7 +246,6 @@ export default function StockViewer() {
             }, 100);
 
             // PHASE 2: Generate AI Summary (COMPLETELY ASYNC - doesn't block UI)
-            // This runs in the background while user sees the chart/news
             (async () => {
                 let newAiSummary = "AI summary unavailable.";
 
@@ -289,10 +300,62 @@ ${aggregatedNews.slice(0, 15000)}
                 updateStockState({ aiSummary: newAiSummary });
             })();
 
+            // PHASE 3: Fetch Competitors (Also ASYNC/Non-blocking)
+            (async () => {
+                try {
+                    const compPrompt = `
+Identify exactly 4 distinct public companies that are the most direct direct competitors or comparable peers to ${searchTicker} (${meta.name || searchTicker}).
+Return ONLY a valid JSON array of their ticker symbols. Do not explain.
+Example output: ["NVDA", "INTC", "TSM", "QCOM"]
+`;
+                    const compRes = await fetch(`/api/proxy?service=gemini&ticker=${searchTicker}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ role: "user", parts: [{ text: compPrompt }] }],
+                            generationConfig: { temperature: 0.1, maxOutputTokens: 100 }
+                        })
+                    });
+
+                    if (!compRes.ok) throw new Error("AI competitor fetch failed");
+
+                    const compData = await compRes.json();
+                    const candidate = compData.candidates?.[0];
+                    const text = candidate?.content?.parts?.[0]?.text || "";
+
+                    // Extract JSON array from text (in case AI adds markdown code blocks)
+                    const jsonMatch = text.match(/\[.*\]/s);
+                    if (!jsonMatch) throw new Error("No JSON found in AI response");
+
+                    const competitors = JSON.parse(jsonMatch[0]);
+                    setComparables(competitors); // Triggers loading individual history
+
+                    // Fetch history for these competitors
+                    const compHistoryPromises = competitors.map(t =>
+                        fetch(`/api/history?ticker=${t}&period=${period}&interval=${interval}`)
+                            .then(r => r.ok ? r.json() : [])
+                            .then(d => ({ ticker: t, data: d }))
+                    );
+
+                    const histories = await Promise.all(compHistoryPromises);
+                    const historyMap = {};
+                    histories.forEach(({ ticker, data }) => {
+                        if (data && data.length > 0) historyMap[ticker] = data;
+                    });
+
+                    setComparableData(historyMap);
+                } catch (err) {
+                    console.error("Competitor fetch error:", err);
+                } finally {
+                    setLoadingComparables(false);
+                }
+            })();
+
         } catch (err) {
             setError("Failed to fetch stock data. Please check the ticker and try again.");
             console.error(err);
             updateStockState({ aiSummary: "AI summary unavailable.", loading: false });
+            setLoadingComparables(false);
         }
     };
 
@@ -846,447 +909,456 @@ ${aggregatedNews.slice(0, 15000)}
                                                     <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                                                     <feMerge>
                                                         <feMergeNode in="coloredBlur" />
-                                                        <feMergeNode in="SourceGraphic" />
-                                                    </feMerge>
-                                                </filter>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                                            <XAxis
-                                                dataKey="date"
-                                                stroke="#475569"
-                                                tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                minTickGap={60}
-                                                dy={10}
-                                                tickFormatter={formatXAxis}
-                                            />
-                                            <YAxis
-                                                domain={yDomain}
-                                                stroke="#475569"
-                                                tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickFormatter={(val) => `$${val.toFixed(0)}`}
-                                                width={50}
-                                                dx={-10}
-                                            />
-                                            {/* We hide the default tooltip content but keep the cursor line */}
-                                            <Tooltip
-                                                content={<CustomTooltip />}
-                                                cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
-                                            />
-
-                                            {timeRange === '1D' && baselinePrice > 0 && (
-                                                <ReferenceLine
-                                                    y={baselinePrice}
-                                                    stroke="#94a3b8"
-                                                    strokeDasharray="3 3"
-                                                    strokeOpacity={0.5}
-                                                />
-                                            )}
-                                            {/* Pre-Market End Line */}
-                                            {preMarketData && (
-                                                <ReferenceLine
-                                                    x={preMarketData.endDate}
-                                                    stroke="#94a3b8"
-                                                    strokeDasharray="3 3"
-                                                    strokeOpacity={0.3}
-                                                />
-                                            )}
-                                            {/* After-Hours Start Line */}
-                                            {afterHoursData && (
-                                                <ReferenceLine
-                                                    x={afterHoursData.closeDate}
-                                                    stroke="#94a3b8"
-                                                    strokeDasharray="3 3"
-                                                    strokeOpacity={0.5}
-                                                />
-                                            )}
-                                            <Area
-                                                type="monotone"
-                                                dataKey="price"
-                                                stroke={(timeRange === '1D' && (preMarketData || afterHoursData)) ? "url(#splitColor)" : "url(#standardColor)"}
-                                                strokeWidth={2}
-                                                fillOpacity={1}
-                                                fill="url(#colorPrice)"
-                                                activeDot={(props) => {
-                                                    const { cx, cy, payload } = props;
-                                                    // Determine color based on the specific point being hovered
-                                                    const isRegular = payload.isRegularMarket;
-                                                    const isAfterHoursPoint = timeRange === '1D' && !isRegular;
-                                                    const color = isAfterHoursPoint ? '#94a3b8' : (displayData.isPositive ? '#34d399' : '#f43f5e');
-
-                                                    return (
-                                                        <circle cx={cx} cy={cy} r={6} stroke={color} strokeWidth={2} fill="#fff" />
-                                                    );
-                                                }}
-                                            />
-                                            {/* Live Price Glowing Dot - Only show when NOT hovering */}
-                                            {chartData.length > 0 && !hoveredData && (
-                                                <ReferenceDot
-                                                    x={chartData[chartData.length - 1].date}
-                                                    y={chartData[chartData.length - 1].price}
-                                                    shape={(props) => {
-                                                        const { cx, cy } = props;
-                                                        const color = displayData.isPositive ? '#34d399' : '#f43f5e';
-                                                        return (
-                                                            <g>
-                                                                {/* Outer Diffuse Glow (Blur) */}
-                                                                <circle cx={cx} cy={cy} r={12} fill={color} opacity={0.4} filter="url(#glow)">
-                                                                    <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite" />
-                                                                    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite" />
-                                                                </circle>
-                                                                {/* Inner Core */}
-                                                                <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
-                                                            </g>
-                                                        );
-                                                    }}
-                                                />
-                                            )}
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="px-6 pb-4 flex justify-end">
-                                    <p className="text-xs text-slate-500 font-medium">
-                                        * Prices may be delayed
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Key Statistics Grid */}
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
-                                <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Open</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">High</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Low</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Prev Close</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
-                                            {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
-                                        </p>
-                                    </div>
-                                </div>
-                                {stockInfo && (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Mkt Cap</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {formatLargeNumber(stockInfo.marketCap)}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">P/E Ratio</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk High</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk Low</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">EPS (TTM)</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Volume</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {formatLargeNumber(stockInfo.volume)}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Beta</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
-                                                {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
-                                            </p>
-                                        </div>
-
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Debug Info - Temporary */}
-
-
-                            {/* Performance Comparison Cards */}
-                            {stockInfo?.returns && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                    {['ytd', '1y', '3y', '5y'].map((period) => {
-                                        const data = stockInfo.returns[period];
-                                        if (!data) return null;
-
-                                        const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
-                                        const label = labels[period];
-
-                                        return (
-                                            <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
-                                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-bold text-white">{stockData.symbol}</span>
-                                                        <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-medium text-slate-500">S&P 500</span>
-                                                        <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {/* Earnings Trends Section */}
-                            {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
-                                <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        {/* EPS Chart */}
-                                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h4 className="text-sm font-bold text-slate-300">Earnings Per Share</h4>
-                                                <div className="flex gap-4 text-xs font-medium">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                                                        <span className="text-slate-400">Estimate</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                                        <span className="text-slate-400">Actual</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="h-[300px] w-full">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <ComposedChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
-                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                                        <XAxis
-                                                            dataKey="quarter"
-                                                            stroke="#475569"
-                                                            tick={{ fill: '#64748b', fontSize: 11 }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            dy={10}
+                                                        labelFormatter={(label) => {
+                                                            const date = new Date(label);
+                                                            return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) +
+                                                                (timeRange === '1D' ? ` ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '');
+                                                        }}
+                                                    />
+                                                        <Area
+                                                            type="monotone"
+                                                            dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
+                                                            name={activeComparables.length > 0 ? stockData.symbol : "value"} // Ensure name matches data key for tooltip
+                                                            stroke={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')}
+                                                            strokeWidth={activeComparables.length > 0 ? 3 : 2}
+                                                            fillOpacity={1}
+                                                            fill="url(#colorValue)"
                                                         />
-                                                        <YAxis
-                                                            stroke="#475569"
-                                                            tick={{ fill: '#64748b', fontSize: 11 }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            tickFormatter={(val) => val.toFixed(2)}
-                                                        />
-                                                        <Tooltip
-                                                            content={({ active, payload }) => {
-                                                                if (active && payload && payload.length) {
-                                                                    const data = payload[0].payload;
-                                                                    const surprise = data.epsReported - data.epsEstimate;
-                                                                    const isBeat = surprise >= 0;
-                                                                    return (
-                                                                        <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
-                                                                            <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
-                                                                            <div className="space-y-1">
-                                                                                <p className="text-slate-300">Est: <span className="text-white font-medium">{data.epsEstimate?.toFixed(2)}</span></p>
-                                                                                <p className="text-slate-300">Act: <span className={`font-medium ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>{data.epsReported?.toFixed(2)}</span></p>
-                                                                                <p className={`font-bold ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                                    {isBeat ? 'Beat' : 'Missed'} by {Math.abs(surprise).toFixed(2)}
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            }}
-                                                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
-                                                        />
-                                                        {/* Estimate Dots (Grey) */}
-                                                        <Scatter name="Estimate" dataKey="epsEstimate" fill="#64748b" shape="circle" />
 
-                                                        {/* Actual Dots (Colored) */}
-                                                        <Scatter name="Actual" dataKey="epsReported" shape="circle">
-                                                            {stockInfo.earningsHistory.map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={entry.epsReported >= entry.epsEstimate ? '#34d399' : '#f43f5e'} />
-                                                            ))}
-                                                        </Scatter>
+                                                        {/* Competitor Lines */}
+                                                        {activeComparables.map((ticker, idx) => {
+                                                            const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
+                                                            const color = colors[idx % colors.length];
+                                                            return (
+                                                                <Line
+                                                                    key={ticker}
+                                                                    type="monotone"
+                                                                    dataKey={ticker}
+                                                                    stroke={color}
+                                                                    strokeWidth={2}
+                                                                    dot={false}
+                                                                    activeDot={{ r: 6, strokeWidth: 0 }}
+                                                                    isAnimationActive={true}
+                                                                />
+                                                            );
+                                                        })}
+
+                                                        {/* Reference Dots for live price (only in price mode) */}
+                                                        {activeComparables.length === 0 && stockData.price && (
+                                                            <ReferenceDot
+                                                                x={chartData[chartData.length - 1]?.date}
+                                                                y={stockData.price}
+                                                                r={4}
+                                                                fill={stockData.change >= 0 ? '#10b981' : '#f43f5e'}
+                                                                stroke="#fff"
+                                                                strokeWidth={2}
+                                                                isFront={true}
+                                                            />
+                                                        )}
                                                     </ComposedChart>
                                                 </ResponsiveContainer>
                                             </div>
-                                        </div>
 
-                                        {/* Revenue vs Earnings Chart */}
-                                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h4 className="text-sm font-bold text-slate-300">Revenue vs. Earnings</h4>
-                                                <div className="flex gap-4 text-xs font-medium">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-2 h-2 rounded-sm bg-blue-500"></span>
-                                                        <span className="text-slate-400">Revenue</span>
+                                            {/* Comparable Securities Control Bar */}
+                                            <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`p-1.5 rounded-lg ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
+                                                        {loadingComparables ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
-                                                        <span className="text-slate-400">Earnings</span>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Comparable Analysis</p>
+                                                        <p className="text-[10px] text-slate-500 font-medium">
+                                                            {loadingComparables ? "AI identifying market peers..." : comparables.length > 0 ? "Toggle to compare performance" : "No comparables found"}
+                                                        </p>
                                                     </div>
+                                                    {/* Color Legend (Only visible when active) */}
+                                                    {activeComparables.length > 0 && (
+                                                        <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-white/10">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className="w-2 h-2 rounded-full bg-[#22c55e]"></div>
+                                                                <span className="text-[10px] text-slate-400 font-mono">{stockData.symbol}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
+
+                                                {comparables.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {comparables.map((comp, idx) => {
+                                                            const isActive = activeComparables.includes(comp);
+                                                            // Unique colors for competitors
+                                                            const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
+                                                            const color = colors[idx % colors.length];
+
+                                                            return (
+                                                                <button
+                                                                    key={comp}
+                                                                    onClick={() => {
+                                                                        setActiveComparables(prev =>
+                                                                            prev.includes(comp)
+                                                                                ? prev.filter(c => c !== comp)
+                                                                                : [...prev, comp]
+                                                                        );
+                                                                    }}
+                                                                    className={`
+                                                            px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
+                                                            ${isActive
+                                                                            ? `bg-[${color}]/10 border-[${color}]/50 text-white shadow-[0_0_10px_-2px_${color}]`
+                                                                            : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
+                                                                        }
+                                                        `}
+                                                                    style={isActive ? { borderColor: color, color: '#fff', backgroundColor: `${color}20` } : {}}
+                                                                >
+                                                                    {isActive ? '✓ ' : '+ '}{comp}
+                                                                    {isActive && (
+                                                                        <span className="ml-2 w-1.5 h-1.5 inline-block rounded-full" style={{ backgroundColor: color }}></span>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="h-[300px] w-full">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <BarChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }} barGap={2}>
-                                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                                        <XAxis
-                                                            dataKey="quarter"
-                                                            stroke="#475569"
-                                                            tick={{ fill: '#64748b', fontSize: 11 }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            dy={10}
-                                                        />
-                                                        <YAxis
-                                                            stroke="#475569"
-                                                            tick={{ fill: '#64748b', fontSize: 11 }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            tickFormatter={(val) => formatLargeNumber(val)}
-                                                            width={45}
-                                                        />
-                                                        <Tooltip
-                                                            content={({ active, payload }) => {
-                                                                if (active && payload && payload.length) {
-                                                                    const data = payload[0].payload;
-                                                                    return (
-                                                                        <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
-                                                                            <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
-                                                                            <div className="space-y-1">
-                                                                                <p className="text-slate-300">Rev: <span className="text-blue-400 font-medium">{formatLargeNumber(data.revenue)}</span></p>
-                                                                                <p className="text-slate-300">Earn: <span className="text-amber-400 font-medium">{formatLargeNumber(data.earnings)}</span></p>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            }}
-                                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                        />
-                                                        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                                        <Bar dataKey="earnings" fill="#fbbf24" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
+                                            <div className="px-6 pb-4 flex justify-end">
+                                                <p className="text-xs text-slate-500 font-medium">
+                                                    * Prices may be delayed
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
 
-                        {/* Right Column: AI & News (Span 1) */}
-                        <div className="space-y-8">
-                            {/* AI Summary */}
-                            <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
-                                <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
-                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
-                                    <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
-                                        <TrendingUp className="w-5 h-5" />
-                                    </div>
-                                    AI Analysis
-                                </h3>
-                                <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed relative z-10 font-medium">
-                                    {aiSummary || (
-                                        <div className="flex flex-col gap-4">
-                                            <div className="h-4 bg-white/5 rounded w-3/4 animate-pulse"></div>
-                                            <div className="h-4 bg-white/5 rounded w-full animate-pulse"></div>
-                                            <div className="h-4 bg-white/5 rounded w-5/6 animate-pulse"></div>
-                                            <div className="h-4 bg-white/5 rounded w-4/5 animate-pulse"></div>
-                                        </div>
-                                    )}
-                                </div>
-                                {aiSummary && (
-                                    <p className="text-xs text-slate-500 mt-4">AI-powered, not financial advice.</p>
-                                )}
-                            </div>
-
-                            {/* Recent News */}
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
-                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                                    <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
-                                        <Calendar className="w-5 h-5" />
-                                    </div>
-                                    Recent News
-                                </h3>
-                                <ul className="space-y-4">
-                                    {news.map((item, i) => (
-                                        <li key={i} className="group">
-                                            <a
-                                                href={item.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="block hover:bg-white/5 p-5 -mx-5 rounded-2xl transition-all border border-transparent hover:border-white/5 group-hover:shadow-lg group-hover:shadow-black/20"
-                                            >
-                                                <h4 className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">
-                                                    {item.headline}
-                                                </h4>
-                                                <div className="flex items-center justify-between mt-4">
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
-                                                        {item.source || new URL(item.url).hostname.replace('www.', '')}
+                                        {/* Key Statistics Grid */}
+                                        <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                                            <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                    <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Open</p>
+                                                    <p className="text-2xl font-bold text-white tracking-tight">
+                                                        {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
                                                     </p>
-                                                    <span className="text-xs text-slate-500 font-medium">
-                                                        {new Date(item.datetime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                    </span>
                                                 </div>
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
+                                                <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                    <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">High</p>
+                                                    <p className="text-2xl font-bold text-white tracking-tight">
+                                                        {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                    <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Low</p>
+                                                    <p className="text-2xl font-bold text-white tracking-tight">
+                                                        {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                    <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Prev Close</p>
+                                                    <p className="text-2xl font-bold text-white tracking-tight">
+                                                        {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {stockInfo && (
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Mkt Cap</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {formatLargeNumber(stockInfo.marketCap)}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">P/E Ratio</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk High</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk Low</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">EPS (TTM)</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Volume</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {formatLargeNumber(stockInfo.volume)}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Beta</p>
+                                                        <p className="text-xl font-bold text-white tracking-tight">
+                                                            {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
+                                                        </p>
+                                                    </div>
+
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Debug Info - Temporary */}
+
+
+                                        {/* Performance Comparison Cards */}
+                                        {stockInfo?.returns && (
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                                {['ytd', '1y', '3y', '5y'].map((period) => {
+                                                    const data = stockInfo.returns[period];
+                                                    if (!data) return null;
+
+                                                    const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
+                                                    const label = labels[period];
+
+                                                    return (
+                                                        <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
+                                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
+                                                            <div className="space-y-2">
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-sm font-bold text-white">{stockData.symbol}</span>
+                                                                    <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                        {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-xs font-medium text-slate-500">S&P 500</span>
+                                                                    <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                        {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Earnings Trends Section */}
+                                        {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
+                                            <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
+                                                <div className="flex justify-between items-center mb-8">
+                                                    <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {/* EPS Chart */}
+                                                    <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <h4 className="text-sm font-bold text-slate-300">Earnings Per Share</h4>
+                                                            <div className="flex gap-4 text-xs font-medium">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                                                                    <span className="text-slate-400">Estimate</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                                                    <span className="text-slate-400">Actual</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="h-[300px] w-full">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <ComposedChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                                    <XAxis
+                                                                        dataKey="quarter"
+                                                                        stroke="#475569"
+                                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                                        tickLine={false}
+                                                                        axisLine={false}
+                                                                        dy={10}
+                                                                    />
+                                                                    <YAxis
+                                                                        stroke="#475569"
+                                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                                        tickLine={false}
+                                                                        axisLine={false}
+                                                                        tickFormatter={(val) => val.toFixed(2)}
+                                                                    />
+                                                                    <Tooltip
+                                                                        content={({ active, payload }) => {
+                                                                            if (active && payload && payload.length) {
+                                                                                const data = payload[0].payload;
+                                                                                const surprise = data.epsReported - data.epsEstimate;
+                                                                                const isBeat = surprise >= 0;
+                                                                                return (
+                                                                                    <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
+                                                                                        <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
+                                                                                        <div className="space-y-1">
+                                                                                            <p className="text-slate-300">Est: <span className="text-white font-medium">{data.epsEstimate?.toFixed(2)}</span></p>
+                                                                                            <p className="text-slate-300">Act: <span className={`font-medium ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>{data.epsReported?.toFixed(2)}</span></p>
+                                                                                            <p className={`font-bold ${isBeat ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                                                {isBeat ? 'Beat' : 'Missed'} by {Math.abs(surprise).toFixed(2)}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        }}
+                                                                        cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                                                                    />
+                                                                    {/* Estimate Dots (Grey) */}
+                                                                    <Scatter name="Estimate" dataKey="epsEstimate" fill="#64748b" shape="circle" />
+
+                                                                    {/* Actual Dots (Colored) */}
+                                                                    <Scatter name="Actual" dataKey="epsReported" shape="circle">
+                                                                        {stockInfo.earningsHistory.map((entry, index) => (
+                                                                            <Cell key={`cell-${index}`} fill={entry.epsReported >= entry.epsEstimate ? '#34d399' : '#f43f5e'} />
+                                                                        ))}
+                                                                    </Scatter>
+                                                                </ComposedChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Revenue vs Earnings Chart */}
+                                                    <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <h4 className="text-sm font-bold text-slate-300">Revenue vs. Earnings</h4>
+                                                            <div className="flex gap-4 text-xs font-medium">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 rounded-sm bg-blue-500"></span>
+                                                                    <span className="text-slate-400">Revenue</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
+                                                                    <span className="text-slate-400">Earnings</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="h-[300px] w-full">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <BarChart data={stockInfo.earningsHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }} barGap={2}>
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                                    <XAxis
+                                                                        dataKey="quarter"
+                                                                        stroke="#475569"
+                                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                                        tickLine={false}
+                                                                        axisLine={false}
+                                                                        dy={10}
+                                                                    />
+                                                                    <YAxis
+                                                                        stroke="#475569"
+                                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                                        tickLine={false}
+                                                                        axisLine={false}
+                                                                        tickFormatter={(val) => formatLargeNumber(val)}
+                                                                        width={45}
+                                                                    />
+                                                                    <Tooltip
+                                                                        content={({ active, payload }) => {
+                                                                            if (active && payload && payload.length) {
+                                                                                const data = payload[0].payload;
+                                                                                return (
+                                                                                    <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-xl text-xs">
+                                                                                        <p className="text-slate-400 mb-1 font-bold">{data.quarter}</p>
+                                                                                        <div className="space-y-1">
+                                                                                            <p className="text-slate-300">Rev: <span className="text-blue-400 font-medium">{formatLargeNumber(data.revenue)}</span></p>
+                                                                                            <p className="text-slate-300">Earn: <span className="text-amber-400 font-medium">{formatLargeNumber(data.earnings)}</span></p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        }}
+                                                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                                                    />
+                                                                    <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                                    <Bar dataKey="earnings" fill="#fbbf24" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                                </BarChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                </div>
+
+                                {/* Right Column: AI & News (Span 1) */}
+                                <div className="space-y-8">
+                                    {/* AI Summary */}
+                                    <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
+                                        <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
+                                        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
+                                            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
+                                                <TrendingUp className="w-5 h-5" />
+                                            </div>
+                                            AI Analysis
+                                        </h3>
+                                        <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed relative z-10 font-medium">
+                                            {aiSummary || (
+                                                <div className="flex flex-col gap-4">
+                                                    <div className="h-4 bg-white/5 rounded w-3/4 animate-pulse"></div>
+                                                    <div className="h-4 bg-white/5 rounded w-full animate-pulse"></div>
+                                                    <div className="h-4 bg-white/5 rounded w-5/6 animate-pulse"></div>
+                                                    <div className="h-4 bg-white/5 rounded w-4/5 animate-pulse"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {aiSummary && (
+                                            <p className="text-xs text-slate-500 mt-4">AI-powered, not financial advice.</p>
+                                        )}
+                                    </div>
+
+                                    {/* Recent News */}
+                                    <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                                        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                            <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
+                                                <Calendar className="w-5 h-5" />
+                                            </div>
+                                            Recent News
+                                        </h3>
+                                        <ul className="space-y-4">
+                                            {news.map((item, i) => (
+                                                <li key={i} className="group">
+                                                    <a
+                                                        href={item.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block hover:bg-white/5 p-5 -mx-5 rounded-2xl transition-all border border-transparent hover:border-white/5 group-hover:shadow-lg group-hover:shadow-black/20"
+                                                    >
+                                                        <h4 className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">
+                                                            {item.headline}
+                                                        </h4>
+                                                        <div className="flex items-center justify-between mt-4">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
+                                                                {item.source || new URL(item.url).hostname.replace('www.', '')}
+                                                            </p>
+                                                            <span className="text-xs text-slate-500 font-medium">
+                                                                {new Date(item.datetime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            )
-            }
-        </div >
-    );
+                        )
+}
+                    </div >
+                    );
 }
