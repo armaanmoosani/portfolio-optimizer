@@ -7,7 +7,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
-import { motion } from "framer-motion";
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -861,14 +860,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         <div className="lg:col-span-2 space-y-8">
 
                             {/* Chart Card */}
-                            {/* Chart Card */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5 }}
-                                className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10"
-                            >
+                            <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
                                         {chartLoading ? (
@@ -1091,16 +1083,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     )}
                                 </div>
 
-
-
-                                <div className="px-6 flex justify-end -mt-2 mb-2">
+                                {/* Disclaimer moved above comparable bar */}
+                                <div className="px-6 pb-2 pt-2 flex justify-end">
                                     <p className="text-xs text-slate-500 font-medium">
                                         * Prices may be delayed
                                     </p>
                                 </div>
 
                                 {/* Comparable Securities Control Bar */}
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5">
+                                <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className={`p-1.5 rounded-lg ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
                                             {loadingComparables ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
@@ -1159,16 +1150,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         </div>
                                     )}
                                 </div>
-                            </motion.div>
+
+                            </div>
 
                             {/* Key Statistics Grid */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: 0.2 }}
-                                className="glass-panel rounded-3xl p-8 border border-white/5"
-                            >
+                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
@@ -1255,7 +1241,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                                     </div>
                                 )}
-                            </motion.div>
+                            </div>
 
                             {/* Debug Info - Temporary */}
 
@@ -1496,8 +1482,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </ul>
                             </div>
                         </div>
-                    </div >
-                </div >
+                    </div>
+                </div>
             )
             }
         </div >
