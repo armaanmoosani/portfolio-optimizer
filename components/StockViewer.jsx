@@ -662,6 +662,33 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         return `$${num.toLocaleString()}`;
     };
 
+    // Helper to normalize data for relative comparison (0% start)
+    const getRelativeData = () => {
+        if (!chartData || chartData.length === 0) return [];
+
+        const basePrice0 = chartData[0]?.price || 1;
+
+        return chartData.map((point, idx) => {
+            const newItem = {
+                date: point.date,
+                [stockData.symbol]: ((point.price / basePrice0) - 1) * 100
+            };
+
+            activeComparables.forEach(ticker => {
+                const compPoints = comparableData[ticker];
+                if (compPoints && compPoints[idx]) {
+                    const compPrice0 = compPoints[0]?.price || 1;
+                    const compPrice = compPoints[idx].price;
+                    newItem[ticker] = ((compPrice / compPrice0) - 1) * 100;
+                } else {
+                    newItem[ticker] = null;
+                }
+            });
+
+            return newItem;
+        });
+    };
+
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
             {/* Search Section */}
