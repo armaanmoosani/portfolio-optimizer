@@ -349,7 +349,7 @@ export default function EfficientFrontier({ data }) {
                             wrapperStyle={{ zIndex: 100 }}
                         />
 
-                        {/* Layer 1: Monte Carlo Cloud (Background) */}
+                        {/* Layer 1: Monte Carlo Cloud (Background) - NO TOOLTIP */}
                         <Scatter
                             name="Feasible Set"
                             data={monteCarloPoints}
@@ -357,6 +357,7 @@ export default function EfficientFrontier({ data }) {
                             opacity={0.12}
                             shape="circle"
                             isAnimationActive={false}
+                            tooltipType="none"
                         />
 
                         {/* Layer 2: Capital Market Line */}
@@ -393,7 +394,7 @@ export default function EfficientFrontier({ data }) {
                             </>
                         )}
 
-                        {/* Layer 3: Efficient Frontier Curve */}
+                        {/* Layer 3: Efficient Frontier Curve - NO TOOLTIP */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
@@ -402,6 +403,7 @@ export default function EfficientFrontier({ data }) {
                             shape={false}
                             stroke="#3b82f6"
                             isAnimationActive={false}
+                            tooltipType="none"
                         />
 
                         {/* Layer 4: Individual Assets */}
