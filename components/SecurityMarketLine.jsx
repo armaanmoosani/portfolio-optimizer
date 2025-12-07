@@ -101,21 +101,34 @@ export default function SecurityMarketLine({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // CRITICAL: Iterate through ALL payload items and find the highest-priority type
-        // Priority order: optimal > market > asset > sml
-        const typePriority = { 'optimal': 4, 'market': 3, 'asset': 2, 'sml': 0 };
-
+        // Find the specific point - check ALL items for special portfolios first
         let selectedPoint = null;
-        let highestPriority = -1;
 
+        // First pass: look for special portfolios by ID
         for (const item of payload) {
             const point = item.payload;
-            if (!point || point.type === 'sml') continue;
+            if (!point) continue;
 
-            const priority = typePriority[point.type] || 1;
-            if (priority > highestPriority) {
-                highestPriority = priority;
+            if (point.id === 'optimal_portfolio') {
                 selectedPoint = point;
+                break; // Optimal has highest priority
+            }
+            if (point.id === 'market_portfolio' && !selectedPoint) {
+                selectedPoint = point;
+                // Don't break - keep looking for optimal
+            }
+        }
+
+        // Second pass: if no special portfolio found, find highest priority regular point
+        if (!selectedPoint) {
+            for (const item of payload) {
+                const point = item.payload;
+                if (!point || point.type === 'sml') continue;
+
+                // Prefer assets over undefined types
+                if (!selectedPoint || (point.type === 'asset' && selectedPoint.type !== 'asset')) {
+                    selectedPoint = point;
+                }
             }
         }
 
@@ -132,7 +145,6 @@ export default function SecurityMarketLine({ data }) {
         let valuationColor = "text-slate-400";
         let valuationBg = "bg-slate-700/30";
 
-        // Use 0.5% threshold for significance (industry standard)
         if (Math.abs(alpha) > 0.5) {
             if (alpha > 0) {
                 valuation = "Undervalued";
@@ -145,17 +157,17 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge and name based on type
+        // Display badge and name based on ID
         let badge = null;
         let displayName = selectedPoint.name || 'Security';
 
-        if (selectedPoint.type === 'optimal') {
+        if (selectedPoint.id === 'optimal_portfolio') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">PORTFOLIO</span>;
-            displayName = 'Optimal Portfolio';
-        } else if (selectedPoint.type === 'market') {
+            displayName = 'Optimal Portfolio (Max Sharpe)';
+        } else if (selectedPoint.id === 'market_portfolio') {
             badge = <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MARKET</span>;
             displayName = 'Market Portfolio (β=1)';
-        } else if (selectedPoint.type === 'asset') {
+        } else if (selectedPoint.id?.startsWith('asset_')) {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
             displayName = selectedPoint.name;
         }

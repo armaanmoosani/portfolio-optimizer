@@ -121,7 +121,7 @@ export default function EfficientFrontier({ data }) {
         if (!active || !payload || payload.length === 0) return null;
 
         // CRITICAL: Iterate through ALL payload items and find the highest-priority type
-        // Priority order: optimal > min_variance > asset > frontier > monte_carlo
+        // Also check ID fields for definitive matching
         const typePriority = { 'optimal': 5, 'min_variance': 4, 'asset': 3, 'frontier': 2, 'monte_carlo': 1, 'cml': 0 };
 
         let selectedPoint = null;
@@ -130,6 +130,18 @@ export default function EfficientFrontier({ data }) {
         for (const item of payload) {
             const point = item.payload;
             if (!point || point.type === 'cml') continue;
+
+            // Use ID for definitive matching (highest priority)
+            if (point.id === 'optimal_portfolio') {
+                selectedPoint = point;
+                highestPriority = 100; // Highest priority
+                break;
+            }
+            if (point.id === 'min_variance_portfolio') {
+                selectedPoint = point;
+                highestPriority = 99;
+                continue; // Keep looking in case optimal is also present
+            }
 
             const priority = typePriority[point.type] || 0;
             if (priority > highestPriority) {
@@ -140,33 +152,33 @@ export default function EfficientFrontier({ data }) {
 
         if (!selectedPoint) return null;
 
-        // Display badge and name based on type
+        // Display badge and name based on ID
         let badge = null;
         let displayName = selectedPoint.name || 'Portfolio';
         let displayWeights = selectedPoint.weights;
         let displaySharpe = selectedPoint.sharpe_ratio;
 
-        if (selectedPoint.type === 'optimal') {
+        if (selectedPoint.id === 'optimal_portfolio') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
             displayName = 'Maximum Sharpe Ratio Portfolio';
             if (optimalPortfolio) {
                 displayWeights = optimalPortfolio.weights;
                 displaySharpe = optimalPortfolio.sharpe_ratio;
             }
-        } else if (selectedPoint.type === 'min_variance') {
+        } else if (selectedPoint.id === 'min_variance_portfolio') {
             badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
             displayName = 'Global Minimum Variance Portfolio';
             if (minVariancePortfolio) {
                 displayWeights = minVariancePortfolio.weights;
                 displaySharpe = minVariancePortfolio.sharpe_ratio;
             }
-        } else if (selectedPoint.type === 'asset') {
+        } else if (selectedPoint.id?.startsWith('asset_')) {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
             displayName = selectedPoint.name;
-        } else if (selectedPoint.type === 'frontier') {
+        } else if (selectedPoint.id?.startsWith('frontier') || selectedPoint.type === 'frontier') {
             badge = <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">FRONTIER</span>;
             displayName = 'Efficient Frontier Point';
-        } else if (selectedPoint.type === 'monte_carlo') {
+        } else if (selectedPoint.id?.startsWith('mc_') || selectedPoint.type === 'monte_carlo') {
             badge = <span className="text-xs bg-purple-600/70 text-white px-2 py-0.5 rounded">SIMULATED</span>;
             displayName = 'Random Portfolio';
         }
