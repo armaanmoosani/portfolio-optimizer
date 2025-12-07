@@ -1093,8 +1093,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     </p>
                                 </div>
 
-                                {/* Comparable Securities Control Bar */}
-                                <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30 rounded-xl p-3 border border-white/5">
+                                {/* Comparable Securities Control Bar (Footer Style) */}
+                                <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                     <div className="flex items-center gap-2">
                                         <div className={`p-1.5 rounded-lg ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
                                             {loadingComparables ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
