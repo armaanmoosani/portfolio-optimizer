@@ -1106,6 +1106,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     strokeWidth={activeComparables.length > 0 ? 4 : 2}
                                                     fillOpacity={1}
                                                     fill="url(#colorPrice)"
+                                                    connectNulls={true}
                                                 />
 
                                                 {/* Competitor Lines */}
@@ -1122,6 +1123,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             dot={false}
                                                             activeDot={{ r: 6, strokeWidth: 0 }}
                                                             isAnimationActive={true}
+                                                            connectNulls={true}
                                                         />
                                                     );
                                                 })}
