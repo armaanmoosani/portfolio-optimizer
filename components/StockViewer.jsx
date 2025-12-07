@@ -1093,68 +1093,70 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     </p>
                                 </div>
 
-                                {/* Comparable Securities Control Bar (Footer Style) */}
-                                <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`p-1.5 rounded-lg ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
-                                            {loadingComparables ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Comparable Analysis</p>
-                                            <p className="text-[10px] text-slate-500 font-medium">
-                                                {loadingComparables ? "AI identifying comparable securities..." : comparables.length > 0 ? "Toggle to compare" : "No comparables found"}
-                                            </p>
-                                        </div>
-                                        {/* Color Legend (Only visible when active) */}
-                                        {activeComparables.length > 0 && (
-                                            <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-white/10">
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-[#22c55e]"></div>
-                                                    <span className="text-[10px] text-slate-400 font-mono">{stockData.symbol}</span>
-                                                </div>
-                                            </div>
-                                        )}
+                            </div>
+
+                            {/* Comparable Securities Control Bar - Separated for clean layout */}
+                            <div className="glass-panel rounded-2xl p-4 border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-xl ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
+                                        {loadingComparables ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
                                     </div>
-
-                                    {comparables.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {comparables.map((comp, idx) => {
-                                                const isActive = activeComparables.includes(comp);
-                                                // Unique colors for competitors
-                                                const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
-                                                const color = colors[idx % colors.length];
-
-                                                return (
-                                                    <button
-                                                        key={comp}
-                                                        onClick={() => {
-                                                            setActiveComparables(prev =>
-                                                                prev.includes(comp)
-                                                                    ? prev.filter(c => c !== comp)
-                                                                    : [...prev, comp]
-                                                            );
-                                                        }}
-                                                        className={`
-                                                            px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
-                                                            ${isActive
-                                                                ? `bg-[${color}]/10 border-[${color}]/50 text-white shadow-[0_0_10px_-2px_${color}]`
-                                                                : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
-                                                            }
-                                                        `}
-                                                        style={isActive ? { borderColor: color, color: '#fff', backgroundColor: `${color}20` } : {}}
-                                                    >
-                                                        {isActive ? '✓ ' : '+ '}{comp}
-                                                        {isActive && (
-                                                            <span className="ml-2 w-1.5 h-1.5 inline-block rounded-full" style={{ backgroundColor: color }}></span>
-                                                        )}
-                                                    </button>
-                                                );
-                                            })}
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-300 uppercase tracking-wider">Comparable Analysis</p>
+                                        <p className="text-xs text-slate-500 font-medium">
+                                            {loadingComparables ? "AI identifying comparable securities..." : comparables.length > 0 ? "Toggle to compare" : "No comparables found"}
+                                        </p>
+                                    </div>
+                                    {/* Color Legend (Only visible when active) */}
+                                    {activeComparables.length > 0 && (
+                                        <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-white/10">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-2 h-2 rounded-full bg-[#22c55e]"></div>
+                                                <span className="text-[10px] text-slate-400 font-mono">{stockData.symbol}</span>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
 
+                                {comparables.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {comparables.map((comp, idx) => {
+                                            const isActive = activeComparables.includes(comp);
+                                            // Unique colors for competitors
+                                            const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
+                                            const color = colors[idx % colors.length];
+
+                                            return (
+                                                <button
+                                                    key={comp}
+                                                    onClick={() => {
+                                                        setActiveComparables(prev =>
+                                                            prev.includes(comp)
+                                                                ? prev.filter(c => c !== comp)
+                                                                : [...prev, comp]
+                                                        );
+                                                    }}
+                                                    className={`
+                                                        px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
+                                                        ${isActive
+                                                            ? `bg-[${color}]/10 border-[${color}]/50 text-white shadow-[0_0_10px_-2px_${color}]`
+                                                            : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
+                                                        }
+                                                    `}
+                                                    style={isActive ? { borderColor: color, color: '#fff', backgroundColor: `${color}20` } : {}}
+                                                >
+                                                    {isActive ? '✓ ' : '+ '}{comp}
+                                                    {isActive && (
+                                                        <span className="ml-2 w-1.5 h-1.5 inline-block rounded-full" style={{ backgroundColor: color }}></span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
+
+
 
                             {/* Key Statistics Grid */}
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
@@ -1489,8 +1491,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </ul>
                             </div>
                         </div>
-                    </FadeInSection>
-                </div>
+                    </FadeInSection >
+                </div >
             )
             }
         </div >
