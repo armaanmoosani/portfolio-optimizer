@@ -116,37 +116,30 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // SIMPLE TOOLTIP - Uses Scatter layer name for reliable identification
+    // FIXED TOOLTIP - Uses payload.type for reliable identification
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // DEBUG: Log all payload items to understand structure
-        console.log('Tooltip Payload:', payload.map(item => ({
-            layerName: item.name,
-            dataKey: item.dataKey,
-            pointType: item.payload?.type,
-            pointId: item.payload?.id,
-            pointName: item.payload?.name
-        })));
-
-        // Each Scatter component has a 'name' prop that appears in payload items
-        // Priority: Max Sharpe > Min Variance > Assets > Frontier > Monte Carlo
-        const layerPriority = {
-            'Max Sharpe': 100,
-            'Min Variance': 99,
-            'Assets': 50,
-            'Efficient Frontier': 30,
-            'Feasible Set': 10
+        // Priority based on point TYPE (from payload.type)
+        // optimal > min_variance > asset > frontier > monte_carlo
+        const typePriority = {
+            'optimal': 100,
+            'min_variance': 99,
+            'asset': 50,
+            'frontier': 30,
+            'monte_carlo': 10
         };
 
-        // Find the highest priority layer in the payload
+        // Find the highest priority point type in the payload
         let selectedItem = null;
         let highestPriority = -1;
 
         for (const item of payload) {
-            const layerName = item.name; // This is the Scatter 'name' prop
-            const priority = layerPriority[layerName] || 0;
+            if (!item.payload) continue;
+            const pointType = item.payload.type;
+            if (!pointType || pointType === 'cml') continue;
 
+            const priority = typePriority[pointType] || 0;
             if (priority > highestPriority) {
                 highestPriority = priority;
                 selectedItem = item;
@@ -156,38 +149,37 @@ export default function EfficientFrontier({ data }) {
         if (!selectedItem || !selectedItem.payload) return null;
 
         const selectedPoint = selectedItem.payload;
-        const layerName = selectedItem.name;
 
         // Skip CML points
         if (selectedPoint.type === 'cml') return null;
 
-        // Display badge and name based on Scatter layer name
+        // Display badge and name based on point TYPE
         let badge = null;
         let displayName = selectedPoint.name || 'Portfolio';
         let displayWeights = selectedPoint.weights;
         let displaySharpe = selectedPoint.sharpe_ratio;
 
-        if (layerName === 'Max Sharpe') {
+        if (selectedPoint.type === 'optimal') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MAX SHARPE</span>;
             displayName = 'Maximum Sharpe Ratio Portfolio';
             if (optimalPortfolio) {
                 displayWeights = optimalPortfolio.weights;
                 displaySharpe = optimalPortfolio.sharpe_ratio;
             }
-        } else if (layerName === 'Min Variance') {
+        } else if (selectedPoint.type === 'min_variance') {
             badge = <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MIN VOL</span>;
             displayName = 'Global Minimum Variance Portfolio';
             if (minVariancePortfolio) {
                 displayWeights = minVariancePortfolio.weights;
                 displaySharpe = minVariancePortfolio.sharpe_ratio;
             }
-        } else if (layerName === 'Assets') {
+        } else if (selectedPoint.type === 'asset') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
             displayName = selectedPoint.name;
-        } else if (layerName === 'Efficient Frontier') {
+        } else if (selectedPoint.type === 'frontier') {
             badge = <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">FRONTIER</span>;
             displayName = 'Efficient Frontier Point';
-        } else if (layerName === 'Feasible Set') {
+        } else if (selectedPoint.type === 'monte_carlo') {
             badge = <span className="text-xs bg-purple-600/70 text-white px-2 py-0.5 rounded">SIMULATED</span>;
             displayName = 'Random Portfolio';
         }

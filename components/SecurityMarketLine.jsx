@@ -97,26 +97,28 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // SIMPLE TOOLTIP with CAPM Validation - Uses Scatter layer name
+    // FIXED TOOLTIP with CAPM Validation - Uses payload.type
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Each Scatter component has a 'name' prop that appears in payload items
-        // Priority: Optimal > Market > Assets
-        const layerPriority = {
-            'Optimal': 100,
-            'Market': 99,
-            'Assets': 50
+        // Priority based on point TYPE (from payload.type)
+        // optimal > market > asset
+        const typePriority = {
+            'optimal': 100,
+            'market': 99,
+            'asset': 50
         };
 
-        // Find the highest priority layer in the payload
+        // Find the highest priority point type in the payload
         let selectedItem = null;
         let highestPriority = -1;
 
         for (const item of payload) {
-            const layerName = item.name;
-            const priority = layerPriority[layerName] || 0;
+            if (!item.payload) continue;
+            const pointType = item.payload.type;
+            if (!pointType || pointType === 'sml') continue;
 
+            const priority = typePriority[pointType] || 0;
             if (priority > highestPriority) {
                 highestPriority = priority;
                 selectedItem = item;
@@ -126,7 +128,6 @@ export default function SecurityMarketLine({ data }) {
         if (!selectedItem || !selectedItem.payload) return null;
 
         const selectedPoint = selectedItem.payload;
-        const layerName = selectedItem.name;
 
         // Skip SML line points
         if (selectedPoint.type === 'sml') return null;
@@ -154,17 +155,17 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge and name based on Scatter layer name
+        // Display badge and name based on point TYPE
         let badge = null;
         let displayName = selectedPoint.name || 'Security';
 
-        if (layerName === 'Optimal') {
+        if (selectedPoint.type === 'optimal') {
             badge = <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">PORTFOLIO</span>;
             displayName = 'Optimal Portfolio (Max Sharpe)';
-        } else if (layerName === 'Market') {
+        } else if (selectedPoint.type === 'market') {
             badge = <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded font-bold shadow-sm">MARKET</span>;
             displayName = 'Market Portfolio (β=1)';
-        } else if (layerName === 'Assets') {
+        } else if (selectedPoint.type === 'asset') {
             badge = <span className="text-xs bg-slate-600 text-white px-2 py-0.5 rounded">ASSET</span>;
             displayName = selectedPoint.name;
         }
