@@ -318,7 +318,7 @@ export default function EfficientFrontier({ data }) {
                             wrapperStyle={{ zIndex: 100 }}
                         />
 
-                        {/* Layer 1: Monte Carlo Cloud (Background) - NO TOOLTIP */}
+                        {/* Layer 1: Monte Carlo Cloud (Background) */}
                         <Scatter
                             name="Feasible Set"
                             data={monteCarloPoints}
@@ -326,7 +326,8 @@ export default function EfficientFrontier({ data }) {
                             opacity={0.12}
                             shape="circle"
                             isAnimationActive={false}
-                            tooltipType="none"
+                            onMouseOver={(data) => setHoveredPoint(data)}
+                            onMouseOut={() => setHoveredPoint(null)}
                         />
 
                         {/* Layer 2: Capital Market Line */}
@@ -363,17 +364,23 @@ export default function EfficientFrontier({ data }) {
                             </>
                         )}
 
-                        {/* Layer 3: Efficient Frontier Curve - NO TOOLTIP */}
+                        {/* Layer 3: Efficient Frontier Curve */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
                             line={{ stroke: '#3b82f6', strokeWidth: 4 }}
                             lineType="natural"
-                            shape={false}
+                            shape="circle"
+                            fill="#3b82f6"
                             stroke="#3b82f6"
                             isAnimationActive={false}
-                            tooltipType="none"
-                        />
+                            onMouseOver={(data) => setHoveredPoint(data)}
+                            onMouseOut={() => setHoveredPoint(null)}
+                        >
+                            {frontierPoints.map((entry, index) => (
+                                <Cell key={`frontier-${index}`} r={3} fill="#3b82f6" stroke="#3b82f6" />
+                            ))}
+                        </Scatter>
 
                         {/* Layer 4: Individual Assets */}
                         <Scatter
