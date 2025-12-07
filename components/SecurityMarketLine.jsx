@@ -1,13 +1,6 @@
-import { useState, useCallback } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine, LabelList } from 'recharts';
 
 export default function SecurityMarketLine({ data }) {
-    // State for managing which point is being hovered
-    const [hoveredPoint, setHoveredPoint] = useState(null);
-
-    // Memoized hover handlers to prevent re-renders
-    const handleMouseOver = useCallback((data) => setHoveredPoint(data), []);
-    const handleMouseOut = useCallback(() => setHoveredPoint(null), []);
 
     if (!data || !data.sml_points || data.sml_points.length === 0) {
         return (
@@ -105,15 +98,34 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // SIMPLE TOOLTIP - Uses hoveredPoint state (set by onMouseOver on each Scatter)
-    const CustomTooltip = ({ active }) => {
-        // Use hoveredPoint state instead of payload
-        if (!active || !hoveredPoint) return null;
+    // FAST TOOLTIP - Uses payload directly with type-based priority (no useState)
+    const CustomTooltip = ({ active, payload }) => {
+        if (!active || !payload || payload.length === 0) return null;
 
-        const selectedPoint = hoveredPoint;
+        // Priority based on point TYPE - higher priority wins when points overlap
+        const typePriority = {
+            'optimal': 100,
+            'market': 90,
+            'asset': 50
+        };
 
-        // Skip SML line points
-        if (selectedPoint.type === 'sml') return null;
+        // Find the highest priority point type in the payload
+        let selectedPoint = null;
+        let highestPriority = -1;
+
+        for (const item of payload) {
+            if (!item.payload) continue;
+            const pointType = item.payload.type;
+            if (!pointType || pointType === 'sml') continue;
+
+            const priority = typePriority[pointType] || 0;
+            if (priority > highestPriority) {
+                highestPriority = priority;
+                selectedPoint = item.payload;
+            }
+        }
+
+        if (!selectedPoint) return null;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);
@@ -341,8 +353,6 @@ export default function SecurityMarketLine({ data }) {
                             data={assets}
                             fill="#f8fafc"
                             shape="circle"
-                            onMouseOver={handleMouseOver}
-                            onMouseOut={handleMouseOut}
                         >
                             {assets.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
@@ -354,8 +364,6 @@ export default function SecurityMarketLine({ data }) {
                         <Scatter
                             name="Market"
                             data={[marketPortfolio]}
-                            onMouseOver={() => setHoveredPoint(marketPortfolio)}
-                            onMouseOut={handleMouseOut}
                             shape={(props) => {
                                 const { cx, cy } = props;
                                 return (
@@ -373,8 +381,6 @@ export default function SecurityMarketLine({ data }) {
                             <Scatter
                                 name="Optimal"
                                 data={[optimalPortfolio]}
-                                onMouseOver={() => setHoveredPoint(optimalPortfolio)}
-                                onMouseOut={handleMouseOut}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     // Star shape using polygon

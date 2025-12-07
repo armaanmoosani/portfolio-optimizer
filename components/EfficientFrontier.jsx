@@ -1,13 +1,7 @@
-import { useState, useCallback, useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label, Cell, ReferenceLine, LabelList } from 'recharts';
 
 export default function EfficientFrontier({ data }) {
-    // State for managing which point is being hovered
-    const [hoveredPoint, setHoveredPoint] = useState(null);
 
-    // Memoized hover handlers to prevent re-renders
-    const handleMouseOver = useCallback((data) => setHoveredPoint(data), []);
-    const handleMouseOut = useCallback(() => setHoveredPoint(null), []);
 
     if (!data || !data.frontier_points || data.frontier_points.length === 0) {
         return (
@@ -124,15 +118,36 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // SIMPLE TOOLTIP - Uses hoveredPoint state (set by onMouseEnter on each Scatter)
-    const CustomTooltip = ({ active }) => {
-        // Use hoveredPoint state instead of payload - this is set by individual Scatter onMouseEnter
-        if (!active || !hoveredPoint) return null;
+    // FAST TOOLTIP - Uses payload directly with type-based priority (no useState)
+    const CustomTooltip = ({ active, payload }) => {
+        if (!active || !payload || payload.length === 0) return null;
 
-        const selectedPoint = hoveredPoint;
+        // Priority based on point TYPE - higher priority wins when points overlap
+        const typePriority = {
+            'optimal': 100,
+            'min_variance': 90,
+            'asset': 50,
+            'frontier': 30,
+            'monte_carlo': 10
+        };
 
-        // Skip CML points
-        if (selectedPoint.type === 'cml') return null;
+        // Find the highest priority point type in the payload
+        let selectedPoint = null;
+        let highestPriority = -1;
+
+        for (const item of payload) {
+            if (!item.payload) continue;
+            const pointType = item.payload.type;
+            if (!pointType || pointType === 'cml') continue;
+
+            const priority = typePriority[pointType] || 0;
+            if (priority > highestPriority) {
+                highestPriority = priority;
+                selectedPoint = item.payload;
+            }
+        }
+
+        if (!selectedPoint) return null;
 
         // Display badge and name based on point TYPE
         let badge = null;
@@ -330,8 +345,6 @@ export default function EfficientFrontier({ data }) {
                             opacity={0.12}
                             shape="circle"
                             isAnimationActive={false}
-                            onMouseOver={handleMouseOver}
-                            onMouseOut={handleMouseOut}
                         />
 
                         {/* Layer 2: Capital Market Line */}
@@ -378,8 +391,6 @@ export default function EfficientFrontier({ data }) {
                             fill="#3b82f6"
                             stroke="#3b82f6"
                             isAnimationActive={false}
-                            onMouseOver={handleMouseOver}
-                            onMouseOut={handleMouseOut}
                         >
                             {frontierPoints.map((entry, index) => (
                                 <Cell key={`frontier-${index}`} r={3} fill="#3b82f6" stroke="#3b82f6" />
@@ -392,8 +403,6 @@ export default function EfficientFrontier({ data }) {
                             data={individualAssets}
                             fill="#f8fafc"
                             shape="circle"
-                            onMouseOver={handleMouseOver}
-                            onMouseOut={handleMouseOut}
                         >
                             {individualAssets.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
@@ -406,8 +415,6 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Min Variance"
                                 data={[minVariancePortfolio]}
-                                onMouseOver={() => setHoveredPoint(minVariancePortfolio)}
-                                onMouseOut={handleMouseOut}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     return (
@@ -426,8 +433,6 @@ export default function EfficientFrontier({ data }) {
                             <Scatter
                                 name="Max Sharpe"
                                 data={[optimalPortfolio]}
-                                onMouseOver={() => setHoveredPoint(optimalPortfolio)}
-                                onMouseOut={handleMouseOut}
                                 shape={(props) => {
                                     const { cx, cy } = props;
                                     return (
