@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend, Line } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
