@@ -73,6 +73,17 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
     const [tooltipVisible, setTooltipVisible] = useState(null);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [isOptimizing, setIsOptimizing] = useState(false);
+    const [optimizationProgress, setOptimizationProgress] = useState("");
+
+    // Progress stages for visual feedback
+    const progressStages = [
+        "Fetching historical data...",
+        "Calculating covariance matrix...",
+        "Running optimization...",
+        "Computing efficient frontier...",
+        "Backtesting portfolio...",
+        "Generating results..."
+    ];
 
     // Configuration state
     const [startYear, setStartYear] = useState("1985");
@@ -104,6 +115,14 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
 
         if (onOptimizationStart) onOptimizationStart();
         setIsOptimizing(true);
+        setOptimizationProgress(progressStages[0]);
+
+        // Cycle through progress stages while waiting
+        let progressIndex = 0;
+        const progressInterval = setInterval(() => {
+            progressIndex = (progressIndex + 1) % progressStages.length;
+            setOptimizationProgress(progressStages[progressIndex]);
+        }, 2000); // Change every 2 seconds
 
         try {
             const payload = {
@@ -245,6 +264,8 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
             console.error("Optimization error:", error);
             showToast(error.message || "Failed to optimize portfolio", "error");
         } finally {
+            clearInterval(progressInterval);
+            setOptimizationProgress("");
             setIsOptimizing(false);
         }
     };
@@ -592,7 +613,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                 {isOptimizing ? (
                     <>
                         <Loader2 className="w-6 h-6 animate-spin" />
-                        Running Optimization...
+                        <span className="min-w-[200px] text-center">{optimizationProgress || "Optimizing..."}</span>
                     </>
                 ) : (
                     <>
