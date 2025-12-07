@@ -168,13 +168,20 @@ export default function StockViewer() {
         setSelectedIndex(-1);
 
         try {
-            // Fetch Metadata
-            const metaRes = await fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`);
-            const meta = await metaRes.json();
+            // PHASE 1: Fetch all primary data in parallel
+            const [metaRes, quoteRes, infoRes, newsRes] = await Promise.all([
+                fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
+                fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`),
+                fetch(`/api/stock_info?ticker=${searchTicker}`),
+                fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`)
+            ]);
 
-            // Fetch Quote
-            const quoteRes = await fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`);
-            const quote = await quoteRes.json();
+            const [meta, quote, infoData, newsData] = await Promise.all([
+                metaRes.json(),
+                quoteRes.json(),
+                infoRes.json(),
+                newsRes.json()
+            ]);
 
             if (!quote.c) throw new Error("Invalid ticker or no data found");
 
@@ -191,37 +198,24 @@ export default function StockViewer() {
                 prevClose: quote.pc
             };
 
-            // Update state with stock data immediately
+            const newsArr = Array.isArray(newsData) ? newsData : [];
+
+            // Update state with all primary data immediately
             updateStockState({
                 stockData: newStockData,
                 ticker: searchTicker,
-                // Clear previous secondary data while loading new
-                news: [],
-                aiSummary: "",
-                chartData: [],
-                stockInfo: null
+                stockInfo: infoData,
+                news: newsArr.slice(0, 5),
+                aiSummary: "", // Clear while AI loads
+                chartData: []
             });
 
-            // Fetch Extended Stock Info
-            const infoRes = await fetch(`/api/stock_info?ticker=${searchTicker}`);
-            const infoData = await infoRes.json();
-            updateStockState({ stockInfo: infoData });
-
-            // Fetch News
-            const newsRes = await fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`);
-            const newsData = await newsRes.json();
-            const newsArr = Array.isArray(newsData) ? newsData : [];
-
+            // PHASE 2: Generate AI Summary (non-blocking - runs after primary data shown)
             let newAiSummary = "AI summary unavailable.";
 
             if (newsArr.length === 0) {
                 newAiSummary = "AI summary unavailable — no news data.";
-                updateStockState({ news: [], aiSummary: newAiSummary });
             } else {
-                const slicedNews = newsArr.slice(0, 5);
-                updateStockState({ news: slicedNews });
-
-                // Generate AI Summary
                 const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
                 const companyName = meta.name ? `${meta.name} (${searchTicker})` : searchTicker;
 
@@ -244,38 +238,40 @@ Recent headlines and summaries:
 ${aggregatedNews.slice(0, 15000)}
 `;
 
-                const aiRes = await fetch(`/api/proxy?service=gemini&ticker=${searchTicker}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2, maxOutputTokens: 400 }
-                    })
-                });
+                try {
+                    const aiRes = await fetch(`/api/proxy?service=gemini&ticker=${searchTicker}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ role: "user", parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.2, maxOutputTokens: 400 }
+                        })
+                    });
 
-                if (!aiRes.ok) throw new Error("AI Fetch failed");
-
-                const aiData = await aiRes.json();
-                const candidate = aiData.candidates?.[0];
-                newAiSummary = candidate?.content?.parts?.[0]?.text ||
-                    candidate?.content ||
-                    aiData.output_text ||
-                    "Summary unavailable.";
-
-                updateStockState({ aiSummary: newAiSummary });
+                    if (aiRes.ok) {
+                        const aiData = await aiRes.json();
+                        const candidate = aiData.candidates?.[0];
+                        newAiSummary = candidate?.content?.parts?.[0]?.text ||
+                            candidate?.content ||
+                            aiData.output_text ||
+                            "Summary unavailable.";
+                    }
+                } catch (aiErr) {
+                    console.error("AI summary failed:", aiErr);
+                }
             }
+
+            updateStockState({ aiSummary: newAiSummary });
 
             // Show success toast with click-to-scroll AFTER all data is loaded
             toast.success(`Loaded data for ${searchTicker}. Click to view.`, 4000, () => {
-                // Navigate to stocks page first
                 router.push('/stocks');
-                // Then scroll after a short delay to ensure page has loaded
                 setTimeout(() => {
                     document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
                 }, 300);
             });
 
-            // Auto-scroll to results AFTER all data is loaded
+            // Auto-scroll to results
             setTimeout(() => {
                 document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
             }, 300);
