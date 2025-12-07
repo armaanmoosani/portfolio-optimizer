@@ -101,12 +101,10 @@ export default function SecurityMarketLine({ data }) {
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Priority order for overlapping points
-        const priorityOrder = ['optimal', 'market', 'asset'];
+        // CRITICAL: Use priority-based selection with exact ID matching
+        const priorityOrder = ['optimal', 'market', 'asset', 'sml'];
 
         let selectedPoint = null;
-
-        // First, try to find a point matching our priority order
         for (const type of priorityOrder) {
             const found = payload.find(p => p.payload?.type === type);
             if (found) {
@@ -115,7 +113,6 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Skip if nothing to show or if it's just SML line
         if (!selectedPoint || selectedPoint.type === 'sml') return null;
 
         // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)

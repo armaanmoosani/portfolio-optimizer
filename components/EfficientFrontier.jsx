@@ -115,16 +115,15 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // INDUSTRY-GRADE TOOLTIP - Prioritizes key portfolios, then assets, then frontier
+    // INDUSTRY-GRADE TOOLTIP - Uses exact point matching
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Priority order for overlapping points
-        const priorityOrder = ['optimal', 'min_variance', 'asset', 'frontier'];
+        // CRITICAL FIX: Find the exact point being hovered using unique ID
+        // Priority order: optimal > min_variance > asset > frontier > monte_carlo
+        const priorityOrder = ['optimal', 'min_variance', 'asset', 'frontier', 'monte_carlo'];
 
         let selectedPoint = null;
-
-        // First, try to find a point matching our priority order
         for (const type of priorityOrder) {
             const found = payload.find(p => p.payload?.type === type);
             if (found) {
@@ -133,18 +132,7 @@ export default function EfficientFrontier({ data }) {
             }
         }
 
-        // If no priority match, use the first valid non-CML/non-MC point
-        if (!selectedPoint) {
-            const fallback = payload.find(p =>
-                p.payload &&
-                p.payload.type !== 'cml' &&
-                p.payload.type !== 'monte_carlo'
-            );
-            if (fallback) selectedPoint = fallback.payload;
-        }
-
-        // Skip if nothing to show
-        if (!selectedPoint) return null;
+        if (!selectedPoint || selectedPoint.type === 'cml') return null;
 
         // Validate data integrity - prevent showing wrong portfolio data
         const isOptimal = selectedPoint.id === 'optimal_portfolio';
@@ -324,7 +312,8 @@ export default function EfficientFrontier({ data }) {
                             name="Feasible Set"
                             data={monteCarloPoints}
                             fill="#64748b"
-                            opacity={0.3}
+                            opacity={0.12}
+                            shape="circle"
                             isAnimationActive={false}
                         />
 
