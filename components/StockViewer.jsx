@@ -168,19 +168,24 @@ export default function StockViewer() {
         setSelectedIndex(-1);
 
         try {
-            // PHASE 1: Fetch all primary data in parallel
-            const [metaRes, quoteRes, infoRes, newsRes] = await Promise.all([
+            // Get current time range settings for chart fetch
+            const { period, interval } = TIME_RANGES[timeRange];
+
+            // PHASE 1: Fetch all data in parallel (including chart)
+            const [metaRes, quoteRes, infoRes, newsRes, chartRes] = await Promise.all([
                 fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`),
                 fetch(`/api/stock_info?ticker=${searchTicker}`),
-                fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`)
+                fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`),
+                fetch(`/api/history?ticker=${searchTicker}&period=${period}&interval=${interval}`)
             ]);
 
-            const [meta, quote, infoData, newsData] = await Promise.all([
+            const [meta, quote, infoData, newsData, chartDataRaw] = await Promise.all([
                 metaRes.json(),
                 quoteRes.json(),
                 infoRes.json(),
-                newsRes.json()
+                newsRes.json(),
+                chartRes.json()
             ]);
 
             if (!quote.c) throw new Error("Invalid ticker or no data found");
@@ -200,15 +205,21 @@ export default function StockViewer() {
 
             const newsArr = Array.isArray(newsData) ? newsData : [];
 
-            // Update state with all primary data immediately and STOP loading
+            // Sync last chart point with live price for 1D view
+            let processedChartData = Array.isArray(chartDataRaw) ? chartDataRaw : [];
+            if (timeRange === '1D' && quote.c && processedChartData.length > 0) {
+                processedChartData[processedChartData.length - 1].price = quote.c;
+            }
+
+            // Update state with ALL data at once and STOP loading
             updateStockState({
                 stockData: newStockData,
                 ticker: searchTicker,
                 stockInfo: infoData,
                 news: newsArr.slice(0, 5),
                 aiSummary: "", // Clear while AI loads (shows skeleton)
-                chartData: [],
-                loading: false // <-- Key change: stop loading early so UI appears
+                chartData: processedChartData,
+                loading: false
             });
 
             // Show toast and scroll IMMEDIATELY after primary data is ready
