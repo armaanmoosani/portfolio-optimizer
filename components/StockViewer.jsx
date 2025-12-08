@@ -686,7 +686,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             } catch (e) {
                 console.error("Live update failed", e);
             }
-        }, 10000); // 10 seconds
+        }, 5000); // 5 seconds
 
         return () => clearInterval(interval);
     }, [stockData?.symbol, timeRange, loading, chartData]);
