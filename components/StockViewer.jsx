@@ -87,10 +87,10 @@ export default function StockViewer() {
 
     // Helper to normalize data for relative comparison (0% start)
     // Moved up to avoid ReferenceError initialization issues
-    const getRelativeData = () => {
-        if (!chartData || chartData.length === 0) return [];
+    const getRelativeData = (data = chartData) => {
+        if (!data || data.length === 0) return [];
 
-        const basePrice0 = chartData[0]?.price || 1;
+        const basePrice0 = data[0]?.price || 1;
 
         // Create lookup maps for all active comparables for faster date matching
         const compMaps = {};
@@ -106,7 +106,7 @@ export default function StockViewer() {
             }
         });
 
-        return chartData.map((point) => {
+        return data.map((point) => {
             const newItem = {
                 date: point.date,
                 [stockData.symbol]: ((point.price / basePrice0) - 1) * 100
@@ -1152,7 +1152,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     {isMounted ? (
                                         <ResponsiveContainer width="100%" height="100%">
                                             <ComposedChart
-                                                data={activeComparables.length > 0 ? getRelativeData() : chartData}
+                                                data={activeComparables.length > 0 ? getRelativeData(visibleChartData) : visibleChartData}
                                                 margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
                                                 onMouseLeave={() => {
                                                     setHoveredData(null);
