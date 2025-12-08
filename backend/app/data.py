@@ -377,7 +377,14 @@ def get_stock_info(ticker: str) -> dict:
             
             # Download adjusted close prices
             tickers_list = [ticker, "^GSPC"]
-            data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)['Adj Close']
+            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
+            
+            if 'Adj Close' in raw_data.columns:
+                data = raw_data['Adj Close']
+            elif 'Close' in raw_data.columns:
+                data = raw_data['Close']
+            else:
+                data = pd.DataFrame()
             
             # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
             # But yfinance can be tricky.
