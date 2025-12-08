@@ -1150,6 +1150,22 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 {activeComparables.length > 0 && (
                                                     <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
                                                 )}
+                                                {/* Prev Close Reference Line (1D only, no comparables) */}
+                                                {activeComparables.length === 0 && timeRange === '1D' && baselinePrice > 0 && (
+                                                    <ReferenceLine
+                                                        y={baselinePrice}
+                                                        stroke="#94a3b8"
+                                                        strokeDasharray="4 4"
+                                                        opacity={0.6}
+                                                        label={{
+                                                            value: 'Prev Close',
+                                                            position: 'insideTopRight',
+                                                            fill: '#94a3b8',
+                                                            fontSize: 10,
+                                                            fontWeight: 600
+                                                        }}
+                                                    />
+                                                )}
                                                 {/* Legend for quick identification */}
                                                 {activeComparables.length > 0 && (
                                                     <Legend
