@@ -1234,11 +1234,26 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     <ReferenceDot
                                                         x={chartData[chartData.length - 1]?.date}
                                                         y={stockData.price}
-                                                        r={4}
+                                                        r={6}
                                                         fill={displayData.isPositive ? '#34d399' : '#f43f5e'}
                                                         stroke="#fff"
                                                         strokeWidth={2}
                                                         isFront={true}
+                                                        shape={(props) => {
+                                                            const { cx, cy } = props;
+                                                            const color = displayData.isPositive ? '#34d399' : '#f43f5e';
+                                                            return (
+                                                                <g>
+                                                                    {/* Outer glow ring */}
+                                                                    <circle cx={cx} cy={cy} r={12} fill={color} opacity={0.2}>
+                                                                        <animate attributeName="r" values="10;14;10" dur="1.5s" repeatCount="indefinite" />
+                                                                        <animate attributeName="opacity" values="0.3;0.1;0.3" dur="1.5s" repeatCount="indefinite" />
+                                                                    </circle>
+                                                                    {/* Inner dot */}
+                                                                    <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
+                                                                </g>
+                                                            );
+                                                        }}
                                                     />
                                                 )}
                                             </ComposedChart>
