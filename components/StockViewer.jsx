@@ -504,6 +504,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     const preMarketData = useMemo(() => {
         if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
 
+        // Don't show pre-market during after-hours (after 4 PM ET)
+        const now = new Date();
+        const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const etHour = etTime.getHours();
+        const etMinute = etTime.getMinutes();
+        const isAfterMarketClose = etHour >= 16; // 4 PM ET or later
+
+        if (isAfterMarketClose) return null;
+
         // Find the first point that is "Regular Market"
         const openIndex = chartData.findIndex(d => d.isRegularMarket);
 
