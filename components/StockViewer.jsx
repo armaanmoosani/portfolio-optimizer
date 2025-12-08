@@ -1158,11 +1158,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         strokeDasharray="4 4"
                                                         opacity={0.6}
                                                         label={{
-                                                            value: 'Prev Close',
+                                                            value: `Prev Close  $${baselinePrice.toFixed(2)}`,
                                                             position: 'insideTopRight',
                                                             fill: '#94a3b8',
                                                             fontSize: 10,
-                                                            fontWeight: 600
+                                                            fontWeight: 500
                                                         }}
                                                     />
                                                 )}
