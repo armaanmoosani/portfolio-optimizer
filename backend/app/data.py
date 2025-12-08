@@ -507,36 +507,44 @@ def get_analyst_ratings(ticker: str) -> dict:
 def get_latest_price(ticker: str) -> dict:
     """
     Fetch the latest price, change, and percent change.
-    Optimized for speed/lightweight response.
+    Optimized for speed/lightweight response, but robust for Extended Hours.
     """
     try:
         stock = yf.Ticker(ticker)
         
-        # Method 1: fast_info (preferred for realtime)
-        # fast_info usually has 'last_price', 'previous_close'
-        fi = stock.fast_info
+        # Method: Use history(prepost=True) to capture Extended Hours
+        # 1-minute interval, 1-day period ensures we get the very latest ticks
+        hist = stock.history(period="1d", interval="1m", prepost=True)
         
-        current_price = fi.last_price
-        prev_close = fi.previous_close
-        
-        # Calculation
-        change = current_price - prev_close
-        percent = (change / prev_close) * 100
-        
-        # Timestamp (UTC)
-        # fast_info doesn't always provide timestamp, so we might need fallbacks
-        # But usually good enough for "Right Now"
+        if hist.empty:
+            # Fallback to fast_info if history is empty (e.g. market closed, no data yet?)
+            fi = stock.fast_info
+            current_price = fi.last_price
+            prev_close = fi.previous_close
+        else:
+            # Get the absolutely last close price available (Reg or Ext Hours)
+            current_price = hist['Close'].iloc[-1]
+            
+            # Previous close (Regular market close of PREVIOUS day)
+            # fast_info.previous_close is reliable for this
+            prev_close = stock.fast_info.previous_close
+
+        if prev_close and not pd.isna(prev_close):
+            change = current_price - prev_close
+            percent_change = (change / prev_close) * 100
+        else:
+            change = 0
+            percent_change = 0
         
         return {
-            "symbol": ticker.upper(),
             "price": current_price,
             "change": change,
-            "percent": percent,
-            "timestamp": int(datetime.utcnow().timestamp() * 1000) 
+            "percent_change": percent_change
         }
+
     except Exception as e:
-        print(f"Error fetching quote for {ticker}: {e}")
-        return {}
+        print(f"Error fetching latest price for {ticker}: {e}")
+        return {"price": 0, "change": 0, "percent_change": 0}
 
 
 def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:

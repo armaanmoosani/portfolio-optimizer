@@ -503,8 +503,20 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     // Calculate market open index (always needed for data filtering)
     const marketOpenIndex = useMemo(() => {
         if (timeRange !== '1D' || chartData.length === 0) return 0;
+
+        // Try to find using the flag first
         const openIndex = chartData.findIndex(d => d.isRegularMarket);
-        return openIndex > 0 ? openIndex : 0;
+        if (openIndex > 0) return openIndex;
+
+        // Fallback: Check timestamps if flag is missing
+        // 9:30 AM ET = 09:30 in the date string (backend sends "YYYY-MM-DD HH:MM")
+        const timeFallbackIndex = chartData.findIndex(d => {
+            if (!d.date || d.date.length < 16) return false;
+            const timePart = d.date.substring(11, 16); // Extract HH:MM
+            return timePart >= "09:30";
+        });
+
+        return timeFallbackIndex > 0 ? timeFallbackIndex : 0;
     }, [chartData, timeRange]);
 
     // Determine current market session based on ET time
@@ -528,48 +540,28 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         if (totalMinutes >= preMarketOpen && totalMinutes < regularOpen) return 'pre-market';
         if (totalMinutes >= regularOpen && totalMinutes < regularClose) return 'regular';
         if (totalMinutes >= regularClose && totalMinutes < afterHoursClose) return 'after-hours';
-        return 'closed';
-    }, []);
 
-    // Calculate Pre-Market Data (for visual display only)
-    const preMarketData = useMemo(() => {
-        if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
+        // Data-Driven Override: If chart data has points after 16:00, we are definitely in After Hours
+        // This protects against User System Timezone mismatches
+        if (chartData.length > 0) {
+            const lastPoint = chartData[chartData.length - 1];
+            if (lastPoint.date && lastPoint.date.length >= 16) {
+                const timePart = lastPoint.date.substring(11, 16);
+                if (timePart >= "16:00") return 'after-hours';
+            }
+        }
 
-        // Don't show pre-market visual during after-hours (remove segment entirely)
-        if (marketSession === 'after-hours') return null;
-
-        // Find the first point that is "Regular Market"
-        const openIndex = chartData.findIndex(d => d.isRegularMarket);
-
-        // If no regular market data or it starts at 0, no pre-market
-        if (openIndex <= 0) return null;
-
-        const regularOpenPrice = chartData[openIndex].price;
-        const currentPrice = chartData[openIndex - 1].price; // Last pre-market price
-
-        // Pre-market change is usually vs Prev Close
-        const change = currentPrice - (stockData.prevClose || regularOpenPrice);
-        const percent = (change / (stockData.prevClose || regularOpenPrice)) * 100;
-
-        // Calculate offset for gradient (0 to 1)
-        const splitOffset = openIndex / (chartData.length - 1);
-
-        return {
-            price: currentPrice,
-            change,
-            percent,
-            splitOffset,
-            openIndex,
-            endDate: chartData[openIndex].date
-        };
-    }, [chartData, timeRange, stockData, marketSession]);
+        return 'closed'; // Late night
+    }, [chartData, timeRange]); // Depend on chartData (polls every 5s) to keep time fresh
 
     // Calculate After Hours Data
+    // We compute this BEFORE preMarketData so we can use it to hide pre-market
     const afterHoursData = useMemo(() => {
         if (timeRange !== '1D' || chartData.length === 0) return null;
 
         // Find the last point that is "Regular Market"
         let closeIndex = -1;
+        // Search from end backwards
         for (let i = chartData.length - 1; i >= 0; i--) {
             if (chartData[i].isRegularMarket) {
                 closeIndex = i;
@@ -577,7 +569,21 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             }
         }
 
-        // If no regular market data or all regular, handle gracefully
+        // Fallback: If no flag, check time "16:00"
+        if (closeIndex === -1) {
+            for (let i = chartData.length - 1; i >= 0; i--) {
+                const dateStr = chartData[i].date;
+                if (dateStr && dateStr.length >= 16) {
+                    const timePart = dateStr.substring(11, 16);
+                    if (timePart < "16:00") {
+                        closeIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If no regular market data found (all pre-market check?), or ALL data is regular (no AH yet)
         if (closeIndex === -1 || closeIndex === chartData.length - 1) return null;
 
         const regularClosePrice = chartData[closeIndex].price;
@@ -599,17 +605,56 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         };
     }, [chartData, timeRange]);
 
+    // Calculate Pre-Market Data (for visual display only)
+    const preMarketData = useMemo(() => {
+        if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
+
+        // Don't show pre-market visual during after-hours
+        // Robust check: If session is 'after-hours' OR 'closed' OR we have detected After Hours data points
+        const isAfterRegular = marketSession === 'after-hours' || marketSession === 'closed' || afterHoursData !== null;
+
+        if (isAfterRegular) return null;
+
+        // Use our robust marketOpenIndex
+        const openIndex = marketOpenIndex;
+
+        // If openIndex is 0, it means we start with Regular Market -> No pre-market data
+        if (openIndex <= 0) return null;
+
+        const regularOpenPrice = chartData[openIndex].price;
+        const currentPrice = chartData[openIndex - 1].price; // Last pre-market price
+
+        // Pre-market change is usually vs Prev Close
+        const change = currentPrice - (stockData.prevClose || regularOpenPrice);
+        const percent = (change / (stockData.prevClose || regularOpenPrice)) * 100;
+
+        // Calculate offset for gradient (0 to 1)
+        const splitOffset = openIndex / (chartData.length - 1);
+
+        return {
+            price: currentPrice,
+            change,
+            percent,
+            splitOffset,
+            openIndex,
+            endDate: chartData[openIndex].date
+        };
+    }, [chartData, timeRange, stockData, marketSession, marketOpenIndex, afterHoursData]);
+
     // Filter Chart Data: Remove pre-market segment during after-hours
     const visibleChartData = useMemo(() => {
         if (timeRange !== '1D') return chartData;
 
-        // During after-hours session, slice out pre-market data to start from market open
-        if (marketSession === 'after-hours' && marketOpenIndex > 0) {
+        // During after-hours session (or if we have AH data), slice out pre-market data
+        // Explicitly check afterHoursData existence for robustness
+        const isAfterRegular = marketSession === 'after-hours' || marketSession === 'closed' || afterHoursData !== null;
+
+        if (isAfterRegular && marketOpenIndex > 0) {
             return chartData.slice(marketOpenIndex);
         }
 
         return chartData;
-    }, [chartData, timeRange, marketSession, marketOpenIndex]);
+    }, [chartData, timeRange, marketSession, marketOpenIndex, afterHoursData]);
 
     // Calculate Y-axis domain to ensure reference line is visible
     const yDomain = useMemo(() => {
