@@ -481,7 +481,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
     // Calculate baseline price based on time range
     const baselinePrice = useMemo(() => {
-        if (timeRange === '1D' && stockData?.prevClose) return stockData.prevClose;
+        if (timeRange === '1D') {
+            // Prefer prevClose, fallback to first chart point (open price)
+            if (stockData?.prevClose) return stockData.prevClose;
+            if (chartData.length > 0) return chartData[0].price;
+        }
         return chartData.length > 0 ? chartData[0].price : 0;
     }, [timeRange, stockData, chartData]);
 
@@ -1139,7 +1143,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     }}
                                                 />
                                                 <YAxis
-                                                    domain={['auto', 'auto']}
+                                                    domain={activeComparables.length > 0 ? ['auto', 'auto'] : yDomain}
                                                     stroke="#94a3b8"
                                                     fontSize={12}
                                                     tickLine={false}
