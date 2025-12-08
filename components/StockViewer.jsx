@@ -334,10 +334,11 @@ export default function StockViewer() {
                 changePercent: quote.c && quote.pc ? ((quote.c - quote.pc) / quote.pc) * 100 : 0,
                 name: meta.name || searchTicker,
                 description: meta.description || "No description available.",
-                open: quote.o,
-                high: quote.h,
-                low: quote.l,
-                prevClose: quote.pc
+                // Prefer Yahoo Finance data (infoData) if available for accuracy, fallback to Finnhub (quote)
+                open: infoData.open || quote.o,
+                high: infoData.dayHigh || quote.h,
+                low: infoData.dayLow || quote.l,
+                prevClose: infoData.previousClose || quote.pc
             };
 
             const newsArr = Array.isArray(newsData) ? newsData : [];

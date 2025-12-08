@@ -260,7 +260,12 @@ def get_stock_info(ticker: str) -> dict:
             "averageVolume": info.get("averageVolume"),
             "beta": info.get("beta"),
             "earnings": None,
-            "ipoDate": None  # Will be set below
+            "ipoDate": None,  # Will be set below
+            # Add realtime OHLC from fast_info (preferred over info for accuracy)
+            "open": stock.fast_info.open,
+            "dayHigh": stock.fast_info.day_high,
+            "dayLow": stock.fast_info.day_low,
+            "previousClose": stock.fast_info.previous_close
         }
         
         # Get IPO / first trade date
