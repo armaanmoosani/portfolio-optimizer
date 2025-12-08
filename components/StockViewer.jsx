@@ -599,20 +599,17 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         };
     }, [chartData, timeRange]);
 
-    // Filter Chart Data based on User Request:
-    // "When after hours start remove the pre market segment start it from the market open time."
-    // Filter Chart Data based on User Request:
-    // "When after hours start remove the pre market segment start it from the market open time."
+    // Filter Chart Data: Remove pre-market segment during after-hours
     const visibleChartData = useMemo(() => {
         if (timeRange !== '1D') return chartData;
 
-        // If we are in after-hours (afterHoursData exists), hide pre-market data
-        if (afterHoursData && marketOpenIndex > 0) {
+        // During after-hours session, slice out pre-market data to start from market open
+        if (marketSession === 'after-hours' && marketOpenIndex > 0) {
             return chartData.slice(marketOpenIndex);
         }
 
         return chartData;
-    }, [chartData, timeRange, afterHoursData, marketOpenIndex]);
+    }, [chartData, timeRange, marketSession, marketOpenIndex]);
 
     // Calculate Y-axis domain to ensure reference line is visible
     const yDomain = useMemo(() => {
