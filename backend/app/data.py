@@ -383,20 +383,25 @@ def get_stock_info(ticker: str) -> dict:
             print(f"[DEBUG] raw_data type: {type(raw_data)}, shape: {raw_data.shape if hasattr(raw_data, 'shape') else 'N/A'}")
             print(f"[DEBUG] raw_data columns: {raw_data.columns.tolist() if hasattr(raw_data, 'columns') else 'N/A'}")
             
-            # Extract price data
+            # Extract price data - handle MultiIndex columns from yfinance
             data = pd.DataFrame()
             if hasattr(raw_data, 'columns'):
-                if 'Adj Close' in raw_data.columns:
-                    data = raw_data['Adj Close']
-                elif 'Close' in raw_data.columns:
-                    data = raw_data['Close']
-                # Handle multi-level columns from yfinance
-                elif isinstance(raw_data.columns, pd.MultiIndex):
-                    # Try to get Close or Adj Close from first level
-                    if ('Close', ticker) in raw_data.columns or ('Close', 'SPY') in raw_data.columns:
+                if isinstance(raw_data.columns, pd.MultiIndex):
+                    # yfinance returns MultiIndex like ('Close', 'AAPL'), ('Close', 'SPY')
+                    # Check first level for 'Close' or 'Adj Close'
+                    level_0 = raw_data.columns.get_level_values(0)
+                    if 'Close' in level_0:
                         data = raw_data['Close']
-                    elif ('Adj Close', ticker) in raw_data.columns:
+                        print(f"[DEBUG] Extracted 'Close' from MultiIndex")
+                    elif 'Adj Close' in level_0:
                         data = raw_data['Adj Close']
+                        print(f"[DEBUG] Extracted 'Adj Close' from MultiIndex")
+                else:
+                    # Simple columns (single ticker or older yfinance)
+                    if 'Adj Close' in raw_data.columns:
+                        data = raw_data['Adj Close']
+                    elif 'Close' in raw_data.columns:
+                        data = raw_data['Close']
             
             print(f"[DEBUG] Processed data shape: {data.shape if hasattr(data, 'shape') else 'N/A'}")
             print(f"[DEBUG] Processed data columns: {data.columns.tolist() if hasattr(data, 'columns') else 'N/A'}")
