@@ -500,15 +500,21 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     }, [chartData, baselinePrice]);
 
 
-    // Calculate Pre-Market Data
+    // Calculate market open index (always needed for data filtering)
+    const marketOpenIndex = useMemo(() => {
+        if (timeRange !== '1D' || chartData.length === 0) return 0;
+        const openIndex = chartData.findIndex(d => d.isRegularMarket);
+        return openIndex > 0 ? openIndex : 0;
+    }, [chartData, timeRange]);
+
+    // Calculate Pre-Market Data (for visual display only)
     const preMarketData = useMemo(() => {
         if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
 
-        // Don't show pre-market during after-hours (after 4 PM ET)
+        // Don't show pre-market visual during after-hours (after 4 PM ET)
         const now = new Date();
         const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const etHour = etTime.getHours();
-        const etMinute = etTime.getMinutes();
         const isAfterMarketClose = etHour >= 16; // 4 PM ET or later
 
         if (isAfterMarketClose) return null;
@@ -581,13 +587,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     const visibleChartData = useMemo(() => {
         if (timeRange !== '1D') return chartData;
 
-        // If we are in after-hours (afterHoursData exists), hide pre-market
-        if (afterHoursData && preMarketData && preMarketData.openIndex > 0) {
-            return chartData.slice(preMarketData.openIndex);
+        // If we are in after-hours (afterHoursData exists), hide pre-market data
+        if (afterHoursData && marketOpenIndex > 0) {
+            return chartData.slice(marketOpenIndex);
         }
 
         return chartData;
-    }, [chartData, timeRange, afterHoursData, preMarketData]);
+    }, [chartData, timeRange, afterHoursData, marketOpenIndex]);
 
     // Calculate Y-axis domain to ensure reference line is visible
     const yDomain = useMemo(() => {
@@ -611,9 +617,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
     // Calculate split offset for the VISIBLE chart data
     const visibleSplitOffset = useMemo(() => {
-        if (!afterHoursData || !preMarketData || timeRange !== '1D') return 0;
-        return preMarketData.splitOffset; // Or logic to handle multiple splits if needed
-    }, [afterHoursData, preMarketData, timeRange]);
+        if (!afterHoursData || timeRange !== '1D') return 0;
+
+        // When in after-hours, calculate where the market closed in the visible data
+        // If pre-market was filtered out, we need to adjust the close index
+        const adjustedCloseIndex = afterHoursData.closeIndex - marketOpenIndex;
+        const visibleLength = visibleChartData.length - 1;
+
+        return visibleLength > 0 ? adjustedCloseIndex / visibleLength : 0;
+    }, [afterHoursData, timeRange, marketOpenIndex, visibleChartData]);
 
     // Live Price Updates Polling
     useEffect(() => {
@@ -1098,24 +1110,24 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     </linearGradient>
 
                                                     {/* Multi-Segment Gradient for Stroke (1D View) */}
-                                                    {timeRange === '1D' && (preMarketData || afterHoursData) ? (
+                                                    {timeRange === '1D' && afterHoursData ? (
+                                                        /* After-hours mode: Regular market colored, after-hours grey */
                                                         <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
-                                                            {preMarketData && !afterHoursData && (
-                                                                <>
-                                                                    <stop offset={0} stopColor="#94a3b8" />
-                                                                    <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
-                                                                </>
-                                                            )}
-                                                            <stop offset={afterHoursData ? 0 : (preMarketData ? preMarketData.splitOffset : 0)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
-                                                            <stop offset={afterHoursData ? visibleSplitOffset : (afterHoursData ? afterHoursData.splitOffset : 1)} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
-                                                            {afterHoursData && (
-                                                                <>
-                                                                    <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
-                                                                    <stop offset={1} stopColor="#94a3b8" />
-                                                                </>
-                                                            )}
+                                                            <stop offset={0} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                            <stop offset={visibleSplitOffset} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                            <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
+                                                            <stop offset={1} stopColor="#94a3b8" />
+                                                        </linearGradient>
+                                                    ) : timeRange === '1D' && preMarketData ? (
+                                                        /* Pre-market mode: Pre-market grey, regular market colored */
+                                                        <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
+                                                            <stop offset={0} stopColor="#94a3b8" />
+                                                            <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
+                                                            <stop offset={preMarketData.splitOffset} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
+                                                            <stop offset={1} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                         </linearGradient>
                                                     ) : (
+                                                        /* Normal mode: Solid color */
                                                         <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset="0%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
                                                             <stop offset="100%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
