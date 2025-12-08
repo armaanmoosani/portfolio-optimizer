@@ -606,16 +606,39 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         if (timeRange !== '1D' || !stockData?.symbol || loading) return;
 
         const interval = setInterval(async () => {
-            // Check if US market is open (Mon-Fri, 9:30 AM - 4:00 PM ET)
+            // Market Holidays (2024-2028)
+            const marketHolidays = [
+                // 2024
+                '2024-01-01', '2024-01-15', '2024-02-19', '2024-03-29', '2024-05-27', '2024-06-19', '2024-07-04', '2024-09-02', '2024-11-28', '2024-12-25',
+                // 2025
+                '2025-01-01', '2025-01-20', '2025-02-17', '2025-04-18', '2025-05-26', '2025-06-19', '2025-07-04', '2025-09-01', '2025-11-27', '2025-12-25',
+                // 2026
+                '2026-01-01', '2026-01-19', '2026-02-16', '2026-04-03', '2026-05-25', '2026-06-19', '2026-07-03', '2026-09-07', '2026-11-26', '2026-12-25',
+                // 2027
+                '2027-01-01', '2027-01-18', '2027-02-15', '2027-03-26', '2027-05-31', '2027-06-18', '2027-07-05', '2027-09-06', '2027-11-25', '2027-12-24',
+                // 2028 (Note: Jan 1 is Sat, no NY holiday observed)
+                '2028-01-17', '2028-02-21', '2028-04-14', '2028-05-29', '2028-06-19', '2028-07-04', '2028-09-04', '2028-11-23', '2028-12-25'
+            ];
+
+            // Check if today is a holiday
+            // Note: toISOString is UTC, so we should use local date string for US/Eastern ideally or approximate with local
+            // Simple consistent approximation using local time string in a standard format
             const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const date = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${date}`;
+
+            if (marketHolidays.includes(todayStr)) return;
+
+            // Check if extended trading hours (Mon-Fri, 4:00 AM - 8:00 PM ET)
+            // Pre-market: 4:00 AM - 9:30 AM, Regular: 9:30 AM - 4:00 PM, After-hours: 4:00 PM - 8:00 PM
             const day = now.getDay();
             const hour = now.getHours();
-            const minute = now.getMinutes();
-            // Simple client-side check (same logic as isMarketOpen helper below)
-            const marketOpen = day >= 1 && day <= 5 &&
-                ((hour === 9 && minute >= 30) || (hour >= 10 && hour < 16));
+            // Extended hours: 4 AM to 8 PM (4-20), Mon-Fri (1-5)
+            const extendedHoursOpen = day >= 1 && day <= 5 && hour >= 4 && hour < 20;
 
-            if (!marketOpen) return;
+            if (!extendedHoursOpen) return;
 
             try {
                 const res = await fetch(`/api/quote?ticker=${stockData.symbol}`);
