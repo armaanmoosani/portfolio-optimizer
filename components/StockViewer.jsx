@@ -307,18 +307,19 @@ export default function StockViewer() {
             // Get current time range settings for chart fetch
             const { period, interval } = TIME_RANGES[timeRange];
 
-            // PHASE 1: Fetch core data in parallel (Meta, Quote, News, Chart)
-            // Removed blocking stock_info fetch to allow graceful degradation
-            const [metaRes, quoteRes, newsRes, chartRes] = await Promise.all([
+            // PHASE 1: Fetch all data in parallel (including chart)
+            const [metaRes, quoteRes, infoRes, newsRes, chartRes] = await Promise.all([
                 fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`),
+                fetch(`/api/stock_info?ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`),
                 fetch(`/api/history?ticker=${searchTicker}&period=${period}&interval=${interval}`)
             ]);
 
-            const [meta, quote, newsData, chartDataRaw] = await Promise.all([
+            const [meta, quote, infoData, newsData, chartDataRaw] = await Promise.all([
                 metaRes.json(),
                 quoteRes.json(),
+                infoRes.json(),
                 newsRes.json(),
                 chartRes.json()
             ]);
@@ -350,7 +351,7 @@ export default function StockViewer() {
             updateStockState({
                 stockData: newStockData,
                 ticker: searchTicker,
-                stockInfo: null, // Will be populated by async Phase 2 fetch
+                stockInfo: infoData,
                 news: newsArr.slice(0, 5),
                 aiSummary: "", // Clear while AI loads (shows skeleton)
                 chartData: processedChartData,
@@ -364,7 +365,7 @@ export default function StockViewer() {
             }, 100);
 
             // PHASE 2: Generate AI Summary (COMPLETELY ASYNC - doesn't block UI)
-            const fetchAISummary = async () => {
+            (async () => {
                 let newAiSummary = "AI summary unavailable.";
 
                 if (newsArr.length === 0) {
@@ -413,10 +414,10 @@ ${aggregatedNews.slice(0, 15000)}
                     } catch (aiErr) {
                         console.error("AI summary failed:", aiErr);
                     }
-                    updateStockState({ aiSummary: newAiSummary });
                 }
-            };
-            fetchAISummary();
+
+                updateStockState({ aiSummary: newAiSummary });
+            })();
 
             // PHASE 4: Fetch Analyst Ratings (ASYNC/Non-blocking)
             (async () => {
@@ -431,47 +432,6 @@ ${aggregatedNews.slice(0, 15000)}
                     console.error("Analyst ratings fetch error:", err);
                 } finally {
                     setLoadingAnalystRatings(false);
-                }
-            })();
-
-            // PHASE 2: Fetch Stock Info (Backend Analysis)
-            (async () => {
-                try {
-                    const res = await fetch(`/api/stock_info?ticker=${searchTicker}`);
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        updateStockState({
-                            ...data,
-                            loading: false,
-                            returns_error: data.returns_error || null // Ensure error is passed if present
-                        });
-                    } else {
-                        // Capture backend error details
-                        let errorMsg = `HTTP ${res.status} ${res.statusText}`;
-                        try {
-                            const errorBody = await res.text();
-                            errorMsg += `: ${errorBody}`;
-                        } catch (e) { /* ignore parse error */ }
-
-                        console.error("Stock info fetch failed:", errorMsg);
-
-                        // Update state to show the error in the debug card
-                        updateStockState({
-                            loading: false,
-                            returns: {}, // Empty returns triggers the debug card
-                            returns_error: errorMsg,
-                            returns_debug: { status: res.status, url: res.url }
-                        });
-                    }
-                } catch (err) {
-                    console.error("Stock info network error:", err);
-                    updateStockState({
-                        loading: false,
-                        returns: {},
-                        returns_error: `Network/Fetch Error: ${err.message}`,
-                        returns_debug: { error: err.toString() }
-                    });
                 }
             })();
 
@@ -1373,83 +1333,39 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
 
                             {/* Performance Comparison Cards */}
-                            {(() => {
-                                const returns = stockInfo?.returns;
-                                // Check if we have ANY ticker data across the main periods
-                                const hasData = returns && (
-                                    returns.ytd?.ticker != null ||
-                                    returns['1y']?.ticker != null ||
-                                    returns['3y']?.ticker != null ||
-                                    returns['5y']?.ticker != null
-                                );
-
-                                if (!hasData) {
-                                    return (
-                                        <div className="mb-8 p-4 bg-amber-900/20 border border-amber-500/30 rounded-xl">
-                                            <p className="text-amber-200 text-sm font-bold flex items-center gap-2">
-                                                ⚠️ Performance Data Unavailable
-                                            </p>
-                                            <p className="text-amber-400/80 text-xs mt-1 mb-2">
-                                                Could not fetch performance data.
-                                            </p>
-                                            <details className="text-[10px] text-amber-500/50 font-mono">
-                                                <summary className="cursor-pointer hover:text-amber-400">Debug Data</summary>
-                                                <pre className="mt-2 whitespace-pre-wrap">
-                                                    {JSON.stringify({
-                                                        returns: returns,
-                                                        returns_error: stockInfo?.returns_error,
-                                                        returns_debug: stockInfo?.returns_debug
-                                                    }, null, 2)}
-                                                </pre>
-                                            </details>
-                                        </div>
-                                    );
-                                }
-
-                                return (
+                            {stockInfo?.returns && (
+                                <FadeInSection delay={100}>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                                         {['ytd', '1y', '3y', '5y'].map((period) => {
-                                            const data = returns[period];
+                                            const data = stockInfo.returns[period];
                                             if (!data) return null;
 
                                             const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
+                                            const label = labels[period];
+
                                             return (
                                                 <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
-                                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{labels[period]}</p>
+                                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
                                                     <div className="space-y-2">
-                                                        {/* Stock Ticker Return */}
-                                                        {data.ticker != null && (
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="text-sm font-bold text-white">{stockData.symbol}</span>
-                                                                <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                    {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* S&P 500 Return (Conditional) */}
-                                                        {data.spy != null && (
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="text-xs font-medium text-slate-500">S&P 500</span>
-                                                                <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                    {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Fallback if S&P missing: Label why */}
-                                                        {data.spy == null && (
-                                                            <div className="mt-2 pt-2 border-t border-white/5">
-                                                                <span className="text-[10px] text-slate-600 italic">S&P Data Unavailable</span>
-                                                            </div>
-                                                        )}
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-bold text-white">{stockData.symbol}</span>
+                                                            <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-xs font-medium text-slate-500">S&P 500</span>
+                                                            <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                );
-                            })()}
+                                </FadeInSection>
+                            )}
 
                             {/* Earnings Trends Section */}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (

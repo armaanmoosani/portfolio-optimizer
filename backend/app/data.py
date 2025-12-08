@@ -234,75 +234,35 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
 def get_stock_info(ticker: str) -> dict:
     """
     Fetch detailed stock information including Market Cap, P/E, 52-wk High/Low, Dividends.
-    Designed to be robust: failures in one section (e.g. metadata) won't prevent others (e.g. returns) from loading.
     """
-    # Initialize result with safe defaults
-    result = {
-        "marketCap": None,
-        "trailingPE": None,
-        "forwardPE": None,
-        "fiftyTwoWeekHigh": None,
-        "fiftyTwoWeekLow": None,
-        "dividendRate": None,
-        "dividendYield": None,
-        "beta": None,
-        "priceToBook": None,
-        "description": None,
-        "sector": None,
-        "industry": None,
-        "fullTimeEmployees": None,
-        "city": None,
-        "state": None,
-        "country": None,
-        "website": None,
-        "recommendationMean": None,
-        "recommendationKey": None,
-        "numberOfAnalystOpinions": None,
-        "earningsHistory": [],
-        "returns": {
-            "ytd": None,
-            "1y": None,
-            "3y": None,
-            "5y": None
-        },
-        "returns_error": None,
-        "returns_debug": None,
-        "_debug_version": "v4_legacy_logic_restored"
-    }
-
     try:
         stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # Extract relevant fields with safe defaults
+        result = {
+            "marketCap": info.get("marketCap"),
+            "trailingPE": info.get("trailingPE"),
+            "forwardPE": info.get("forwardPE"),
+            "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
+            "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
+            "dividendRate": info.get("dividendRate"),
+            "dividendYield": info.get("dividendYield"),
+            "currency": info.get("currency", "USD"),
+            "shortName": info.get("shortName"),
+            "longName": info.get("longName"),
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+            "exDividendDate": info.get("exDividendDate"),
+            "lastDividendValue": info.get("lastDividendValue"),
+            "trailingEps": info.get("trailingEps"),
+            "volume": info.get("regularMarketVolume") or info.get("volume"),
+            "averageVolume": info.get("averageVolume"),
+            "beta": info.get("beta"),
+            "earnings": None
+        }
 
-        # 1. Fetch Metadata (Info)
-        try:
-            info = stock.info
-            if info:
-                result.update({
-                    "marketCap": info.get("marketCap"),
-                    "trailingPE": info.get("trailingPE"),
-                    "forwardPE": info.get("forwardPE"),
-                    "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
-                    "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
-                    "dividendRate": info.get("dividendRate"),
-                    "dividendYield": info.get("dividendYield"),
-                    "beta": info.get("beta"),
-                    "priceToBook": info.get("priceToBook"),
-                    "description": info.get("longBusinessSummary"),
-                    "sector": info.get("sector"),
-                    "industry": info.get("industry"),
-                    "fullTimeEmployees": info.get("fullTimeEmployees"),
-                    "city": info.get("city"),
-                    "state": info.get("state"),
-                    "country": info.get("country"),
-                    "website": info.get("website"),
-                    "recommendationMean": info.get("recommendationMean"),
-                    "recommendationKey": info.get("recommendationKey"),
-                    "numberOfAnalystOpinions": info.get("numberOfAnalystOpinions"),
-                })
-        except Exception as e:
-            print(f"Error fetching stock info metadata for {ticker}: {e}")
-
-        # 2. Fetch Earnings History
+        # Fetch Earnings Data
         try:
             earnings_dates = stock.earnings_dates
             financials = stock.quarterly_financials
@@ -310,15 +270,30 @@ def get_stock_info(ticker: str) -> dict:
             history = []
             
             if earnings_dates is not None and not earnings_dates.empty:
+                # Filter for rows with valid data
+                # Sort by date descending
                 earnings_dates = earnings_dates.sort_index(ascending=False)
+                
+                # Get last 4 quarters (approx)
+                # We look at the last 8 entries and pick the ones that have data
                 recent_earnings = earnings_dates.head(8)
                 
                 for date, row in recent_earnings.iterrows():
+                    # Skip if no reported EPS (future date)
                     if pd.isna(row.get("Reported EPS")):
                         continue
                         
+                    # Determine Quarter Label
                     month = date.month
                     year = date.year
+                    quarter_label = "Q?"
+                    # Fiscal year logic is complex, we'll use calendar quarters for simplicity
+                    # or try to align with standard "Q3 FY24" format if possible.
+                    # Usually:
+                    # Jan/Feb/Mar report -> Q4 Prev Year
+                    # Apr/May/Jun report -> Q1 Curr Year
+                    # Jul/Aug/Sep report -> Q2 Curr Year
+                    # Oct/Nov/Dec report -> Q3 Curr Year
                     
                     fy_year = year
                     if month in [1, 2, 3]:
@@ -342,28 +317,19 @@ def get_stock_info(ticker: str) -> dict:
                         "earnings": None
                     }
                     
+                    # Try to match with financials (Revenue/Net Income)
                     if financials is not None and not financials.empty:
-                        # Ensure columns are timezone-naive
+                        # Financials columns are dates (quarter end)
+                        # Earnings report date is usually 1-3 months AFTER quarter end
+                        # So we look for a financial date that is BEFORE the report date
                         cols = pd.to_datetime(financials.columns)
-                        if hasattr(cols, 'tz_localize'):
-                            try: cols = cols.tz_localize(None)
-                            except: pass
-                        
-                        # Handle DataFrame columns safely
-                        cols_list = []
-                        for c in cols:
-                            try:
-                                if hasattr(c, 'replace'): cols_list.append(c.replace(tzinfo=None))
-                                else: cols_list.append(c)
-                            except: cols_list.append(c)
-                            
-                        date_naive = date.replace(tzinfo=None)
-                        potential_dates = [d for d in cols_list if d < date_naive]
+                        potential_dates = [d for d in cols if d < date.replace(tzinfo=None)]
                         
                         if potential_dates:
                             closest_date = max(potential_dates)
-                            if (date_naive - closest_date).days < 120:
-                                col_idx = cols_list.index(closest_date)
+                            # Check if it's within reasonable range (e.g. < 4 months)
+                            if (date.replace(tzinfo=None) - closest_date).days < 120:
+                                col_idx = list(cols).index(closest_date)
                                 orig_col = financials.columns[col_idx]
                                 
                                 if "Total Revenue" in financials.index:
@@ -372,40 +338,56 @@ def get_stock_info(ticker: str) -> dict:
                                     entry["earnings"] = financials.loc["Net Income", orig_col]
                     
                     history.append(entry)
+                    
                     if len(history) >= 4:
                         break
             
+            # Reverse to chronological order for charts (Oldest -> Newest)
             result["earningsHistory"] = history[::-1]
             
+            # Keep the "earnings" field for backward compatibility (most recent)
+            if history:
+                latest = history[-1]
+                result["earnings"] = {
+                    "quarter": latest["quarter"],
+                    "date": latest["date"],
+                    "eps": {
+                        "estimate": latest["epsEstimate"],
+                        "reported": latest["epsReported"],
+                        "surprise": ((latest["epsReported"] - latest["epsEstimate"]) / abs(latest["epsEstimate"]) * 100) if latest["epsEstimate"] else 0
+                    },
+                    "revenue": {
+                        "reported": latest["revenue"],
+                        "date": latest["date"] # Approx
+                    }
+                }
+
+        except Exception as e:
+            print(f"Error fetching earnings for {ticker}: {e}")
+            result["debug_earnings_error"] = str(e)
+
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
 
-        # 3. Fetch Returns Comparison (Legacy Logic Restored with Safety)
+        # Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
         try:
+            # Fetch 5y history for both
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=5*365 + 20)
+            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
             
-            # Use User's preferred Benchmark
-            benchmark = "^GSPC"
-            tickers_list = [ticker, benchmark]
+            # Download adjusted close prices
+            tickers_list = [ticker, "^GSPC"]
+            data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)['Adj Close']
             
-            # Fetch data - simplified as per user request
-            raw = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
-            
-            # Extract Adjusted Close safely
-            data = pd.DataFrame()
-            if 'Adj Close' in raw.columns:
-                data = raw['Adj Close']
-            elif 'Close' in raw.columns:
-                data = raw['Close']
-            
-            # Save debug info
-            result["returns_debug"] = {
-                "raw_shape": str(raw.shape) if hasattr(raw, 'shape') else "N/A",
-                "columns": str(raw.columns) if hasattr(raw, 'columns') else "N/A"
-            }
+            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
+            # But yfinance can be tricky.
             
             if not data.empty and isinstance(data, pd.DataFrame):
+                # Ensure we have both columns
+                if ticker not in data.columns:
+                    # Maybe it's under the symbol name?
+                    pass 
+                
                 # Calculate returns
                 def get_return(period_days=None, is_ytd=False):
                     try:
@@ -414,34 +396,36 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Latest price
+                        # Find closest available date on or before start
+                        # We slice data to be up to 'start'
+                        # Actually, we want the price at 'start'. 
+                        # So we find the index closest to 'start'
+                        
+                        # Get price at end (latest)
                         latest_prices = data.iloc[-1]
                         
-                        # Start price
+                        # Get price at start
+                        # Find index closest to start date
                         idx = data.index.get_indexer([start], method='nearest')[0]
                         start_prices = data.iloc[idx]
                         found_date = data.index[idx]
                         
+                        # Check if the found date is too far from the requested start date
+                        # This implies the stock wasn't public yet
+                        # Tolerance: 10 days
                         if abs((found_date - start).days) > 10:
                             return None
                         
-                        t_ret = None
-                        s_ret = None
-                        
-                        # Handle ticker return
-                        if ticker in data.columns:
-                            t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
-                        
-                        # Handle Benchmark return (^GSPC)
-                        if benchmark in data.columns:
-                            s_ret = ((latest_prices[benchmark] - start_prices[benchmark]) / start_prices[benchmark]) * 100
+                        # Calculate % change
+                        # Handle missing data (NaN)
+                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
+                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
                         return {
-                            "ticker": float(t_ret) if t_ret is not None and not pd.isna(t_ret) else None,
-                            "spy": float(s_ret) if s_ret is not None and not pd.isna(s_ret) else None
+                            "ticker": t_ret if not pd.isna(t_ret) else None,
+                            "spy": s_ret if not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
-                        # print(f"Calc error: {ex}") 
                         return None
 
                 result["returns"] = {
@@ -450,22 +434,14 @@ def get_stock_info(ticker: str) -> dict:
                     "3y": get_return(365*3),
                     "5y": get_return(365*5)
                 }
-            else:
-                 result["returns_error"] = "Data empty or invalid format"
-
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
-            result["returns_error"] = str(e)
+            result["debug_returns_error"] = str(e)
 
         return result
-
     except Exception as e:
-         print(f"CRITICAL ERROR in get_stock_info: {e}")
-         return {
-             "returns_error": f"CRITICAL BACKEND ERROR: {str(e)}",
-             "returns": {"ytd": None, "1y": None, "3y": None, "5y": None},
-             "_debug_version": "v4_legacy_logic_restored_ERROR"
-         }
+        print(f"Error fetching stock info for {ticker}: {e}")
+        return {}
 
 def get_analyst_ratings(ticker: str) -> dict:
     """

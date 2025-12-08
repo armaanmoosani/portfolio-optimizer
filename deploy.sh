@@ -6,12 +6,9 @@ echo "Starting GCP VM deployment..."
 echo "Pulling latest code..."
 git pull
 
-# Cleanup ANY potential old containers to avoid conflicts
 echo "Stopping existing containers..."
 sudo docker stop portfolio-backend 2>/dev/null || true
 sudo docker rm portfolio-backend 2>/dev/null || true
-sudo docker stop backend 2>/dev/null || true
-sudo docker rm backend 2>/dev/null || true
 
 echo "Building Docker image (with memory limits for e2-micro)..."
 sudo docker build \
@@ -39,3 +36,6 @@ sudo docker ps | grep portfolio-backend
 echo ""
 echo "View logs with: sudo docker logs -f portfolio-backend"
 echo "API docs: http://$(curl -s ifconfig.me):10000/api/docs"
+docker run -d -p 8000:10000 --restart always --name backend portfolio-backend
+
+echo "Deployment complete! Server is running."
