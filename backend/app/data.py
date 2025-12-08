@@ -527,3 +527,114 @@ def get_latest_price(ticker: str) -> dict:
     except Exception as e:
         print(f"Error fetching quote for {ticker}: {e}")
         return {}
+
+
+def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:
+    """
+    Calculate what an investment would be worth today.
+    
+    Uses split-adjusted prices (yfinance default) for accuracy.
+    Handles edge cases: weekends, holidays, pre-IPO dates.
+    
+    Args:
+        ticker: Stock symbol
+        start_date: Date in YYYY-MM-DD format
+        amount: Investment amount in dollars
+        
+    Returns:
+        dict with calculation results or error
+    """
+    from datetime import datetime, timedelta
+    
+    # Validate amount
+    if amount <= 0:
+        return {"valid": False, "error": "Amount must be greater than 0"}
+    
+    try:
+        target_date = datetime.strptime(start_date, "%Y-%m-%d")
+    except ValueError:
+        return {"valid": False, "error": "Invalid date format. Use YYYY-MM-DD"}
+    
+    # Check if date is in the future
+    today = datetime.now()
+    if target_date >= today:
+        return {"valid": False, "error": "Date must be in the past"}
+    
+    try:
+        stock = yf.Ticker(ticker)
+        
+        # Fetch historical data - use a range to find nearest trading day
+        # Start from target date, go a few days forward to handle weekends/holidays
+        end_search = target_date + timedelta(days=10)
+        hist = stock.history(start=target_date.strftime("%Y-%m-%d"), 
+                            end=end_search.strftime("%Y-%m-%d"))
+        
+        if hist.empty:
+            # Try fetching max history to check if ticker is valid and get IPO date
+            max_hist = stock.history(period="max")
+            if max_hist.empty:
+                return {"valid": False, "error": f"No data available for {ticker}"}
+            
+            first_date = max_hist.index[0].strftime("%Y-%m-%d")
+            return {"valid": False, "error": f"Date is before available data. Earliest: {first_date}"}
+        
+        # Get the first available price (handles weekends/holidays)
+        actual_buy_date = hist.index[0]
+        buy_price = hist.iloc[0]['Close']
+        
+        # Calculate shares bought
+        shares = amount / buy_price
+        
+        # Get current price
+        current_hist = stock.history(period="1d")
+        if current_hist.empty:
+            # Fallback to fast_info
+            fi = stock.fast_info
+            current_price = fi.last_price
+        else:
+            current_price = current_hist.iloc[-1]['Close']
+        
+        # Calculate returns
+        current_value = shares * current_price
+        gain = current_value - amount
+        gain_percent = (gain / amount) * 100
+        
+        # Calculate holding period
+        holding_days = (today - actual_buy_date.replace(tzinfo=None)).days
+        holding_years = holding_days / 365.25
+        
+        # Calculate annualized return (CAGR)
+        if holding_years > 0:
+            annualized_return = ((current_value / amount) ** (1 / holding_years) - 1) * 100
+        else:
+            annualized_return = gain_percent
+        
+        # Format holding period
+        years = holding_days // 365
+        months = (holding_days % 365) // 30
+        if years > 0 and months > 0:
+            holding_str = f"{years}y {months}m"
+        elif years > 0:
+            holding_str = f"{years}y"
+        else:
+            holding_str = f"{months}m" if months > 0 else f"{holding_days}d"
+        
+        return {
+            "valid": True,
+            "error": None,
+            "buyDate": actual_buy_date.strftime("%Y-%m-%d"),
+            "buyPrice": round(buy_price, 2),
+            "shares": round(shares, 4),
+            "currentPrice": round(current_price, 2),
+            "currentValue": round(current_value, 2),
+            "gain": round(gain, 2),
+            "gainPercent": round(gain_percent, 2),
+            "annualizedReturn": round(annualized_return, 2),
+            "holdingDays": holding_days,
+            "holdingPeriod": holding_str,
+            "splitAdjusted": True
+        }
+        
+    except Exception as e:
+        print(f"Error calculating whatif for {ticker}: {e}")
+        return {"valid": False, "error": str(e)}

@@ -9,6 +9,7 @@ import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
 import FadeInSection from "./FadeInSection";
 import AnalystRatings from "./AnalystRatings";
+import WhatIfCalculator from "./WhatIfCalculator";
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -1705,6 +1706,16 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             {/* No, let's put it in the Main Column (Left, col-span-2) at the bottom */}
                         </div>
                     </FadeInSection >
+
+                    {/* Investment Calculator - Full Width */}
+                    {stockData && (
+                        <FadeInSection>
+                            <WhatIfCalculator
+                                ticker={stockData.symbol}
+                                currentPrice={stockData.price}
+                            />
+                        </FadeInSection>
+                    )}
 
                     {/* Analyst Ratings Section - Full Width */}
                     <FadeInSection>

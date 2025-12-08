@@ -311,6 +311,35 @@ def get_quote_endpoint(request: Request, ticker: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/whatif")
+@limiter.limit(RATE_LIMITS["data_fetch"])
+def whatif_endpoint(request: Request, ticker: str, date: str, amount: float):
+    """
+    Calculate what an investment would be worth today.
+    
+    Args:
+        ticker: Stock symbol
+        date: Start date (YYYY-MM-DD)
+        amount: Investment amount in dollars
+    """
+    try:
+        InputValidator.validate_ticker(ticker)
+        if amount <= 0 or amount > 1_000_000_000:
+            raise HTTPException(status_code=400, detail="Amount must be between 0 and 1 billion")
+        
+        from data import calculate_whatif
+        result = calculate_whatif(ticker, date, amount)
+        
+        if not result.get("valid", False):
+            raise HTTPException(status_code=400, detail=result.get("error", "Calculation failed"))
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
