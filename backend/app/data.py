@@ -236,41 +236,41 @@ def get_stock_info(ticker: str) -> dict:
     Fetch detailed stock information including Market Cap, P/E, 52-wk High/Low, Dividends.
     Designed to be robust: failures in one section (e.g. metadata) won't prevent others (e.g. returns) from loading.
     """
-    try:
-        # Initialize result with safe defaults
-        result = {
-            "marketCap": None,
-            "trailingPE": None,
-            "forwardPE": None,
-            "fiftyTwoWeekHigh": None,
-            "fiftyTwoWeekLow": None,
-            "dividendRate": None,
-            "dividendYield": None,
-            "beta": None,
-            "priceToBook": None,
-            "description": None,
-            "sector": None,
-            "industry": None,
-            "fullTimeEmployees": None,
-            "city": None,
-            "state": None,
-            "country": None,
-            "website": None,
-            "recommendationMean": None,
-            "recommendationKey": None,
-            "numberOfAnalystOpinions": None,
-            "earningsHistory": [],
-            "returns": {
-                "ytd": None,
-                "1y": None,
-                "3y": None,
-                "5y": None
-            },
-            "returns_error": None,
-            "returns_debug": None,
-            "_debug_version": "v3_robust_with_toplevel_catch"
-        }
+    # Initialize result with safe defaults
+    result = {
+        "marketCap": None,
+        "trailingPE": None,
+        "forwardPE": None,
+        "fiftyTwoWeekHigh": None,
+        "fiftyTwoWeekLow": None,
+        "dividendRate": None,
+        "dividendYield": None,
+        "beta": None,
+        "priceToBook": None,
+        "description": None,
+        "sector": None,
+        "industry": None,
+        "fullTimeEmployees": None,
+        "city": None,
+        "state": None,
+        "country": None,
+        "website": None,
+        "recommendationMean": None,
+        "recommendationKey": None,
+        "numberOfAnalystOpinions": None,
+        "earningsHistory": [],
+        "returns": {
+            "ytd": None,
+            "1y": None,
+            "3y": None,
+            "5y": None
+        },
+        "returns_error": None,
+        "returns_debug": None,
+        "_debug_version": "v4_legacy_logic_restored"
+    }
 
+    try:
         stock = yf.Ticker(ticker)
 
         # 1. Fetch Metadata (Info)
@@ -301,158 +301,111 @@ def get_stock_info(ticker: str) -> dict:
                 })
         except Exception as e:
             print(f"Error fetching stock info metadata for {ticker}: {e}")
-            # Continue execution - do not return early
 
         # 2. Fetch Earnings History
         try:
-            # yfinance earnings history
-            earnings_hist = stock.earnings_dates
+            earnings_dates = stock.earnings_dates
             financials = stock.quarterly_financials
             
-            if earnings_hist is not None and not earnings_hist.empty:
-                # Sort by date descending (newest first)
-                earnings_hist = earnings_hist.sort_index(ascending=False)
+            history = []
+            
+            if earnings_dates is not None and not earnings_dates.empty:
+                earnings_dates = earnings_dates.sort_index(ascending=False)
+                recent_earnings = earnings_dates.head(8)
                 
-                # Filter for recent past and near future
-                today = pd.Timestamp.now().normalize()
-                # past_1_year = today - pd.DateOffset(months=12)
-                
-                history = []
-                
-                # Take top 8 entries to find relevant ones
-                # We want the last 4 reported quarters
-                count = 0
-                for date, row in earnings_hist.iterrows():
-                    # Skip if date is generic or NaN
-                    if pd.isna(date):
+                for date, row in recent_earnings.iterrows():
+                    if pd.isna(row.get("Reported EPS")):
                         continue
                         
-                    # We only want reported earnings (past)
-                    if date < today:
-                        # Convert date to standard format
-                        year = date.year
-                        month = date.month
+                    month = date.month
+                    year = date.year
+                    
+                    fy_year = year
+                    if month in [1, 2, 3]:
+                        q_num = 4
+                        fy_year = year - 1
+                    elif month in [4, 5, 6]:
+                        q_num = 1
+                    elif month in [7, 8, 9]:
+                        q_num = 2
+                    elif month in [10, 11, 12]:
+                        q_num = 3
                         
-                        fy_year = year
-                        if month in [1, 2, 3]:
-                            q_num = 4
-                            fy_year = year - 1
-                        elif month in [4, 5, 6]:
-                            q_num = 1
-                        elif month in [7, 8, 9]:
-                            q_num = 2
-                        elif month in [10, 11, 12]:
-                            q_num = 3
-                            
-                        quarter_label = f"Q{q_num} FY{str(fy_year)[2:]}"
+                    quarter_label = f"Q{q_num} FY{str(fy_year)[2:]}"
+                    
+                    entry = {
+                        "quarter": quarter_label,
+                        "date": date.strftime("%Y-%m-%d"),
+                        "epsEstimate": row.get("EPS Estimate"),
+                        "epsReported": row.get("Reported EPS"),
+                        "revenue": None,
+                        "earnings": None
+                    }
+                    
+                    if financials is not None and not financials.empty:
+                        # Ensure columns are timezone-naive
+                        cols = pd.to_datetime(financials.columns)
+                        if hasattr(cols, 'tz_localize'):
+                            try: cols = cols.tz_localize(None)
+                            except: pass
                         
-                        entry = {
-                            "quarter": quarter_label,
-                            "date": date.strftime("%Y-%m-%d"),
-                            "epsEstimate": row.get("EPS Estimate"),
-                            "epsReported": row.get("Reported EPS"),
-                            "revenue": None,
-                            "earnings": None
-                        }
+                        # Handle DataFrame columns safely
+                        cols_list = []
+                        for c in cols:
+                            try:
+                                if hasattr(c, 'replace'): cols_list.append(c.replace(tzinfo=None))
+                                else: cols_list.append(c)
+                            except: cols_list.append(c)
+                            
+                        date_naive = date.replace(tzinfo=None)
+                        potential_dates = [d for d in cols_list if d < date_naive]
                         
-                        # Try to match with financials (Revenue/Net Income)
-                        if financials is not None and not financials.empty:
-                            # Financials columns are dates (quarter end)
-                            # Earnings report date is usually 1-3 months AFTER quarter end
-                            # So we look for a financial date that is BEFORE the report date
-                            
-                            # Ensure columns are DatetimeIndex and timezone-naive
-                            cols = pd.to_datetime(financials.columns)
-                            if hasattr(cols, 'tz_localize'):
-                                # If it's a DatetimeIndex
-                                try:
-                                    cols = cols.tz_localize(None)
-                                except: pass
-                            
-                            # Also handle if it's already a list/series
-                            cols_list = []
-                            for c in cols:
-                                try:
-                                    if hasattr(c, 'tz_localize'):
-                                        cols_list.append(c.tz_localize(None))
-                                    elif hasattr(c, 'replace'):
-                                        cols_list.append(c.replace(tzinfo=None))
-                                    else:
-                                        cols_list.append(c)
-                                except: cols_list.append(c)
-                            
-                            date_naive = date.replace(tzinfo=None)
-                            
-                            potential_dates = [d for d in cols_list if d < date_naive]
-                            
-                            if potential_dates:
-                                closest_date = max(potential_dates)
-                                # Check if it's within reasonable range (e.g. < 4 months)
-                                if (date_naive - closest_date).days < 120:
-                                    # Find matching column in original financials
-                                    # We need to find the index in cols_list
-                                    col_idx = cols_list.index(closest_date)
-                                    orig_col = financials.columns[col_idx]
-                                    
-                                    if "Total Revenue" in financials.index:
-                                        entry["revenue"] = financials.loc["Total Revenue", orig_col]
-                                    if "Net Income" in financials.index:
-                                        entry["earnings"] = financials.loc["Net Income", orig_col]
-                        
-                        history.append(entry)
-                        
-                        if len(history) >= 4:
-                            break
-                
-                # Reverse to chronological order for charts (Oldest -> Newest)
-                result["earningsHistory"] = history[::-1]
+                        if potential_dates:
+                            closest_date = max(potential_dates)
+                            if (date_naive - closest_date).days < 120:
+                                col_idx = cols_list.index(closest_date)
+                                orig_col = financials.columns[col_idx]
+                                
+                                if "Total Revenue" in financials.index:
+                                    entry["revenue"] = financials.loc["Total Revenue", orig_col]
+                                if "Net Income" in financials.index:
+                                    entry["earnings"] = financials.loc["Net Income", orig_col]
+                    
+                    history.append(entry)
+                    if len(history) >= 4:
+                        break
+            
+            result["earningsHistory"] = history[::-1]
+            
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
 
-        # 3. Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
+        # 3. Fetch Returns Comparison (Legacy Logic Restored with Safety)
         try:
-            # Fetch 5y history for both
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
+            start_date = end_date - timedelta(days=5*365 + 20)
             
-            # Download close prices
-            tickers_list = [ticker, "SPY"]
-            raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
+            # Use User's preferred Benchmark
+            benchmark = "^GSPC"
+            tickers_list = [ticker, benchmark]
             
-            # Debug: Log what we received
-            print(f"[DEBUG] raw_data type: {type(raw_data)}, shape: {raw_data.shape if hasattr(raw_data, 'shape') else 'N/A'}")
+            # Fetch data - simplified as per user request
+            raw = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
             
-            # Extract price data - handle MultiIndex columns from yfinance
+            # Extract Adjusted Close safely
             data = pd.DataFrame()
-            if hasattr(raw_data, 'columns'):
-                if isinstance(raw_data.columns, pd.MultiIndex):
-                    # yfinance returns MultiIndex like ('Close', 'AAPL'), ('Close', 'SPY')
-                    # Check first level for 'Close' or 'Adj Close'
-                    level_0 = raw_data.columns.get_level_values(0)
-                    if 'Close' in level_0:
-                        data = raw_data['Close']
-                    elif 'Adj Close' in level_0:
-                        data = raw_data['Adj Close']
-                else:
-                    # Simple columns (single ticker or older yfinance)
-                    if 'Adj Close' in raw_data.columns:
-                        data = raw_data['Adj Close']
-                    elif 'Close' in raw_data.columns:
-                        data = raw_data['Close']
+            if 'Adj Close' in raw.columns:
+                data = raw['Adj Close']
+            elif 'Close' in raw.columns:
+                data = raw['Close']
             
-            # Initialize returns debug info
+            # Save debug info
             result["returns_debug"] = {
-                "raw_type": str(type(raw_data)),
-                "raw_shape": str(raw_data.shape) if hasattr(raw_data, 'shape') else "N/A",
-                "data_empty": data.empty if hasattr(data, 'empty') else True,
-                "data_columns": data.columns.tolist() if hasattr(data, 'columns') and not data.empty else []
+                "raw_shape": str(raw.shape) if hasattr(raw, 'shape') else "N/A",
+                "columns": str(raw.columns) if hasattr(raw, 'columns') else "N/A"
             }
             
-            if data.empty:
-                result["returns_error"] = "No data returned from yfinance"
-            elif not isinstance(data, pd.DataFrame):
-                result["returns_error"] = f"Unexpected data type: {type(data)}"
-            else:
+            if not data.empty and isinstance(data, pd.DataFrame):
                 # Calculate returns
                 def get_return(period_days=None, is_ytd=False):
                     try:
@@ -461,37 +414,34 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Get price at end (latest)
+                        # Latest price
                         latest_prices = data.iloc[-1]
                         
-                        # Find index closest to start date
+                        # Start price
                         idx = data.index.get_indexer([start], method='nearest')[0]
                         start_prices = data.iloc[idx]
                         found_date = data.index[idx]
                         
-                        # Tolerance: 10 days
                         if abs((found_date - start).days) > 10:
                             return None
                         
                         t_ret = None
                         s_ret = None
-
-                        if ticker in data.columns:
-                            try:
-                                t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
-                            except: pass
                         
-                        if "SPY" in data.columns:
-                            try:
-                                s_ret = ((latest_prices["SPY"] - start_prices["SPY"]) / start_prices["SPY"]) * 100
-                            except: pass
+                        # Handle ticker return
+                        if ticker in data.columns:
+                            t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
+                        
+                        # Handle Benchmark return (^GSPC)
+                        if benchmark in data.columns:
+                            s_ret = ((latest_prices[benchmark] - start_prices[benchmark]) / start_prices[benchmark]) * 100
                         
                         return {
                             "ticker": float(t_ret) if t_ret is not None and not pd.isna(t_ret) else None,
                             "spy": float(s_ret) if s_ret is not None and not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
-                        print(f"[DEBUG] get_return error: {ex}")
+                        # print(f"Calc error: {ex}") 
                         return None
 
                 result["returns"] = {
@@ -500,17 +450,21 @@ def get_stock_info(ticker: str) -> dict:
                     "3y": get_return(365*3),
                     "5y": get_return(365*5)
                 }
+            else:
+                 result["returns_error"] = "Data empty or invalid format"
+
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
             result["returns_error"] = str(e)
 
         return result
+
     except Exception as e:
          print(f"CRITICAL ERROR in get_stock_info: {e}")
          return {
              "returns_error": f"CRITICAL BACKEND ERROR: {str(e)}",
              "returns": {"ytd": None, "1y": None, "3y": None, "5y": None},
-             "_debug_version": "v3_robust_with_toplevel_catch_ERROR"
+             "_debug_version": "v4_legacy_logic_restored_ERROR"
          }
 
 def get_analyst_ratings(ticker: str) -> dict:
