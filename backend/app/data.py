@@ -442,3 +442,41 @@ def get_stock_info(ticker: str) -> dict:
     except Exception as e:
         print(f"Error fetching stock info for {ticker}: {e}")
         return {}
+
+def get_analyst_ratings(ticker: str) -> dict:
+    """
+    Fetch analyst recommendations and price targets from yfinance.
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # Price Targets
+        targets = {
+            "current": info.get("currentPrice"),
+            "low": info.get("targetLowPrice"),
+            "high": info.get("targetHighPrice"),
+            "mean": info.get("targetMeanPrice"),
+            "median": info.get("targetMedianPrice"),
+            "numberOfAnalysts": info.get("numberOfAnalystOpinions")
+        }
+        
+        # Recommendations
+        # recs = stock.recommendations 
+        # Note: yfinance .recommendations returns a DataFrame history. 
+        # We prefer 'recommendationKey' from info for simple consensus 
+        # or 'recommendationsSummary' if available (often broken in yf).
+        # Best bet for robust simple view is info fields + recommendationMean.
+        
+        recommendation = {
+            "consensus": info.get("recommendationKey"), # e.g 'buy', 'hold'
+            "mean": info.get("recommendationMean"), # 1.0 is Strong Buy, 5.0 is Sell
+        }
+        
+        return {
+            "priceTargets": targets,
+            "recommendation": recommendation
+        }
+    except Exception as e:
+        print(f"Error fetching analyst ratings for {ticker}: {e}")
+        return {}

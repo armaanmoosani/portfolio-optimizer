@@ -287,6 +287,17 @@ async def stress_test(request: Request, stress_request: StressTestRequest):
         print(f"Stress test error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/analyst_ratings")
+@limiter.limit(RATE_LIMITS["data_fetch"])
+def get_analyst_ratings_endpoint(request: Request, ticker: str):
+    try:
+        InputValidator.validate_ticker(ticker)
+        from data import get_analyst_ratings
+        data = get_analyst_ratings(ticker)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

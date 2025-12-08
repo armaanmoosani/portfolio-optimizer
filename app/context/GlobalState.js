@@ -21,7 +21,8 @@ export function GlobalStateProvider({ children }) {
         chartData: [],
         timeRange: '1D',
         timestamp: 0,
-        stockInfo: null
+        stockInfo: null,
+        analystRatings: null
     });
 
     // Load Portfolio Data from LocalStorage on Mount

@@ -7,7 +7,9 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
+import AnimatedPrice from "./AnimatedPrice";
 import FadeInSection from "./FadeInSection";
+import AnalystRatings from "./AnalystRatings";
 
 // Map frontend time ranges to yfinance params
 const TIME_RANGES = {
@@ -41,6 +43,7 @@ export default function StockViewer() {
     const [comparableData, setComparableData] = useState({});
     const [activeComparables, setActiveComparables] = useState([]);
     const [loadingComparables, setLoadingComparables] = useState(false);
+    const [loadingAnalystRatings, setLoadingAnalystRatings] = useState(false);
 
     // Client-side only rendering for Chart to avoid SSR issues
     const [isMounted, setIsMounted] = useState(false);
@@ -415,6 +418,22 @@ ${aggregatedNews.slice(0, 15000)}
                 }
 
                 updateStockState({ aiSummary: newAiSummary });
+            })();
+
+            // PHASE 4: Fetch Analyst Ratings (ASYNC/Non-blocking)
+            (async () => {
+                setLoadingAnalystRatings(true);
+                try {
+                    const res = await fetch(`/api/analyst_ratings?ticker=${searchTicker}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        updateStockState({ analystRatings: data });
+                    }
+                } catch (err) {
+                    console.error("Analyst ratings fetch error:", err);
+                } finally {
+                    setLoadingAnalystRatings(false);
+                }
             })();
 
             // PHASE 3: Fetch Competitors (Also ASYNC/Non-blocking)
@@ -1553,9 +1572,21 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     ))}
                                 </ul>
                             </div>
+
+                            {/* Analyst Ratings (Mobile/Right Col placement or generally here?) */}
+                            {/* Actually I'll place it in the Main Column below Stats for better width? */}
+                            {/* No, let's put it in the Main Column (Left, col-span-2) at the bottom */}
                         </div>
                     </FadeInSection >
-                </div >
+
+                    {/* Analyst Ratings Section - Full Width */}
+                    <FadeInSection>
+                        <AnalystRatings
+                            data={stockViewerState.analystRatings}
+                            loading={loadingAnalystRatings}
+                        />
+                    </FadeInSection>
+                </div>
             )
             }
         </div >
