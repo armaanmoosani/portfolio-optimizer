@@ -1490,7 +1490,17 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 <FadeInSection delay={200}>
                                     <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
                                         <div className="flex justify-between items-center mb-8">
-                                            <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
+                                            <div className="flex items-center gap-4">
+                                                <h3 className="text-xl font-bold text-white">Earnings Trends: {stockData.symbol}</h3>
+                                                {stockInfo?.nextEarningsDate && (
+                                                    <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+                                                        <span className="text-amber-400 text-xs font-semibold">Next Earnings:</span>
+                                                        <span className="text-white text-xs font-bold">
+                                                            {new Date(stockInfo.nextEarningsDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

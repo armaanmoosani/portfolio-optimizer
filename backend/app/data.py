@@ -342,8 +342,21 @@ def get_stock_info(ticker: str) -> dict:
                     if len(history) >= 4:
                         break
             
+            
             # Reverse to chronological order for charts (Oldest -> Newest)
             result["earningsHistory"] = history[::-1]
+            
+            # Extract next upcoming earnings date (where Reported EPS is NaN)
+            next_earnings_date = None
+            if earnings_dates is not None and not earnings_dates.empty:
+                from datetime import datetime
+                now = datetime.now()
+                for date, row in earnings_dates.sort_index(ascending=True).iterrows():
+                    # Future date with no reported EPS = upcoming earnings
+                    if pd.isna(row.get("Reported EPS")) and date.replace(tzinfo=None) > now:
+                        next_earnings_date = date.strftime("%Y-%m-%d")
+                        break
+            result["nextEarningsDate"] = next_earnings_date
             
             # Keep the "earnings" field for backward compatibility (most recent)
             if history:
