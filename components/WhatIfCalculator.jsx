@@ -4,8 +4,8 @@ import { useState, useMemo } from 'react';
 import { Calculator, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, Percent, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Quick preset options
-const PRESETS = [
+// Quick preset options (all available - will be filtered based on IPO)
+const ALL_PRESETS = [
     { label: '1M', months: 1 },
     { label: '6M', months: 6 },
     { label: '1Y', months: 12 },
@@ -14,7 +14,7 @@ const PRESETS = [
     { label: '10Y', months: 120 },
 ];
 
-export default function WhatIfCalculator({ ticker, currentPrice }) {
+export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [amount, setAmount] = useState(1000);
     const [selectedPreset, setSelectedPreset] = useState('1Y');
@@ -31,12 +31,31 @@ export default function WhatIfCalculator({ ticker, currentPrice }) {
         return date.toISOString().split('T')[0];
     };
 
+    // Filter presets based on IPO date - only show periods the stock has existed for
+    const availablePresets = useMemo(() => {
+        if (!ipoDate) return ALL_PRESETS;
+
+        const ipo = new Date(ipoDate);
+        const now = new Date();
+        const monthsSinceIPO = (now.getFullYear() - ipo.getFullYear()) * 12 + (now.getMonth() - ipo.getMonth());
+
+        return ALL_PRESETS.filter(preset => preset.months <= monthsSinceIPO);
+    }, [ipoDate]);
+
+    // If selected preset is no longer available, reset to the longest available one
+    useMemo(() => {
+        if (!useCustomDate && selectedPreset && !availablePresets.find(p => p.label === selectedPreset)) {
+            const longest = availablePresets[availablePresets.length - 1];
+            if (longest) setSelectedPreset(longest.label);
+        }
+    }, [availablePresets, selectedPreset, useCustomDate]);
+
     // Get the active date
     const activeDate = useMemo(() => {
         if (useCustomDate && customDate) {
             return customDate;
         }
-        const preset = PRESETS.find(p => p.label === selectedPreset);
+        const preset = ALL_PRESETS.find(p => p.label === selectedPreset);
         return preset ? getDateFromPreset(preset.months) : getDateFromPreset(12);
     }, [useCustomDate, customDate, selectedPreset]);
 
@@ -170,13 +189,13 @@ export default function WhatIfCalculator({ ticker, currentPrice }) {
                                 <div className="mt-4">
                                     <label className="text-xs font-semibold text-slate-400 mb-2 block">Quick Select</label>
                                     <div className="flex flex-wrap gap-2">
-                                        {PRESETS.map((preset) => (
+                                        {availablePresets.map((preset) => (
                                             <button
                                                 key={preset.label}
                                                 onClick={() => handlePresetClick(preset)}
                                                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${selectedPreset === preset.label && !useCustomDate
-                                                        ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25'
-                                                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white border border-white/5'
+                                                    ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25'
+                                                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white border border-white/5'
                                                     }`}
                                             >
                                                 {preset.label}

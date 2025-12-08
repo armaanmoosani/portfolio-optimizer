@@ -259,8 +259,18 @@ def get_stock_info(ticker: str) -> dict:
             "volume": info.get("regularMarketVolume") or info.get("volume"),
             "averageVolume": info.get("averageVolume"),
             "beta": info.get("beta"),
-            "earnings": None
+            "earnings": None,
+            "ipoDate": None  # Will be set below
         }
+        
+        # Get IPO / first trade date
+        try:
+            first_trade_epoch = info.get("firstTradeDateEpochUtc")
+            if first_trade_epoch:
+                from datetime import datetime
+                result["ipoDate"] = datetime.utcfromtimestamp(first_trade_epoch).strftime("%Y-%m-%d")
+        except Exception:
+            pass  # Leave as None if we can't get it
 
         # Fetch Earnings Data
         try:

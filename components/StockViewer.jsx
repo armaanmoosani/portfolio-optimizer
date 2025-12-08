@@ -1713,6 +1713,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             <WhatIfCalculator
                                 ticker={stockData.symbol}
                                 currentPrice={stockData.price}
+                                ipoDate={stockInfo?.ipoDate}
                             />
                         </FadeInSection>
                     )}
