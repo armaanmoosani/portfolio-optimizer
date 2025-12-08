@@ -376,7 +376,7 @@ def get_stock_info(ticker: str) -> dict:
             start_date = end_date - timedelta(days=5*365 + 20) # Buffer
             
             # Download adjusted close prices
-            tickers_list = [ticker, "^GSPC"]
+            tickers_list = [ticker, "SPY"]
             raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
             
             if 'Adj Close' in raw_data.columns:
@@ -433,9 +433,9 @@ def get_stock_info(ticker: str) -> dict:
                                 t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
                             except: pass
                         
-                        if "^GSPC" in data.columns:
+                        if "SPY" in data.columns:
                             try:
-                                s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
+                                s_ret = ((latest_prices["SPY"] - start_prices["SPY"]) / start_prices["SPY"]) * 100
                             except: pass
                         
                         return {
