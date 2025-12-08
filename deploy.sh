@@ -9,6 +9,9 @@ git pull
 echo "Stopping existing containers..."
 sudo docker stop portfolio-backend 2>/dev/null || true
 sudo docker rm portfolio-backend 2>/dev/null || true
+# Also stop 'backend' if it exists (legacy)
+sudo docker stop backend 2>/dev/null || true
+sudo docker rm backend 2>/dev/null || true
 
 echo "Building Docker image (with memory limits for e2-micro)..."
 sudo docker build \
@@ -20,8 +23,10 @@ sudo docker build \
   .
 
 echo "🚀 Starting container..."
+# Map BOTH ports to the same container to ensure coverage
 sudo docker run -d \
   -p 10000:10000 \
+  -p 8000:10000 \
   --memory=512m \
   --memory-swap=1g \
   --restart=unless-stopped \
@@ -36,6 +41,5 @@ sudo docker ps | grep portfolio-backend
 echo ""
 echo "View logs with: sudo docker logs -f portfolio-backend"
 echo "API docs: http://$(curl -s ifconfig.me):10000/api/docs"
-docker run -d -p 8000:10000 --restart always --name backend portfolio-backend
 
-echo "Deployment complete! Server is running."
+echo "Deployment complete! Server is running on ports 8000 and 10000."
