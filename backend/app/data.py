@@ -429,8 +429,8 @@ def get_stock_info(ticker: str) -> dict:
                         s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
                         return {
-                            "ticker": t_ret if not pd.isna(t_ret) else None,
-                            "spy": s_ret if not pd.isna(s_ret) else None
+                            "ticker": float(t_ret) if not pd.isna(t_ret) else None,
+                            "spy": float(s_ret) if not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
                         return None
