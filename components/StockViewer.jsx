@@ -7,7 +7,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
 import AnimatedPrice from "./AnimatedPrice";
-import AnimatedPrice from "./AnimatedPrice";
 import FadeInSection from "./FadeInSection";
 import AnalystRatings from "./AnalystRatings";
 
