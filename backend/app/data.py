@@ -443,6 +443,7 @@ def get_stock_info(ticker: str) -> dict:
                 }
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
+            result["returns_error"] = str(e)
             result["debug_returns_error"] = str(e)
 
         return result

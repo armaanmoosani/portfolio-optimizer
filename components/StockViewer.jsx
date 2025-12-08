@@ -1349,7 +1349,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <details className="text-[10px] text-amber-500/50 font-mono">
                                                 <summary className="cursor-pointer hover:text-amber-400">Debug Data</summary>
                                                 <pre className="mt-2 whitespace-pre-wrap">
-                                                    {returns ? JSON.stringify(returns, null, 2) : "returns is null/undefined"}
+                                                    {returns ? JSON.stringify(returns, null, 2) : (stockInfo?.returns_error || "returns is null/undefined")}
                                                 </pre>
                                             </details>
                                         </div>
