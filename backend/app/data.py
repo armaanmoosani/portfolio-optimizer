@@ -375,26 +375,51 @@ def get_stock_info(ticker: str) -> dict:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=5*365 + 20) # Buffer
             
-            # Download adjusted close prices
+            # Download close prices
             tickers_list = [ticker, "SPY"]
             raw_data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)
             
-            if 'Adj Close' in raw_data.columns:
-                data = raw_data['Adj Close']
-            elif 'Close' in raw_data.columns:
-                data = raw_data['Close']
+            # Debug: Log what we received
+            print(f"[DEBUG] raw_data type: {type(raw_data)}, shape: {raw_data.shape if hasattr(raw_data, 'shape') else 'N/A'}")
+            print(f"[DEBUG] raw_data columns: {raw_data.columns.tolist() if hasattr(raw_data, 'columns') else 'N/A'}")
+            
+            # Extract price data
+            data = pd.DataFrame()
+            if hasattr(raw_data, 'columns'):
+                if 'Adj Close' in raw_data.columns:
+                    data = raw_data['Adj Close']
+                elif 'Close' in raw_data.columns:
+                    data = raw_data['Close']
+                # Handle multi-level columns from yfinance
+                elif isinstance(raw_data.columns, pd.MultiIndex):
+                    # Try to get Close or Adj Close from first level
+                    if ('Close', ticker) in raw_data.columns or ('Close', 'SPY') in raw_data.columns:
+                        data = raw_data['Close']
+                    elif ('Adj Close', ticker) in raw_data.columns:
+                        data = raw_data['Adj Close']
+            
+            print(f"[DEBUG] Processed data shape: {data.shape if hasattr(data, 'shape') else 'N/A'}")
+            print(f"[DEBUG] Processed data columns: {data.columns.tolist() if hasattr(data, 'columns') else 'N/A'}")
+            
+            # Initialize returns with debug info
+            result["returns"] = {
+                "ytd": None,
+                "1y": None,
+                "3y": None,
+                "5y": None
+            }
+            result["returns_debug"] = {
+                "raw_type": str(type(raw_data)),
+                "raw_shape": str(raw_data.shape) if hasattr(raw_data, 'shape') else "N/A",
+                "data_empty": data.empty if hasattr(data, 'empty') else True,
+                "data_columns": data.columns.tolist() if hasattr(data, 'columns') and not data.empty else []
+            }
+            
+            if data.empty:
+                result["returns_error"] = "No data returned from yfinance"
+            elif not isinstance(data, pd.DataFrame):
+                result["returns_error"] = f"Unexpected data type: {type(data)}"
             else:
-                data = pd.DataFrame()
-            
-            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
-            # But yfinance can be tricky.
-            
-            if not data.empty and isinstance(data, pd.DataFrame):
-                # Ensure we have both columns
-                if ticker not in data.columns:
-                    # Maybe it's under the symbol name?
-                    pass 
-                
                 # Calculate returns
                 def get_return(period_days=None, is_ytd=False):
                     try:
@@ -403,28 +428,18 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Find closest available date on or before start
-                        # We slice data to be up to 'start'
-                        # Actually, we want the price at 'start'. 
-                        # So we find the index closest to 'start'
-                        
                         # Get price at end (latest)
                         latest_prices = data.iloc[-1]
                         
-                        # Get price at start
                         # Find index closest to start date
                         idx = data.index.get_indexer([start], method='nearest')[0]
                         start_prices = data.iloc[idx]
                         found_date = data.index[idx]
                         
-                        # Check if the found date is too far from the requested start date
-                        # This implies the stock wasn't public yet
                         # Tolerance: 10 days
                         if abs((found_date - start).days) > 10:
                             return None
                         
-                        # Calculate % change
-                        # Handle missing data (NaN)
                         t_ret = None
                         s_ret = None
 
@@ -443,9 +458,7 @@ def get_stock_info(ticker: str) -> dict:
                             "spy": float(s_ret) if s_ret is not None and not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
-                        # If we have at least partial calculations, return them? 
-                        # No, the outer try/catch handles the date logic. 
-                        # If we are here, we probably failed date lookup.
+                        print(f"[DEBUG] get_return error: {ex}")
                         return None
 
                 result["returns"] = {
@@ -456,8 +469,8 @@ def get_stock_info(ticker: str) -> dict:
                 }
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
+            result["returns"] = {"ytd": None, "1y": None, "3y": None, "5y": None}
             result["returns_error"] = str(e)
-            result["debug_returns_error"] = str(e)
 
         return result
     except Exception as e:
