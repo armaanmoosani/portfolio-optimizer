@@ -415,7 +415,7 @@ ${aggregatedNews.slice(0, 15000)}
                         console.error("AI summary failed:", aiErr);
                     }
                     updateStockState({ aiSummary: newAiSummary });
-                }) ();
+                })();
 
                 // PHASE 4: Fetch Analyst Ratings (ASYNC/Non-blocking)
                 (async () => {
