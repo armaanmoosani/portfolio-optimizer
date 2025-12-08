@@ -480,3 +480,37 @@ def get_analyst_ratings(ticker: str) -> dict:
     except Exception as e:
         print(f"Error fetching analyst ratings for {ticker}: {e}")
         return {}
+
+def get_latest_price(ticker: str) -> dict:
+    """
+    Fetch the latest price, change, and percent change.
+    Optimized for speed/lightweight response.
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        
+        # Method 1: fast_info (preferred for realtime)
+        # fast_info usually has 'last_price', 'previous_close'
+        fi = stock.fast_info
+        
+        current_price = fi.last_price
+        prev_close = fi.previous_close
+        
+        # Calculation
+        change = current_price - prev_close
+        percent = (change / prev_close) * 100
+        
+        # Timestamp (UTC)
+        # fast_info doesn't always provide timestamp, so we might need fallbacks
+        # But usually good enough for "Right Now"
+        
+        return {
+            "symbol": ticker.upper(),
+            "price": current_price,
+            "change": change,
+            "percent": percent,
+            "timestamp": int(datetime.utcnow().timestamp() * 1000) 
+        }
+    except Exception as e:
+        print(f"Error fetching quote for {ticker}: {e}")
+        return {}

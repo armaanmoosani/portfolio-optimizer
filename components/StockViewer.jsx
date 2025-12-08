@@ -598,18 +598,71 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     // Calculate split offset for the VISIBLE chart data
     const visibleSplitOffset = useMemo(() => {
         if (!afterHoursData || !preMarketData || timeRange !== '1D') return 0;
+        return preMarketData.splitOffset; // Or logic to handle multiple splits if needed
+    }, [afterHoursData, preMarketData, timeRange]);
 
-        // If we are hiding pre-market, the new "start" is the original openIndex.
-        // The "close" index (start of after-hours) is afterHoursData.closeIndex.
-        // We need the relative position of the close index in the NEW sliced array.
+    // Live Price Updates Polling
+    useEffect(() => {
+        if (timeRange !== '1D' || !stockData?.symbol || loading) return;
 
-        const slicedLength = chartData.length - preMarketData.openIndex;
-        const relativeCloseIndex = afterHoursData.closeIndex - preMarketData.openIndex;
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/quote?ticker=${stockData.symbol}`);
+                if (!res.ok) return;
 
-        if (slicedLength <= 1) return 1;
+                const quote = await res.json();
 
-        return relativeCloseIndex / (slicedLength - 1);
-    }, [afterHoursData, preMarketData, chartData.length, timeRange]);
+                // 1. Update Header Price (Stock Data)
+                const newStockData = {
+                    ...stockData,
+                    price: quote.price,
+                    change: quote.change,
+                    changesPercentage: quote.percent,
+                    timestamp: quote.timestamp
+                };
+
+                // 2. Update Chart Data
+                let newChartData = [...chartData];
+                if (newChartData.length > 0) {
+                    const lastPoint = newChartData[newChartData.length - 1];
+                    const quoteTime = new Date(quote.timestamp).getTime(); // Ensure millisecond timestamp
+                    const lastTime = new Date(lastPoint.date).getTime();
+
+                    // If new point is significantly newer (> 1 min approx, or just different if 1m candles)
+                    // For simplicity in this demo, we'll append if > 60s, else update last
+                    const isNewCandle = (quoteTime - lastTime) >= 60000; // 1 minute
+
+                    if (isNewCandle) {
+                        newChartData.push({
+                            date: new Date(quote.timestamp).toISOString(),
+                            price: quote.price,
+                            isRegularMarket: true // Assume live updates are regular market for now
+                        });
+                    } else {
+                        // Update last candle close
+                        newChartData[newChartData.length - 1] = {
+                            ...lastPoint,
+                            price: quote.price
+                        };
+                    }
+                }
+
+                // Batch update to avoid flickering
+                updateStockState({
+                    stockData: newStockData,
+                    chartData: newChartData
+                });
+
+            } catch (e) {
+                console.error("Live update failed", e);
+            }
+        }, 10000); // 10 seconds
+
+        return () => clearInterval(interval);
+    }, [stockData?.symbol, timeRange, loading, chartData]); // Dependencies matter for closure
+
+
+
 
     // Calculate Display Data (Dynamic based on Hover)
     const displayData = useMemo(() => {

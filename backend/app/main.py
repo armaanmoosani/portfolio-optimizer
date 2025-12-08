@@ -298,6 +298,19 @@ def get_analyst_ratings_endpoint(request: Request, ticker: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/quote")
+@limiter.limit(RATE_LIMITS["data_fetch"])
+def get_quote_endpoint(request: Request, ticker: str):
+    try:
+        InputValidator.validate_ticker(ticker)
+        from data import get_latest_price
+        data = get_latest_price(ticker)
+        if not data:
+             raise HTTPException(status_code=404, detail="Quote not available")
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
