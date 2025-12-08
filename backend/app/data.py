@@ -384,14 +384,17 @@ def get_stock_info(ticker: str) -> dict:
             elif 'Close' in raw_data.columns:
                 data = raw_data['Close']
             else:
-                print(f"[DEBUG] No Close/Adj Close columns found. Columns: {raw_data.columns}")
                 data = pd.DataFrame()
+            
+            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
+            # But yfinance can be tricky.
             
             if not data.empty and isinstance(data, pd.DataFrame):
                 # Ensure we have both columns
-                if ticker not in data.columns and ticker not in data.index.names: # Handle MultiIndex potential
-                     print(f"[DEBUG] Ticker {ticker} not found in columns: {data.columns}")
-
+                if ticker not in data.columns:
+                    # Maybe it's under the symbol name?
+                    pass 
+                
                 # Calculate returns
                 def get_return(period_days=None, is_ytd=False):
                     try:
@@ -401,6 +404,10 @@ def get_stock_info(ticker: str) -> dict:
                             start = end_date - timedelta(days=period_days)
                         
                         # Find closest available date on or before start
+                        # We slice data to be up to 'start'
+                        # Actually, we want the price at 'start'. 
+                        # So we find the index closest to 'start'
+                        
                         # Get price at end (latest)
                         latest_prices = data.iloc[-1]
                         
@@ -410,11 +417,14 @@ def get_stock_info(ticker: str) -> dict:
                         start_prices = data.iloc[idx]
                         found_date = data.index[idx]
                         
-                        # Check tolerance: 10 days
+                        # Check if the found date is too far from the requested start date
+                        # This implies the stock wasn't public yet
+                        # Tolerance: 10 days
                         if abs((found_date - start).days) > 10:
-                            print(f"[DEBUG] Date too far for {period_days or 'YTD'}. Wanted {start}, got {found_date}")
                             return None
                         
+                        # Calculate % change
+                        # Handle missing data (NaN)
                         t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
                         s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
@@ -423,7 +433,6 @@ def get_stock_info(ticker: str) -> dict:
                             "spy": float(s_ret) if not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
-                        print(f"[DEBUG] Error calc returns for {period_days}: {ex}")
                         return None
 
                 result["returns"] = {
@@ -432,8 +441,6 @@ def get_stock_info(ticker: str) -> dict:
                     "3y": get_return(365*3),
                     "5y": get_return(365*5)
                 }
-            else:
-                print(f"[DEBUG] Data empty for {ticker} + ^GSPC")
         except Exception as e:
             print(f"Error fetching returns comparison: {e}")
             result["debug_returns_error"] = str(e)
