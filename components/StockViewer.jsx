@@ -606,6 +606,17 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         if (timeRange !== '1D' || !stockData?.symbol || loading) return;
 
         const interval = setInterval(async () => {
+            // Check if US market is open (Mon-Fri, 9:30 AM - 4:00 PM ET)
+            const now = new Date();
+            const day = now.getDay();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            // Simple client-side check (same logic as isMarketOpen helper below)
+            const marketOpen = day >= 1 && day <= 5 &&
+                ((hour === 9 && minute >= 30) || (hour >= 10 && hour < 16));
+
+            if (!marketOpen) return;
+
             try {
                 const res = await fetch(`/api/quote?ticker=${stockData.symbol}`);
                 if (!res.ok) return;
@@ -625,21 +636,18 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                 let newChartData = [...chartData];
                 if (newChartData.length > 0) {
                     const lastPoint = newChartData[newChartData.length - 1];
-                    const quoteTime = new Date(quote.timestamp).getTime(); // Ensure millisecond timestamp
+                    const quoteTime = new Date(quote.timestamp).getTime();
                     const lastTime = new Date(lastPoint.date).getTime();
 
-                    // If new point is significantly newer (> 1 min approx, or just different if 1m candles)
-                    // For simplicity in this demo, we'll append if > 60s, else update last
                     const isNewCandle = (quoteTime - lastTime) >= 60000; // 1 minute
 
                     if (isNewCandle) {
                         newChartData.push({
                             date: new Date(quote.timestamp).toISOString(),
                             price: quote.price,
-                            isRegularMarket: true // Assume live updates are regular market for now
+                            isRegularMarket: true
                         });
                     } else {
-                        // Update last candle close
                         newChartData[newChartData.length - 1] = {
                             ...lastPoint,
                             price: quote.price
@@ -647,7 +655,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                     }
                 }
 
-                // Batch update to avoid flickering
                 updateStockState({
                     stockData: newStockData,
                     chartData: newChartData
@@ -659,7 +666,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         }, 10000); // 10 seconds
 
         return () => clearInterval(interval);
-    }, [stockData?.symbol, timeRange, loading, chartData]); // Dependencies matter for closure
+    }, [stockData?.symbol, timeRange, loading, chartData]);
 
 
 
