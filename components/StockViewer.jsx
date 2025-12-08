@@ -1333,19 +1333,33 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
 
                             {/* Performance Comparison Cards */}
-                            {stockInfo?.returns && (
-                                <FadeInSection delay={100}>
+                            {(() => {
+                                const returns = stockInfo?.returns;
+                                const hasData = returns && (returns.ytd || returns['1y'] || returns['3y'] || returns['5y']);
+
+                                if (!hasData) {
+                                    return (
+                                        <div className="mb-8 p-4 bg-amber-900/20 border border-amber-500/30 rounded-xl">
+                                            <p className="text-amber-200 text-sm font-bold flex items-center gap-2">
+                                                ⚠️ Performance Data Unavailable
+                                            </p>
+                                            <p className="text-amber-400/80 text-xs mt-1">
+                                                Could not fetch S&P 500 comparison data. Try clearing cache or searching another ticker.
+                                            </p>
+                                        </div>
+                                    );
+                                }
+
+                                return (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                                         {['ytd', '1y', '3y', '5y'].map((period) => {
-                                            const data = stockInfo.returns[period];
+                                            const data = returns[period];
                                             if (!data) return null;
 
                                             const labels = { ytd: 'YTD Return', '1y': '1-Year Return', '3y': '3-Year Return', '5y': '5-Year Return' };
-                                            const label = labels[period];
-
                                             return (
                                                 <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
-                                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
+                                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{labels[period]}</p>
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm font-bold text-white">{stockData.symbol}</span>
@@ -1364,8 +1378,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             );
                                         })}
                                     </div>
-                                </FadeInSection>
-                            )}
+                                );
+                            })()}
 
                             {/* Earnings Trends Section */}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
