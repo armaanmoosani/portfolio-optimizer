@@ -1343,9 +1343,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <p className="text-amber-200 text-sm font-bold flex items-center gap-2">
                                                 ⚠️ Performance Data Unavailable
                                             </p>
-                                            <p className="text-amber-400/80 text-xs mt-1">
-                                                Could not fetch S&P 500 comparison data. Try clearing cache or searching another ticker.
+                                            <p className="text-amber-400/80 text-xs mt-1 mb-2">
+                                                Could not fetch S&P 500 comparison data.
                                             </p>
+                                            <details className="text-[10px] text-amber-500/50 font-mono">
+                                                <summary className="cursor-pointer hover:text-amber-400">Debug Data</summary>
+                                                <pre className="mt-2 whitespace-pre-wrap">
+                                                    {returns ? JSON.stringify(returns, null, 2) : "returns is null/undefined"}
+                                                </pre>
+                                            </details>
                                         </div>
                                     );
                                 }
