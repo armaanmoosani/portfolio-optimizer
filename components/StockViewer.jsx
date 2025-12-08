@@ -1335,7 +1335,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             {/* Performance Comparison Cards */}
                             {(() => {
                                 const returns = stockInfo?.returns;
-                                const hasData = returns && (returns.ytd || returns['1y'] || returns['3y'] || returns['5y']);
+                                // Check if we have ANY ticker data across the main periods
+                                const hasData = returns && (
+                                    returns.ytd?.ticker != null ||
+                                    returns['1y']?.ticker != null ||
+                                    returns['3y']?.ticker != null ||
+                                    returns['5y']?.ticker != null
+                                );
 
                                 if (!hasData) {
                                     return (
@@ -1344,7 +1350,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 ⚠️ Performance Data Unavailable
                                             </p>
                                             <p className="text-amber-400/80 text-xs mt-1 mb-2">
-                                                Could not fetch S&P 500 comparison data.
+                                                Could not fetch performance data.
                                             </p>
                                             <details className="text-[10px] text-amber-500/50 font-mono">
                                                 <summary className="cursor-pointer hover:text-amber-400">Debug Data</summary>
@@ -1367,18 +1373,32 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
                                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{labels[period]}</p>
                                                     <div className="space-y-2">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm font-bold text-white">{stockData.symbol}</span>
-                                                            <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-xs font-medium text-slate-500">S&P 500</span>
-                                                            <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
-                                                            </span>
-                                                        </div>
+                                                        {/* Stock Ticker Return */}
+                                                        {data.ticker != null && (
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-sm font-bold text-white">{stockData.symbol}</span>
+                                                                <span className={`text-sm font-bold ${data.ticker >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                    {data.ticker >= 0 ? '+' : ''}{data.ticker?.toFixed(2)}%
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* S&P 500 Return (Conditional) */}
+                                                        {data.spy != null && (
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-xs font-medium text-slate-500">S&P 500</span>
+                                                                <span className={`text-xs font-medium ${data.spy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                    {data.spy >= 0 ? '+' : ''}{data.spy?.toFixed(2)}%
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Fallback if S&P missing: Label why */}
+                                                        {data.spy == null && (
+                                                            <div className="mt-2 pt-2 border-t border-white/5">
+                                                                <span className="text-[10px] text-slate-600 italic">S&P Data Unavailable</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );

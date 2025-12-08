@@ -425,14 +425,27 @@ def get_stock_info(ticker: str) -> dict:
                         
                         # Calculate % change
                         # Handle missing data (NaN)
-                        t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
-                        s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
+                        t_ret = None
+                        s_ret = None
+
+                        if ticker in data.columns:
+                            try:
+                                t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
+                            except: pass
+                        
+                        if "^GSPC" in data.columns:
+                            try:
+                                s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
+                            except: pass
                         
                         return {
-                            "ticker": float(t_ret) if not pd.isna(t_ret) else None,
-                            "spy": float(s_ret) if not pd.isna(s_ret) else None
+                            "ticker": float(t_ret) if t_ret is not None and not pd.isna(t_ret) else None,
+                            "spy": float(s_ret) if s_ret is not None and not pd.isna(s_ret) else None
                         }
                     except Exception as ex:
+                        # If we have at least partial calculations, return them? 
+                        # No, the outer try/catch handles the date logic. 
+                        # If we are here, we probably failed date lookup.
                         return None
 
                 result["returns"] = {
