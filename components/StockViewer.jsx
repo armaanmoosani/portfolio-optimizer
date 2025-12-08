@@ -507,17 +507,36 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         return openIndex > 0 ? openIndex : 0;
     }, [chartData, timeRange]);
 
+    // Determine current market session based on ET time
+    const marketSession = useMemo(() => {
+        const now = new Date();
+        const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const etHour = etTime.getHours();
+        const etMinute = etTime.getMinutes();
+        const totalMinutes = etHour * 60 + etMinute;
+
+        const dayOfWeek = etTime.getDay(); // 0 = Sunday, 6 = Saturday
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+        // Market times in minutes from midnight
+        const preMarketOpen = 4 * 60;    // 4:00 AM ET
+        const regularOpen = 9 * 60 + 30;  // 9:30 AM ET
+        const regularClose = 16 * 60;     // 4:00 PM ET
+        const afterHoursClose = 20 * 60;  // 8:00 PM ET
+
+        if (isWeekend) return 'closed';
+        if (totalMinutes >= preMarketOpen && totalMinutes < regularOpen) return 'pre-market';
+        if (totalMinutes >= regularOpen && totalMinutes < regularClose) return 'regular';
+        if (totalMinutes >= regularClose && totalMinutes < afterHoursClose) return 'after-hours';
+        return 'closed';
+    }, []);
+
     // Calculate Pre-Market Data (for visual display only)
     const preMarketData = useMemo(() => {
         if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
 
-        // Don't show pre-market visual during after-hours (after 4 PM ET)
-        const now = new Date();
-        const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-        const etHour = etTime.getHours();
-        const isAfterMarketClose = etHour >= 16; // 4 PM ET or later
-
-        if (isAfterMarketClose) return null;
+        // Don't show pre-market visual during after-hours (remove segment entirely)
+        if (marketSession === 'after-hours') return null;
 
         // Find the first point that is "Regular Market"
         const openIndex = chartData.findIndex(d => d.isRegularMarket);
@@ -543,7 +562,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             openIndex,
             endDate: chartData[openIndex].date
         };
-    }, [chartData, timeRange, stockData]);
+    }, [chartData, timeRange, stockData, marketSession]);
 
     // Calculate After Hours Data
     const afterHoursData = useMemo(() => {
@@ -1110,16 +1129,16 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     </linearGradient>
 
                                                     {/* Multi-Segment Gradient for Stroke (1D View) */}
-                                                    {timeRange === '1D' && afterHoursData ? (
-                                                        /* After-hours mode: Regular market colored, after-hours grey */
+                                                    {timeRange === '1D' && marketSession === 'after-hours' && afterHoursData ? (
+                                                        /* After-hours session: Regular market colored, after-hours grey */
                                                         <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset={0} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                             <stop offset={visibleSplitOffset} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                             <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
                                                             <stop offset={1} stopColor="#94a3b8" />
                                                         </linearGradient>
-                                                    ) : timeRange === '1D' && preMarketData ? (
-                                                        /* Pre-market mode: Pre-market grey, regular market colored */
+                                                    ) : timeRange === '1D' && marketSession === 'regular' && preMarketData ? (
+                                                        /* Regular session: Pre-market grey, regular market colored */
                                                         <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset={0} stopColor="#94a3b8" />
                                                             <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
@@ -1127,7 +1146,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             <stop offset={1} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                         </linearGradient>
                                                     ) : (
-                                                        /* Normal mode: Solid color */
+                                                        /* Pre-market session OR normal: Solid color */
                                                         <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset="0%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
                                                             <stop offset="100%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
@@ -1245,7 +1264,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     type="monotone"
                                                     dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
                                                     name={activeComparables.length > 0 ? stockData.symbol : "value"}
-                                                    stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && (preMarketData || afterHoursData)) ? "url(#splitColor)" : "url(#standardColor)")}
+                                                    stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && ((marketSession === 'after-hours' && afterHoursData) || (marketSession === 'regular' && preMarketData))) ? "url(#splitColor)" : "url(#standardColor)")}
                                                     strokeWidth={activeComparables.length > 0 ? 4 : 2}
                                                     fillOpacity={1}
                                                     fill="url(#colorPrice)"
