@@ -307,19 +307,18 @@ export default function StockViewer() {
             // Get current time range settings for chart fetch
             const { period, interval } = TIME_RANGES[timeRange];
 
-            // PHASE 1: Fetch all data in parallel (including chart)
-            const [metaRes, quoteRes, infoRes, newsRes, chartRes] = await Promise.all([
+            // PHASE 1: Fetch core data in parallel (Meta, Quote, News, Chart)
+            // Removed blocking stock_info fetch to allow graceful degradation
+            const [metaRes, quoteRes, newsRes, chartRes] = await Promise.all([
                 fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`),
-                fetch(`/api/stock_info?ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`),
                 fetch(`/api/history?ticker=${searchTicker}&period=${period}&interval=${interval}`)
             ]);
 
-            const [meta, quote, infoData, newsData, chartDataRaw] = await Promise.all([
+            const [meta, quote, newsData, chartDataRaw] = await Promise.all([
                 metaRes.json(),
                 quoteRes.json(),
-                infoRes.json(),
                 newsRes.json(),
                 chartRes.json()
             ]);
@@ -351,7 +350,7 @@ export default function StockViewer() {
             updateStockState({
                 stockData: newStockData,
                 ticker: searchTicker,
-                stockInfo: infoData,
+                stockInfo: null, // Will be populated by async Phase 2 fetch
                 news: newsArr.slice(0, 5),
                 aiSummary: "", // Clear while AI loads (shows skeleton)
                 chartData: processedChartData,
@@ -415,7 +414,7 @@ ${aggregatedNews.slice(0, 15000)}
                         console.error("AI summary failed:", aiErr);
                     }
                     updateStockState({ aiSummary: newAiSummary });
-                })();
+                }) ();
 
                 // PHASE 4: Fetch Analyst Ratings (ASYNC/Non-blocking)
                 (async () => {
