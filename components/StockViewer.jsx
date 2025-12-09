@@ -867,7 +867,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         <button
                                             key={sym}
                                             onClick={() => handleSearch(sym)}
-                                            className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-slate-400 hover:text-white transition-all text-sm font-medium"
+                                            className="btn-press px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-slate-400 hover:text-white transition-all text-sm font-medium"
                                         >
                                             {sym}
                                         </button>
@@ -907,7 +907,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     <li
                                         key={index}
                                         onClick={() => handleSuggestionClick(item.symbol)}
-                                        className={`px-6 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none group ${index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                                        className={`stagger-item px-6 py-4 cursor-pointer transition-colors border-b border-white/5 last:border-none group ${index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'}`}
                                     >
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-3">
@@ -1009,7 +1009,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <button
                                                 key={range}
                                                 onClick={() => updateStockState({ timeRange: range })}
-                                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === range
+                                                className={`btn-press px-4 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === range
                                                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/10'
                                                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                                                     }`}
@@ -1027,7 +1027,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         </div>
                                     )}
                                     {isMounted ? (
-                                        <ResponsiveContainer width="100%" height="100%">
+                                        <ResponsiveContainer width="100%" height="100%" className="chart-line-animate">
                                             <ComposedChart
                                                 data={activeComparables.length > 0 ? getRelativeData(visibleChartData) : visibleChartData}
                                                 margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
@@ -1307,25 +1307,25 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                         <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Open</p>
                                         <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                         <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">High</p>
                                         <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                         <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Low</p>
                                         <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                         <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Prev Close</p>
                                         <p className="text-2xl font-bold text-white tracking-tight">
                                             {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
@@ -1334,55 +1334,55 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </div>
                                 {stockInfo && (
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Mkt Cap</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {formatLargeNumber(stockInfo.marketCap)}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">P/E Ratio</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk High</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk Low</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">EPS (TTM)</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Volume</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {formatLargeNumber(stockInfo.volume)}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Beta</p>
                                             <p className="text-xl font-bold text-white tracking-tight">
                                                 {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
@@ -1404,7 +1404,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             const label = labels[period];
 
                                             return (
-                                                <div key={period} className="bg-slate-900/40 rounded-xl p-4 border border-white/5">
+                                                <div key={period} className="card-hover-lift bg-slate-900/40 rounded-xl p-4 border border-white/5">
                                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between items-center">
@@ -1610,12 +1610,12 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </h3>
                                 <ul className="space-y-4">
                                     {news.map((item, i) => (
-                                        <li key={i} className="group">
+                                        <li key={i} className="group stagger-item">
                                             <a
                                                 href={item.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="block hover:bg-white/5 p-5 -mx-5 rounded-2xl transition-all border border-transparent hover:border-white/5 group-hover:shadow-lg group-hover:shadow-black/20"
+                                                className="block card-hover-lift hover:bg-white/5 p-5 -mx-5 rounded-2xl transition-all border border-transparent hover:border-white/5"
                                             >
                                                 <h4 className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">
                                                     {item.headline}
