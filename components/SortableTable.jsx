@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 
-/**
- * SortableTable
- * Props:
- * - columns: [{ key: string, label: string, numeric?: boolean }]
- * - data: array of objects
- */
 export default function SortableTable({ columns, data }) {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 

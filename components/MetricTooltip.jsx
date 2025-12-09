@@ -6,36 +6,29 @@ const MetricTooltip = ({ title, description, formula, align = 'left' }) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [position, setPosition] = React.useState({ top: 0, left: 0 });
     const buttonRef = React.useRef(null);
-    const [placement, setPlacement] = React.useState('bottom'); // 'bottom' or 'top'
+    const [placement, setPlacement] = React.useState('bottom');
 
     const updatePosition = () => {
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
 
-            // Horizontal positioning
             let left = rect.left;
             if (align === 'right') {
                 left = rect.right - 320;
             }
-            // Prevent going off screen (right edge)
             if (left + 320 > window.innerWidth) {
                 left = window.innerWidth - 340;
             }
-            // Prevent going off screen (left edge)
             if (left < 10) {
                 left = 10;
             }
 
-            // Vertical positioning (Smart Flip)
             const spaceBelow = window.innerHeight - rect.bottom;
             let top = rect.bottom + 5;
             let newPlacement = 'bottom';
 
-            // If less than 200px space below, flip to top
             if (spaceBelow < 200) {
                 newPlacement = 'top';
-                // For top placement, we'll use bottom style in the render
-                // We store the anchor point (rect.top) in 'top' state variable for convenience
                 top = rect.top - 5;
             }
 
@@ -67,7 +60,7 @@ const MetricTooltip = ({ title, description, formula, align = 'left' }) => {
     const handleMouseLeave = () => {
         timeoutRef.current = setTimeout(() => {
             setIsOpen(false);
-        }, 200); // 200ms delay to allow moving to tooltip
+        }, 200);
     };
 
     React.useEffect(() => {

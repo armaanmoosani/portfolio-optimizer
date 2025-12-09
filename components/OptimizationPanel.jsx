@@ -75,7 +75,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-    // Configuration state
     const [startYear, setStartYear] = useState("1985");
     const currentYear = new Date().getFullYear();
     const [endYear, setEndYear] = useState(String(currentYear));
@@ -85,11 +84,10 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
     const [startingValue, setStartingValue] = useState("10000");
     const [minWeight, setMinWeight] = useState("0");
     const [maxWeight, setMaxWeight] = useState("100");
-    const [mar, setMar] = useState("0");  // Minimum Acceptable Return (%) for Sortino/Omega
-    const [rebalanceFreq, setRebalanceFreq] = useState("never");  // Rebalancing frequency
+    const [mar, setMar] = useState("0");
+    const [rebalanceFreq, setRebalanceFreq] = useState("never");
 
 
-    // Generate years array from 1985 to current year
     const years = Array.from({ length: currentYear - 1985 + 1 }, (_, i) => 1985 + i);
 
     const handleOptimize = async () => {
@@ -107,7 +105,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
         setIsOptimizing(true);
         setElapsedSeconds(0);
 
-        // Show elapsed time while waiting
         const timerInterval = setInterval(() => {
             setElapsedSeconds(prev => prev + 1);
         }, 1000);
@@ -123,8 +120,8 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                 min_weight: parseFloat(minWeight) / 100,
                 max_weight: parseFloat(maxWeight) / 100,
                 frequency: frequency,
-                mar: parseFloat(mar) / 100,  // Convert percentage to decimal
-                rebalance_freq: rebalanceFreq  // Portfolio rebalancing
+                mar: parseFloat(mar) / 100,
+                rebalance_freq: rebalanceFreq
             };
 
             const response = await fetch('/api/optimize', {
@@ -155,23 +152,19 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
 
             const data = await response.json();
 
-            // Check for warnings
             if (data.warnings && data.warnings.length > 0) {
                 data.warnings.forEach(warning => {
                     showToast(warning, "warning");
                 });
             }
 
-            // Transform backend data to frontend format
             const results = {
                 metrics: {
-                    // USE OPTIMIZATION METRICS (Expected) for return, vol, Sharpe to match Charts tab
                     expectedReturn: (data.optimization.metrics.expected_return || 0) * 100,
                     volatility: (data.optimization.metrics.volatility || 0) * 100,
                     sharpeRatio: data.optimization.metrics.sharpe_ratio || 0,
 
-                    // USE BACKTEST METRICS (Realized) for other historical metrics
-                    realizedCAGR: (data.backtest.metrics.annualized_return || 0) * 100,  // Actual CAGR from backtest
+                    realizedCAGR: (data.backtest.metrics.annualized_return || 0) * 100,
                     sortinoRatio: data.backtest.metrics.sortino_ratio || 0,
                     maxDrawdown: (data.backtest.metrics.max_drawdown || 0) * 100,
                     alpha: (data.backtest.metrics.alpha || 0) * 100,
@@ -181,7 +174,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     startBalance: parseFloat(startingValue),
                     endBalance: parseFloat(startingValue) * (1 + (data.backtest.metrics.total_return || 0)),
 
-                    // Comprehensive Metrics (Convert to %)
                     arithmetic_mean_monthly: (data.backtest.metrics.arithmetic_mean_monthly || 0),
                     arithmetic_mean_annualized: (data.backtest.metrics.arithmetic_mean_annualized || 0) * 100,
                     geometric_mean_monthly: (data.backtest.metrics.geometric_mean_monthly || 0),
@@ -192,7 +184,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     benchmark_correlation: data.backtest.metrics.benchmark_correlation || 0,
                     treynor_ratio: (data.backtest.metrics.treynor_ratio || 0) * 100,
 
-                    // Advanced Risk Metrics
                     calmar_ratio: data.backtest.metrics.calmar_ratio || 0,
                     var_95_daily: data.backtest.metrics.var_95_daily || 0,
                     var_99_daily: data.backtest.metrics.var_99_daily || 0,
@@ -203,7 +194,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     skewness: data.backtest.metrics.skewness || 0,
                     kurtosis: data.backtest.metrics.kurtosis || 0,
 
-                    // Benchmark Metrics
                     information_ratio: data.backtest.metrics.information_ratio || 0,
                     up_capture: data.backtest.metrics.up_capture || 0,
                     down_capture: data.backtest.metrics.down_capture || 0,
@@ -214,7 +204,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     weight: weight * 100,
                     color: `hsl(${Math.random() * 360}, 70%, 50%)`
                 })),
-                benchmark: benchmark, // Pass selected benchmark to results
+                benchmark: benchmark,
                 chartData: data.backtest.chart_data || [],
                 performance: (data.backtest.chart_data || []).map(d => ({
                     date: d.date,
@@ -237,12 +227,9 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
 
             onOptimizationComplete(results);
 
-            // Show toast after results section is rendered
             setTimeout(() => {
                 toast.success("Portfolio optimized successfully! Click to view results.", 4000, () => {
-                    // Navigate to portfolio page first
                     router.push('/portfolio');
-                    // Then scroll after a short delay to ensure page has loaded
                     setTimeout(() => {
                         document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
                     }, 300);
@@ -260,15 +247,11 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
 
     return (
         <div className="space-y-8">
-            {/* Header */}
             <div>
                 <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Configuration</h2>
                 <p className="text-slate-400">Set up your optimization parameters and constraints.</p>
             </div>
-
-            {/* Main Configuration Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Time Period */}
                 <div className="space-y-3">
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                         <Calendar className="w-3 h-3" />
@@ -302,7 +285,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     </div>
                 </div>
 
-                {/* Data Frequency */}
                 <div className="space-y-3">
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                         <Activity className="w-3 h-3" />
@@ -330,8 +312,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     </div>
                 </div>
             </div>
-
-            {/* Strategy Type */}
             <div className="space-y-3">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <Sliders className="w-3 h-3" />
@@ -368,10 +348,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     </button>
                 </div>
             </div>
-
             <div className="border-t border-slate-700/50"></div>
-
-            {/* Optimization Method */}
             <div className="space-y-4">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <Target className="w-3 h-3" />
@@ -441,8 +418,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     })}
                 </div>
             </div>
-
-            {/* Advanced Options */}
             <div className="space-y-3">
                 <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
@@ -465,7 +440,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                             className="overflow-hidden"
                         >
                             <div className="space-y-6 p-6 rounded-xl bg-slate-800/20 border border-slate-700/30 mt-2">
-                                {/* Benchmark */}
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
                                         Benchmark (Optional)
@@ -480,7 +454,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                                     <p className="text-xs text-slate-500 mt-2">Used for calculating Alpha, Beta, and Tracking Error.</p>
                                 </div>
 
-                                {/* Starting Value */}
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
                                         Initial Capital
@@ -496,7 +469,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                                     </div>
                                 </div>
 
-                                {/* Weight Bounds */}
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
                                         Asset Weight Limits
@@ -533,7 +505,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                                     </div>
                                 </div>
 
-                                {/* MAR Input (only for Sortino/Omega) */}
                                 {optimizationMethods.find(m => m.id === selectedMethod)?.requiresMAR && (
                                     <motion.div
                                         initial={{ opacity: 0, height: 0 }}
@@ -564,7 +535,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                                     </motion.div>
                                 )}
 
-                                {/* Rebalancing Frequency */}
                                 <div className="pt-2">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
                                         Rebalancing Strategy
@@ -588,8 +558,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     )}
                 </AnimatePresence>
             </div>
-
-            {/* Optimize Button */}
             <button
                 onClick={handleOptimize}
                 disabled={isOptimizing || assets.length < 2}
@@ -610,8 +578,6 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                     </>
                 )}
             </button>
-
-            {/* Info Note */}
             {assets.length < 2 && (
                 <div className="flex gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
                     <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />

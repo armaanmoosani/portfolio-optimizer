@@ -11,7 +11,6 @@ import FadeInSection from "./FadeInSection";
 import AnalystRatings from "./AnalystRatings";
 import WhatIfCalculator from "./WhatIfCalculator";
 
-// Map frontend time ranges to yfinance params
 const TIME_RANGES = {
     '1D': { period: '1d', interval: '5m' },
     '1W': { period: '5d', interval: '15m' },
@@ -38,17 +37,14 @@ export default function StockViewer() {
 
     const searchContainerRef = useRef(null);
 
-    // State for Relative Performance (Moved to top)
     const [comparables, setComparables] = useState([]);
     const [comparableData, setComparableData] = useState({});
     const [activeComparables, setActiveComparables] = useState([]);
     const [loadingComparables, setLoadingComparables] = useState(false);
     const [loadingAnalystRatings, setLoadingAnalystRatings] = useState(false);
 
-    // Client-side only rendering for Chart to avoid SSR issues
     const [isMounted, setIsMounted] = useState(false);
 
-    // Persistence: Load Comparables from LocalStorage on mount/ticker change
     useEffect(() => {
         if (!stockData?.symbol) return;
 
@@ -67,7 +63,6 @@ export default function StockViewer() {
         }
     }, [stockData?.symbol]);
 
-    // Persistence: Save Comparables to LocalStorage when they change
     useEffect(() => {
         if (!stockData?.symbol) return;
         if (comparables.length > 0) {
@@ -75,7 +70,6 @@ export default function StockViewer() {
         }
     }, [comparables, stockData?.symbol]);
 
-    // Persistence: Save Active Comparables when they change
     useEffect(() => {
         if (!stockData?.symbol) return;
         localStorage.setItem(`active_comparables_${stockData.symbol}`, JSON.stringify(activeComparables));
@@ -85,20 +79,15 @@ export default function StockViewer() {
         setIsMounted(true);
     }, []);
 
-    // Helper to normalize data for relative comparison (0% start)
-    // Moved up to avoid ReferenceError initialization issues
     const getRelativeData = (data = chartData) => {
         if (!data || data.length === 0) return [];
 
         const basePrice0 = data[0]?.price || 1;
 
-        // Create lookup maps for all active comparables for faster date matching
         const compMaps = {};
         activeComparables.forEach(ticker => {
             const compPoints = comparableData[ticker];
             if (compPoints && compPoints.length > 0) {
-                // Map date string to price for O(1) lookup
-                // Using normalized date string/timestamp from the API response
                 compMaps[ticker] = {
                     data: new Map(compPoints.map(p => [p.date, p.price])),
                     basePrice: compPoints[0]?.price || 1
@@ -119,7 +108,6 @@ export default function StockViewer() {
                     if (compPrice !== undefined) {
                         newItem[ticker] = ((compPrice / compMap.basePrice) - 1) * 100;
                     } else {
-                        // If exact date match missing, try to find closest previous (optional, but keep null for now to avoid misleading lines)
                         newItem[ticker] = null;
                     }
                 } else {
@@ -131,7 +119,6 @@ export default function StockViewer() {
         });
     };
 
-    // Click outside to close suggestions
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
@@ -143,13 +130,10 @@ export default function StockViewer() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Fetch chart data when time range or stock data changes
     useEffect(() => {
         const fetchChartData = async () => {
             if (!stockData?.symbol) return;
 
-            // Only show loading state if we don't have chart data or if the data doesn't match the current view
-            // This prevents the "regeneration" flash on reload
             if (chartData.length === 0) {
                 setChartLoading(true);
             }
@@ -158,24 +142,19 @@ export default function StockViewer() {
                 const symbol = stockData.symbol;
                 const { period, interval } = TIME_RANGES[timeRange];
 
-                // Call the backend via the Next.js proxy
                 const res = await fetch(`/api/history?ticker=${symbol}&period=${period}&interval=${interval}`);
                 if (!res.ok) throw new Error("Failed to fetch history");
 
                 const data = await res.json();
 
-                // Sync last point with live price for 1D view
                 if (timeRange === '1D' && stockData?.price && data.length > 0) {
                     const lastPoint = data[data.length - 1];
-                    // Update the last point's price to match the live quote
-                    // This ensures the chart line connects to the big number at the top
                     lastPoint.price = stockData.price;
                 }
 
                 updateStockState({ chartData: data });
             } catch (err) {
                 console.error("Chart fetch error:", err);
-                // Only clear chart data on error if we were loading from scratch
                 if (chartData.length === 0) {
                     updateStockState({ chartData: [] });
                 }
@@ -184,26 +163,13 @@ export default function StockViewer() {
             }
         };
 
-        // Only fetch if chartData is empty or if the ticker/timeRange changed from what's cached
-        // This check is a bit loose, but prevents infinite loops. 
-        // Ideally we'd track "lastFetchedParams" in state.
-        // For now, we rely on the fact that updateStockState will trigger re-render.
-        // To avoid loop, we should check if current chartData matches expectation? 
-        // Actually, let's just fetch if we need to.
-        // Simple optimization: If we already have data and it looks "fresh" (handled by GlobalState mount), skip?
-        // But user might change timeRange.
-
-        // We need to know if the current chartData corresponds to the current timeRange.
-        // Since we don't store "chartDataTimeRange", we might re-fetch.
-        // Let's just fetch. The backend is fast.
         fetchChartData();
     }, [stockData?.symbol, timeRange]);
 
-    // FETCH COMPARABLES DATA when timeRange or comparables list changes
     useEffect(() => {
         const fetchComparableData = async () => {
-            // Only fetch if we have comparables
-            if (comparables.length === 0) return;
+            if (comparables.length === 0)
+                return;
 
             setLoadingComparables(true);
             try {
@@ -288,7 +254,6 @@ export default function StockViewer() {
     };
 
 
-    // Modified to accept an optional overrideTicker
     const handleSearch = async (overrideTicker) => {
         const searchTicker = typeof overrideTicker === 'string' ? overrideTicker : ticker;
         if (!searchTicker) return;
@@ -298,17 +263,14 @@ export default function StockViewer() {
         setShowSuggestions(false);
         setSelectedIndex(-1);
 
-        // Reset Competitor State
         setComparables([]);
         setComparableData({});
         setActiveComparables([]);
         setLoadingComparables(true);
 
         try {
-            // Get current time range settings for chart fetch
             const { period, interval } = TIME_RANGES[timeRange];
 
-            // PHASE 1: Fetch all data in parallel (including chart)
             const [metaRes, quoteRes, infoRes, newsRes, chartRes] = await Promise.all([
                 fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
                 fetch(`/api/quote?ticker=${searchTicker}`),
@@ -334,7 +296,6 @@ export default function StockViewer() {
                 changePercent: quote.c && quote.pc ? ((quote.c - quote.pc) / quote.pc) * 100 : 0,
                 name: meta.name || searchTicker,
                 description: meta.description || "No description available.",
-                // Prefer Yahoo Finance data (infoData) if available for accuracy, fallback to Finnhub (quote)
                 open: infoData.open || quote.o,
                 high: infoData.dayHigh || quote.h,
                 low: infoData.dayLow || quote.l,
@@ -343,30 +304,26 @@ export default function StockViewer() {
 
             const newsArr = Array.isArray(newsData) ? newsData : [];
 
-            // Sync last chart point with live price for 1D view
             let processedChartData = Array.isArray(chartDataRaw) ? chartDataRaw : [];
             if (timeRange === '1D' && quote.c && processedChartData.length > 0) {
                 processedChartData[processedChartData.length - 1].price = quote.c;
             }
 
-            // Update state with ALL data at once and STOP loading
             updateStockState({
                 stockData: newStockData,
                 ticker: searchTicker,
                 stockInfo: infoData,
                 news: newsArr.slice(0, 5),
-                aiSummary: "", // Clear while AI loads (shows skeleton)
+                aiSummary: "",
                 chartData: processedChartData,
                 loading: false
             });
 
-            // Show result IMMEDIATELY after primary data is ready
             router.push('/stocks');
             setTimeout(() => {
                 document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
             }, 100);
 
-            // PHASE 2: Generate AI Summary (COMPLETELY ASYNC - doesn't block UI)
             (async () => {
                 let newAiSummary = "AI summary unavailable.";
 
@@ -421,7 +378,6 @@ ${aggregatedNews.slice(0, 15000)}
                 updateStockState({ aiSummary: newAiSummary });
             })();
 
-            // PHASE 4: Fetch Analyst Ratings (ASYNC/Non-blocking)
             (async () => {
                 setLoadingAnalystRatings(true);
                 try {
@@ -437,7 +393,6 @@ ${aggregatedNews.slice(0, 15000)}
                 }
             })();
 
-            // PHASE 3: Fetch Competitors (Also ASYNC/Non-blocking)
             (async () => {
                 try {
                     const compPrompt = `
@@ -460,12 +415,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                     const candidate = compData.candidates?.[0];
                     const text = candidate?.content?.parts?.[0]?.text || "";
 
-                    // Extract JSON array from text (in case AI adds markdown code blocks)
                     const jsonMatch = text.match(/\[.*\]/s);
                     if (!jsonMatch) throw new Error("No JSON found in AI response");
 
                     const competitors = JSON.parse(jsonMatch[0]);
-                    setComparables(competitors); // Triggers useEffect to load history
+                    setComparables(competitors);
                 } catch (err) {
                     console.error("Competitor fetch error:", err);
                 } finally {
@@ -481,17 +435,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         }
     };
 
-    // Calculate baseline price based on time range
     const baselinePrice = useMemo(() => {
         if (timeRange === '1D') {
-            // Prefer prevClose, fallback to first chart point (open price)
-            if (stockData?.prevClose) return stockData.prevClose;
+            if (stockData?.prevClose)
+                return stockData.prevClose;
             if (chartData.length > 0) return chartData[0].price;
         }
         return chartData.length > 0 ? chartData[0].price : 0;
     }, [timeRange, stockData, chartData]);
 
-    // Calculate period change for header
     const periodChange = useMemo(() => {
         if (chartData.length === 0 || !baselinePrice) return null;
         const currentPrice = chartData[chartData.length - 1].price;
@@ -501,26 +453,21 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     }, [chartData, baselinePrice]);
 
 
-    // Calculate market open index (always needed for data filtering)
     const marketOpenIndex = useMemo(() => {
         if (timeRange !== '1D' || chartData.length === 0) return 0;
 
-        // Try to find using the flag first
         const openIndex = chartData.findIndex(d => d.isRegularMarket);
         if (openIndex > 0) return openIndex;
 
-        // Fallback: Check timestamps if flag is missing
-        // 9:30 AM ET = 09:30 in the date string (backend sends "YYYY-MM-DD HH:MM")
         const timeFallbackIndex = chartData.findIndex(d => {
             if (!d.date || d.date.length < 16) return false;
-            const timePart = d.date.substring(11, 16); // Extract HH:MM
+            const timePart = d.date.substring(11, 16);
             return timePart >= "09:30";
         });
 
         return timeFallbackIndex > 0 ? timeFallbackIndex : 0;
     }, [chartData, timeRange]);
 
-    // Determine current market session based on ET time
     const marketSession = useMemo(() => {
         const now = new Date();
         const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
@@ -528,22 +475,19 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         const etMinute = etTime.getMinutes();
         const totalMinutes = etHour * 60 + etMinute;
 
-        const dayOfWeek = etTime.getDay(); // 0 = Sunday, 6 = Saturday
+        const dayOfWeek = etTime.getDay();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-        // Market times in minutes from midnight
-        const preMarketOpen = 4 * 60;    // 4:00 AM ET
-        const regularOpen = 9 * 60 + 30;  // 9:30 AM ET
-        const regularClose = 16 * 60;     // 4:00 PM ET
-        const afterHoursClose = 20 * 60;  // 8:00 PM ET
+        const preMarketOpen = 4 * 60;
+        const regularOpen = 9 * 60 + 30;
+        const regularClose = 16 * 60;
+        const afterHoursClose = 20 * 60;
 
         if (isWeekend) return 'closed';
         if (totalMinutes >= preMarketOpen && totalMinutes < regularOpen) return 'pre-market';
         if (totalMinutes >= regularOpen && totalMinutes < regularClose) return 'regular';
         if (totalMinutes >= regularClose && totalMinutes < afterHoursClose) return 'after-hours';
 
-        // Data-Driven Override: If chart data has points after 16:00, we are definitely in After Hours
-        // This protects against User System Timezone mismatches
         if (chartData.length > 0) {
             const lastPoint = chartData[chartData.length - 1];
             if (lastPoint.date && lastPoint.date.length >= 16) {
@@ -552,17 +496,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             }
         }
 
-        return 'closed'; // Late night
-    }, [chartData, timeRange]); // Depend on chartData (polls every 5s) to keep time fresh
+        return 'closed';
+    }, [chartData, timeRange]);
 
-    // Calculate After Hours Data
-    // We compute this BEFORE preMarketData so we can use it to hide pre-market
     const afterHoursData = useMemo(() => {
         if (timeRange !== '1D' || chartData.length === 0) return null;
 
-        // Find the last point that is "Regular Market"
         let closeIndex = -1;
-        // Search from end backwards
         for (let i = chartData.length - 1; i >= 0; i--) {
             if (chartData[i].isRegularMarket) {
                 closeIndex = i;
@@ -570,7 +510,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             }
         }
 
-        // Fallback: If no flag, check time "16:00"
         if (closeIndex === -1) {
             for (let i = chartData.length - 1; i >= 0; i--) {
                 const dateStr = chartData[i].date;
@@ -584,15 +523,14 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             }
         }
 
-        // If no regular market data found (all pre-market check?), or ALL data is regular (no AH yet)
-        if (closeIndex === -1 || closeIndex === chartData.length - 1) return null;
+        if (closeIndex === -1 || closeIndex === chartData.length - 1)
+            return null;
 
         const regularClosePrice = chartData[closeIndex].price;
         const currentPrice = chartData[chartData.length - 1].price;
         const change = currentPrice - regularClosePrice;
         const percent = (change / regularClosePrice) * 100;
 
-        // Calculate offset for gradient (0 to 1)
         const splitOffset = closeIndex / (chartData.length - 1);
 
         return {
@@ -606,30 +544,24 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         };
     }, [chartData, timeRange]);
 
-    // Calculate Pre-Market Data (for visual display only)
     const preMarketData = useMemo(() => {
         if (!stockData || timeRange !== '1D' || chartData.length === 0) return null;
 
-        // Don't show pre-market visual during after-hours
-        // Robust check: If session is 'after-hours' OR 'closed' OR we have detected After Hours data points
         const isAfterRegular = marketSession === 'after-hours' || marketSession === 'closed' || afterHoursData !== null;
 
         if (isAfterRegular) return null;
 
-        // Use our robust marketOpenIndex
         const openIndex = marketOpenIndex;
 
-        // If openIndex is 0, it means we start with Regular Market -> No pre-market data
-        if (openIndex <= 0) return null;
+        if (openIndex <= 0)
+            return null;
 
         const regularOpenPrice = chartData[openIndex].price;
-        const currentPrice = chartData[openIndex - 1].price; // Last pre-market price
+        const currentPrice = chartData[openIndex - 1].price;
 
-        // Pre-market change is usually vs Prev Close
         const change = currentPrice - (stockData.prevClose || regularOpenPrice);
         const percent = (change / (stockData.prevClose || regularOpenPrice)) * 100;
 
-        // Calculate offset for gradient (0 to 1)
         const splitOffset = openIndex / (chartData.length - 1);
 
         return {
@@ -642,12 +574,9 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         };
     }, [chartData, timeRange, stockData, marketSession, marketOpenIndex, afterHoursData]);
 
-    // Filter Chart Data: Remove pre-market segment during after-hours
     const visibleChartData = useMemo(() => {
         if (timeRange !== '1D') return chartData;
 
-        // During after-hours session (or if we have AH data), slice out pre-market data
-        // Explicitly check afterHoursData existence for robustness
         const isAfterRegular = marketSession === 'after-hours' || marketSession === 'closed' || afterHoursData !== null;
 
         if (isAfterRegular && marketOpenIndex > 0) {
@@ -657,60 +586,43 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         return chartData;
     }, [chartData, timeRange, marketSession, marketOpenIndex, afterHoursData]);
 
-    // Calculate Y-axis domain to ensure reference line is visible
     const yDomain = useMemo(() => {
-        // Use visibleChartData since that's what the chart displays
         const dataToUse = visibleChartData.length > 0 ? visibleChartData : chartData;
         if (dataToUse.length === 0) return ['auto', 'auto'];
 
         let min = Math.min(...dataToUse.map(d => d.price));
         let max = Math.max(...dataToUse.map(d => d.price));
 
-        // If we have a baseline price (prevClose) in 1D view, ensure it's included in the domain
         if (timeRange === '1D' && baselinePrice > 0) {
             min = Math.min(min, baselinePrice);
             max = Math.max(max, baselinePrice);
         }
 
-        // Add some padding (2%)
         const padding = (max - min) * 0.02;
         return [min - padding, max + padding];
     }, [visibleChartData, chartData, baselinePrice, timeRange]);
 
-    // Calculate split offset for the VISIBLE chart data
     const visibleSplitOffset = useMemo(() => {
         if (!afterHoursData || timeRange !== '1D') return 0;
 
-        // When in after-hours, calculate where the market closed in the visible data
-        // If pre-market was filtered out, we need to adjust the close index
         const adjustedCloseIndex = afterHoursData.closeIndex - marketOpenIndex;
         const visibleLength = visibleChartData.length - 1;
 
         return visibleLength > 0 ? adjustedCloseIndex / visibleLength : 0;
     }, [afterHoursData, timeRange, marketOpenIndex, visibleChartData]);
 
-    // Live Price Updates Polling
     useEffect(() => {
         if (timeRange !== '1D' || !stockData?.symbol || loading) return;
 
         const interval = setInterval(async () => {
-            // Market Holidays (2024-2028)
             const marketHolidays = [
-                // 2024
-                '2024-01-01', '2024-01-15', '2024-02-19', '2024-03-29', '2024-05-27', '2024-06-19', '2024-07-04', '2024-09-02', '2024-11-28', '2024-12-25',
-                // 2025
-                '2025-01-01', '2025-01-20', '2025-02-17', '2025-04-18', '2025-05-26', '2025-06-19', '2025-07-04', '2025-09-01', '2025-11-27', '2025-12-25',
-                // 2026
-                '2026-01-01', '2026-01-19', '2026-02-16', '2026-04-03', '2026-05-25', '2026-06-19', '2026-07-03', '2026-09-07', '2026-11-26', '2026-12-25',
-                // 2027
-                '2027-01-01', '2027-01-18', '2027-02-15', '2027-03-26', '2027-05-31', '2027-06-18', '2027-07-05', '2027-09-06', '2027-11-25', '2027-12-24',
-                // 2028 (Note: Jan 1 is Sat, no NY holiday observed)
-                '2028-01-17', '2028-02-21', '2028-04-14', '2028-05-29', '2028-06-19', '2028-07-04', '2028-09-04', '2028-11-23', '2028-12-25'
+                "2024-01-01", '2024-01-15', '2024-02-19', '2024-03-29', '2024-05-27', '2024-06-19', '2024-07-04', '2024-09-02', '2024-11-28', '2024-12-25',
+                "2025-01-01", '2025-01-20', '2025-02-17', '2025-04-18', '2025-05-26', '2025-06-19', '2025-07-04', '2025-09-01', '2025-11-27', '2025-12-25',
+                "2026-01-01", '2026-01-19', '2026-02-16', '2026-04-03', '2026-05-25', '2026-06-19', '2026-07-03', '2026-09-07', '2026-11-26', '2026-12-25',
+                "2027-01-01", '2027-01-18', '2027-02-15', '2027-03-26', '2027-05-31', '2027-06-18', '2027-07-05', '2027-09-06', '2027-11-25', '2027-12-24',
+                "2028-01-17", '2028-02-21', '2028-04-14', '2028-05-29', '2028-06-19', '2028-07-04', '2028-09-04', '2028-11-23', '2028-12-25'
             ];
 
-            // Check if today is a holiday
-            // Note: toISOString is UTC, so we should use local date string for US/Eastern ideally or approximate with local
-            // Simple consistent approximation using local time string in a standard format
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -719,11 +631,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
             if (marketHolidays.includes(todayStr)) return;
 
-            // Check if extended trading hours (Mon-Fri, 4:00 AM - 8:00 PM ET)
-            // Pre-market: 4:00 AM - 9:30 AM, Regular: 9:30 AM - 4:00 PM, After-hours: 4:00 PM - 8:00 PM
             const day = now.getDay();
             const hour = now.getHours();
-            // Extended hours: 4 AM to 8 PM (4-20), Mon-Fri (1-5)
             const extendedHoursOpen = day >= 1 && day <= 5 && hour >= 4 && hour < 20;
 
             if (!extendedHoursOpen) return;
@@ -734,7 +643,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                 const quote = await res.json();
 
-                // 1. Update Header Price (Stock Data)
                 const newStockData = {
                     ...stockData,
                     price: quote.price,
@@ -743,14 +651,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                     timestamp: quote.timestamp
                 };
 
-                // 2. Update Chart Data
                 let newChartData = [...chartData];
                 if (newChartData.length > 0) {
                     const lastPoint = newChartData[newChartData.length - 1];
                     const quoteTime = new Date(quote.timestamp).getTime();
                     const lastTime = new Date(lastPoint.date).getTime();
 
-                    const isNewCandle = (quoteTime - lastTime) >= 60000; // 1 minute
+                    const isNewCandle = (quoteTime - lastTime) >= 60000;
 
                     if (isNewCandle) {
                         newChartData.push({
@@ -774,7 +681,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             } catch (e) {
                 console.error("Live update failed", e);
             }
-        }, 5000); // 5 seconds
+        }, 5000);
 
         return () => clearInterval(interval);
     }, [stockData?.symbol, timeRange, loading, chartData]);
@@ -782,51 +689,41 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
 
 
-    // Calculate Display Data (Dynamic based on Hover)
     const displayData = useMemo(() => {
         if (!stockData) return { price: 0, change: 0, percent: 0, label: '', isPositive: false, isRegular: true };
 
-        // Default to latest data
         let price = stockData.price;
         let change = stockData.change;
         let percent = stockData.changePercent;
         let label = timeRange === '1D' ? 'Today' : timeRange;
         let isRegular = true;
 
-        // If hovering, use hovered data
         if (hoveredData) {
             price = hoveredData.price;
 
-            // Determine context based on hover
             if (timeRange === '1D') {
                 if (preMarketData && hoveredData.index < preMarketData.openIndex) {
-                    // Hovering Pre-Market
                     label = 'Pre-market';
                     change = price - stockData.prevClose;
                     percent = (change / stockData.prevClose) * 100;
                     isRegular = false;
                 } else if (afterHoursData && hoveredData.index > afterHoursData.closeIndex) {
-                    // Hovering After-Hours
                     label = 'After hours';
                     change = price - afterHoursData.regularClosePrice;
                     percent = (change / afterHoursData.regularClosePrice) * 100;
                     isRegular = false;
                 } else {
-                    // Hovering Regular Market
                     label = 'Regular';
                     change = price - stockData.prevClose;
                     percent = (change / stockData.prevClose) * 100;
                 }
             } else {
-                // Non-1D views
                 change = price - baselinePrice;
                 percent = (change / baselinePrice) * 100;
                 label = hoveredData.dateStr || timeRange;
             }
         } else {
-            // Not hovering - show latest appropriate data
             if (timeRange !== '1D' && periodChange) {
-                // For non-1D views, show the change over the selected period
                 change = periodChange.change;
                 percent = periodChange.percent;
                 label = timeRange;
@@ -837,7 +734,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                 label = 'After hours';
                 isRegular = false;
             } else if (preMarketData && !afterHoursData && chartData.length > 0 && !chartData[chartData.length - 1].isRegularMarket) {
-                // Only Pre-market data available so far
                 price = preMarketData.price;
                 change = preMarketData.change;
                 percent = preMarketData.percent;
@@ -850,20 +746,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
     }, [hoveredData, stockData, preMarketData, afterHoursData, timeRange, baselinePrice, chartData]);
 
 
-    // Custom Tooltip for Google Finance style interaction
     const CustomTooltip = ({ active, payload, label }) => {
-        // Sync hover state with tooltip data
         useEffect(() => {
             if (active && payload && payload.length) {
                 const newPayload = payload[0].payload;
-                // Only update if the date/price is different to avoid infinite loops
                 if (!hoveredData || hoveredData.date !== newPayload.date || hoveredData.price !== newPayload.price) {
-                    // We need the index for pre-market logic. 
-                    // Recharts payload usually doesn't have index directly in the data item unless we put it there.
-                    // But we can find it or pass it. 
-                    // Actually, let's just rely on the data object itself.
-                    // We can find the index in chartData if needed, or rely on date comparison.
-                    // Let's find the index to be safe for the pre-market logic.
                     const index = chartData.findIndex(d => d.date === newPayload.date);
                     setHoveredData({ ...newPayload, index });
                 }
@@ -872,28 +759,22 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
         if (active && payload && payload.length) {
             const currentPrice = payload[0].value;
-            // Calculate change relative to the baseline price
             const startPrice = baselinePrice || currentPrice;
             const change = currentPrice - startPrice;
             const changePercent = (change / startPrice) * 100;
             const isPositive = change >= 0;
 
-            // Format date based on timeRange
             let dateStr = label;
             try {
-                const date = new Date(payload[0].payload.date); // Access original date string from payload
+                const date = new Date(payload[0].payload.date);
                 if (timeRange === '1D') {
-                    // "10:30"
                     dateStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 } else if (timeRange === '1W') {
-                    // "Tue, Nov 25 10:30"
                     dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' +
                         date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 } else if (['1M', '3M', 'YTD'].includes(timeRange)) {
-                    // "Tue, Nov 25"
                     dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                 } else {
-                    // 1Y, 5Y, MAX -> "Nov 25, 2024"
                     dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
                 }
             } catch (e) {
@@ -920,21 +801,18 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         return null;
     };
 
-    // Helper to determine market status (simple approximation)
     const isMarketOpen = () => {
         const now = new Date();
         const day = now.getDay();
         const hour = now.getHours();
         const minute = now.getMinutes();
-        // Mon-Fri, 9:30 AM - 4:00 PM ET (approx)
-        // This is a simple client-side check, not perfect but adds UI value
-        if (day === 0 || day === 6) return false;
+        if (day === 0 || day === 6)
+            return false;
         if (hour < 9 || (hour === 9 && minute < 30)) return false;
         if (hour >= 16) return false;
         return true;
     };
 
-    // Helper to format X-axis dates based on time range
     const formatXAxis = (tickItem) => {
         if (!tickItem) return '';
         const date = new Date(tickItem);
@@ -944,12 +822,10 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         } else if (timeRange === '5Y' || timeRange === 'MAX') {
             return date.getFullYear().toString();
         } else {
-            // 1W, 1M, 3M, 1Y -> Short Month + Day (e.g., "Nov 25")
             return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         }
     };
 
-    // Helper to format large numbers (T/B/M)
     const formatLargeNumber = (num) => {
         if (!num) return '-';
         if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
@@ -962,18 +838,18 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
-            {/* Search Section */}
+            {}
             <div className="flex flex-col items-center relative z-20 min-h-[80vh]">
-                {/* Title Section - At the top */}
+                {}
                 <div className="text-center space-y-2 mb-8 pt-4">
                     <h1 className="text-4xl font-bold text-white tracking-tight">Market Intelligence</h1>
                     <p className="text-slate-400 text-lg">Real-time data, AI analysis, and institutional-grade charts.</p>
                 </div>
 
-                {/* Centered Content Group */}
+                {}
                 <div className="flex-1 flex flex-col justify-center items-center w-full max-w-2xl -mt-32">
                     <div className="w-full" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
-                        {/* Start Your Analysis & Popular Tickers - Moved Above Search */}
+                        {}
                         {!stockData && !loading && (
                             <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                 <div className="flex items-center gap-4 mb-3">
@@ -1024,7 +900,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             </button>
                         </div>
 
-                        {/* Autocomplete Suggestions */}
+                        {}
                         {showSuggestions && suggestions.length > 0 && (
                             <ul className="absolute w-full mt-3 bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[350px] overflow-y-auto backdrop-blur-xl custom-scrollbar ring-1 ring-white/5">
                                 {suggestions.slice(0, 8).map((item, index) => (
@@ -1058,7 +934,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             {!loading && stockData && (
                 <div id="stock-results" className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 -mt-12">
 
-                    {/* Ticker Info */}
+                    {}
                     <FadeInSection>
                         <div className="flex flex-col items-center text-center gap-6 border-b border-white/5 pb-8">
                             <div className="flex flex-col items-center">
@@ -1078,13 +954,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         </div>
                     </FadeInSection>
 
-                    {/* Main Content Grid */}
+                    {}
                     <FadeInSection delay={100} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                        {/* Left Column: Chart & Stats (Span 2) */}
+                        {}
                         <div className="lg:col-span-2 space-y-8">
 
-                            {/* Chart Card */}
+                            {}
                             <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
@@ -1101,11 +977,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 <div className="flex items-center gap-3 mt-2">
                                                     <div className={`flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                         {displayData.isPositive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-                                                        {/* Price Change */}
+                                                        {}
                                                         <span className="flex items-center">
                                                             {displayData.isPositive ? '+' : ''}<AnimatedPrice value={displayData.change || 0} />
                                                         </span>
-                                                        {/* Percent Change */}
+                                                        {}
                                                         <span className="flex items-center">
                                                             (<AnimatedPrice value={displayData.percent || 0} />%)
                                                         </span>
@@ -1114,8 +990,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         {displayData.label}
                                                     </span>
                                                 </div>
-                                                {/* Secondary Info (e.g. Regular Close when showing After Hours) */}
-                                                {/* Secondary Info (e.g. Regular Close when showing After Hours) */}
+                                                {}
+                                                {}
                                                 {afterHoursData && (
                                                     <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
                                                         <span className="text-slate-500 font-normal">Market Close:</span>
@@ -1165,35 +1041,32 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 }}
                                             >
                                                 <defs>
-                                                    {/* Dynamic Color Gradient for Fill */}
+                                                    {}
                                                     <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="5%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0.1} />
                                                         <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0} />
                                                     </linearGradient>
 
-                                                    {/* Multi-Segment Gradient for Stroke (1D View) */}
+                                                    {}
                                                     {timeRange === '1D' && marketSession === 'after-hours' && afterHoursData ? (
-                                                        /* After-hours session: Regular market colored, after-hours grey */
-                                                        <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
+                                                        (<linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset={0} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                             <stop offset={visibleSplitOffset} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                             <stop offset={visibleSplitOffset} stopColor="#94a3b8" />
                                                             <stop offset={1} stopColor="#94a3b8" />
-                                                        </linearGradient>
+                                                        </linearGradient>)
                                                     ) : timeRange === '1D' && marketSession === 'regular' && preMarketData ? (
-                                                        /* Regular session: Pre-market grey, regular market colored */
-                                                        <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
+                                                        (<linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset={0} stopColor="#94a3b8" />
                                                             <stop offset={preMarketData.splitOffset} stopColor="#94a3b8" />
                                                             <stop offset={preMarketData.splitOffset} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
                                                             <stop offset={1} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
-                                                        </linearGradient>
+                                                        </linearGradient>)
                                                     ) : (
-                                                        /* Pre-market session OR normal: Solid color */
-                                                        <linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
+                                                        (<linearGradient id="standardColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset="0%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
                                                             <stop offset="100%" stopColor={displayData.isPositive ? '#34d399' : '#f43f5e'} />
-                                                        </linearGradient>
+                                                        </linearGradient>)
                                                     )}
 
                                                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -1201,7 +1074,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')} stopOpacity={0} />
                                                     </linearGradient>
 
-                                                    {/* Glow Filter */}
+                                                    {}
                                                     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                                                         <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                                                         <feMerge>
@@ -1238,7 +1111,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 {activeComparables.length > 0 && (
                                                     <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
                                                 )}
-                                                {/* Prev Close Reference Line (1D only, no comparables) */}
+                                                {}
                                                 {activeComparables.length === 0 && timeRange === '1D' && baselinePrice > 0 && (
                                                     <ReferenceLine
                                                         y={baselinePrice}
@@ -1254,7 +1127,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         }}
                                                     />
                                                 )}
-                                                {/* Legend for quick identification */}
+                                                {}
                                                 {activeComparables.length > 0 && (
                                                     <Legend
                                                         verticalAlign="top"
@@ -1314,7 +1187,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     connectNulls={true}
                                                 />
 
-                                                {/* Competitor Lines */}
                                                 {activeComparables.map((ticker, idx) => {
                                                     const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
                                                     const color = colors[idx % colors.length];
@@ -1333,7 +1205,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     );
                                                 })}
 
-                                                {/* Reference Dots for live price */}
                                                 {activeComparables.length === 0 && stockData.price && chartData.length > 0 && (
                                                     <ReferenceDot
                                                         x={chartData[chartData.length - 1]?.date}
@@ -1348,12 +1219,10 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             const color = displayData.isPositive ? '#34d399' : '#f43f5e';
                                                             return (
                                                                 <g>
-                                                                    {/* Outer glow ring */}
                                                                     <circle cx={cx} cy={cy} r={12} fill={color} opacity={0.2}>
                                                                         <animate attributeName="r" values="10;14;10" dur="1.5s" repeatCount="indefinite" />
                                                                         <animate attributeName="opacity" values="0.3;0.1;0.3" dur="1.5s" repeatCount="indefinite" />
                                                                     </circle>
-                                                                    {/* Inner dot */}
                                                                     <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
                                                                 </g>
                                                             );
@@ -1369,7 +1238,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     )}
                                 </div>
 
-                                {/* Disclaimer moved above comparable bar */}
                                 <div className="px-6 pb-2 pt-2 flex justify-end">
                                     <p className="text-xs text-slate-500 font-medium">
                                         * Prices may be delayed
@@ -1378,7 +1246,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             </div>
 
-                            {/* Comparable Securities Control Bar - Separated for clean layout */}
                             <div className="glass-panel rounded-2xl p-4 border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-xl ${loadingComparables ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
@@ -1390,7 +1257,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             {loadingComparables ? "AI identifying comparable securities..." : comparables.length > 0 ? "Toggle to compare" : "No comparables found"}
                                         </p>
                                     </div>
-                                    {/* Color Legend (Only visible when active) */}
                                     {activeComparables.length > 0 && (
                                         <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-white/10">
                                             <div className="flex items-center gap-1.5">
@@ -1405,7 +1271,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     <div className="flex flex-wrap gap-2">
                                         {comparables.map((comp, idx) => {
                                             const isActive = activeComparables.includes(comp);
-                                            // Unique colors for competitors
                                             const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
                                             const color = colors[idx % colors.length];
 
@@ -1439,9 +1304,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 )}
                             </div>
 
-
-
-                            {/* Key Statistics Grid */}
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1531,10 +1393,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 )}
                             </div>
 
-                            {/* Debug Info - Temporary */}
-
-
-                            {/* Performance Comparison Cards */}
                             {stockInfo?.returns && (
                                 <FadeInSection delay={100}>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -1569,7 +1427,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </FadeInSection>
                             )}
 
-                            {/* Earnings Trends Section */}
+                            {}
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
                                 <FadeInSection delay={200}>
                                     <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
@@ -1588,7 +1446,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            {/* EPS Chart */}
                                             <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
                                                 <div className="flex justify-between items-center mb-6">
                                                     <h4 className="text-sm font-bold text-slate-300">Earnings Per Share</h4>
@@ -1645,10 +1502,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                                 }}
                                                                 cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
                                                             />
-                                                            {/* Estimate Dots (Grey) */}
                                                             <Scatter name="Estimate" dataKey="epsEstimate" fill="#64748b" shape="circle" />
-
-                                                            {/* Actual Dots (Colored) */}
                                                             <Scatter name="Actual" dataKey="epsReported" shape="circle">
                                                                 {stockInfo.earningsHistory.map((entry, index) => (
                                                                     <Cell key={`cell-${index}`} fill={entry.epsReported >= entry.epsEstimate ? '#34d399' : '#f43f5e'} />
@@ -1659,7 +1513,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 </div>
                                             </div>
 
-                                            {/* Revenue vs Earnings Chart */}
                                             <div className="bg-slate-900/40 rounded-2xl p-6 border border-white/5">
                                                 <div className="flex justify-between items-center mb-6">
                                                     <h4 className="text-sm font-bold text-slate-300">Revenue vs. Earnings</h4>
@@ -1724,9 +1577,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             )}
                         </div>
 
-                        {/* Right Column: AI & News (Span 1) */}
                         <div className="space-y-8">
-                            {/* AI Summary */}
                             <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
                                 <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
@@ -1750,7 +1601,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 )}
                             </div>
 
-                            {/* Recent News */}
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                                     <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
@@ -1783,14 +1633,9 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     ))}
                                 </ul>
                             </div>
-
-                            {/* Analyst Ratings (Mobile/Right Col placement or generally here?) */}
-                            {/* Actually I'll place it in the Main Column below Stats for better width? */}
-                            {/* No, let's put it in the Main Column (Left, col-span-2) at the bottom */}
                         </div>
                     </FadeInSection >
 
-                    {/* Investment Calculator - Full Width */}
                     {stockData && (
                         <FadeInSection>
                             <WhatIfCalculator
@@ -1801,7 +1646,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         </FadeInSection>
                     )}
 
-                    {/* Analyst Ratings Section - Full Width */}
                     <FadeInSection>
                         <AnalystRatings
                             data={stockViewerState.analystRatings}

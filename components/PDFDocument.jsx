@@ -73,7 +73,6 @@ const formatCurrency = (value) => new Intl.NumberFormat('en-US', {
 
 export const PDFDocument = ({ data }) => (
     <Document>
-        {/* Page 1: Summary */}
         <Page size="A4" style={styles.page}>
             <Text style={styles.header}>Portfolio Analytics Report</Text>
             <Text style={{ fontSize: 10, color: '#666', marginBottom: 20 }}>
@@ -145,7 +144,6 @@ export const PDFDocument = ({ data }) => (
             </View>
         </Page>
 
-        {/* Page 2: Risk Analysis */}
         <Page size="A4" style={styles.page}>
             <Text style={styles.header}>Risk Analysis</Text>
 
@@ -228,7 +226,6 @@ export const PDFDocument = ({ data }) => (
             </View>
         </Page>
 
-        {/* Page 3: Drawdowns */}
         <Page size="A4" style={styles.page}>
             <Text style={styles.header}>Drawdowns & Recovery</Text>
 

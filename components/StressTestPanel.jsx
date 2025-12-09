@@ -35,15 +35,13 @@ const StressTestPanel = ({ results, isLoading }) => {
         );
     }
 
-    // Filter available scenarios (Historical Only)
     const availableScenarios = results.filter(r => r.available && r.type !== 'hypothetical');
     const unavailableScenarios = results.filter(r => !r.available);
 
-    // Format data for chart (Historical Only)
     const chartData = results
         .filter(r => r.available && r.type !== 'hypothetical')
         .map(scenario => ({
-            name: scenario.name.split(' ')[0], // Short name (e.g., "2008")
+            name: scenario.name.split(' ')[0],
             fullName: scenario.name,
             Portfolio: scenario.metrics.portfolio_return * 100,
             Benchmark: scenario.metrics.benchmark_return * 100,
@@ -72,7 +70,6 @@ const StressTestPanel = ({ results, isLoading }) => {
 
     return (
         <div className="space-y-8">
-            {/* Header Section */}
             <div className="flex items-start justify-between">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -88,8 +85,6 @@ const StressTestPanel = ({ results, isLoading }) => {
                     <div className="text-2xl font-mono text-white">{availableScenarios.length} <span className="text-slate-600 text-sm">/ {results.length}</span></div>
                 </div>
             </div>
-
-            {/* Main Chart */}
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
                 <h4 className="text-sm font-semibold text-slate-300 mb-6">Crisis Performance Comparison (Cumulative Return)</h4>
                 <div className="h-80 w-full">
@@ -123,8 +118,6 @@ const StressTestPanel = ({ results, isLoading }) => {
                     </ResponsiveContainer>
                 </div>
             </div>
-
-            {/* Detailed Scorecard */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {availableScenarios.map((scenario) => (
                     <div key={scenario.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors backdrop-blur-sm">
@@ -226,8 +219,6 @@ const StressTestPanel = ({ results, isLoading }) => {
                     </div>
                 ))}
             </div>
-
-            {/* Hypothetical Scenarios */}
             {results.some(r => r.type === 'hypothetical') && (
                 <div className="space-y-4">
                     <h4 className="text-lg font-bold text-white flex items-center gap-2">
@@ -259,8 +250,6 @@ const StressTestPanel = ({ results, isLoading }) => {
                     </div>
                 </div>
             )}
-
-            {/* Unavailable Scenarios Warning */}
             {unavailableScenarios.length > 0 && (
                 <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3 backdrop-blur-sm">
                     <Info className="w-5 h-5 text-amber-500/50 flex-shrink-0 mt-0.5" />

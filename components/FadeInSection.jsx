@@ -9,16 +9,13 @@ export default function FadeInSection({ children, delay = 0, className = "" }) {
     useEffect(() => {
         const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                // Trigger only once when it becomes visible
                 if (entry.isIntersecting) {
                     setIsVisible(true);
-                    // Optional: Unobserve after triggering to save resources
-                    // observer.unobserve(entry.target);
                 }
             });
         }, {
-            threshold: 0.05, // Trigger almost immediately
-            rootMargin: "0px 0px 100px 0px" // Trigger 100px BEFORE it enters the viewport (eager load)
+            threshold: 0.05,
+            rootMargin: "0px 0px 100px 0px"
         });
 
         const currentRef = domRef.current;

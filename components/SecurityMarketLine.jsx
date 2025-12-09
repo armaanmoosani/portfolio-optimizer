@@ -13,7 +13,6 @@ export default function SecurityMarketLine({ data }) {
         );
     }
 
-    // 1. Format SML Line Points
     const smlPoints = data.sml_points.map((p, idx) => ({
         beta: p.beta,
         return: p.return * 100,
@@ -21,10 +20,8 @@ export default function SecurityMarketLine({ data }) {
         id: `sml_${idx}`
     })).sort((a, b) => a.beta - b.beta);
 
-    // Extract Risk-Free Rate from SML (Beta = 0)
     const riskFreeRate = smlPoints[0].return;
 
-    // 2. Format Individual Assets with unique IDs
     const assets = (data.individual_assets || []).map((p, idx) => ({
         beta: p.beta || 0,
         return: p.return * 100,
@@ -33,7 +30,6 @@ export default function SecurityMarketLine({ data }) {
         id: `asset_${p.name}`
     }));
 
-    // 3. Calculate Portfolio Beta (Weighted Average)
     let portfolioBeta = 0;
     let portfolioReturn = 0;
     let portfolioWeights = null;
@@ -42,7 +38,6 @@ export default function SecurityMarketLine({ data }) {
         portfolioReturn = data.optimal_portfolio.return * 100;
         portfolioWeights = data.optimal_portfolio.weights;
 
-        // Calculate weighted beta: β_p = Σ(w_i × β_i)
         Object.entries(data.optimal_portfolio.weights).forEach(([ticker, weight]) => {
             const asset = data.individual_assets.find(a => a.name === ticker);
             if (asset && asset.beta !== undefined) {
@@ -61,7 +56,6 @@ export default function SecurityMarketLine({ data }) {
         weights: portfolioWeights
     } : null;
 
-    // 4. Market Portfolio (Beta = 1.0 by definition)
     const marketReturn = data.market_return ? data.market_return * 100 : smlPoints[1]?.return || 10;
     const marketPortfolio = {
         beta: 1.0,
@@ -71,7 +65,6 @@ export default function SecurityMarketLine({ data }) {
         id: 'market_portfolio'
     };
 
-    // 5. Calculate Axis Domains
     const allPoints = [
         ...smlPoints,
         ...assets,
@@ -87,7 +80,6 @@ export default function SecurityMarketLine({ data }) {
     const betaPadding = (maxBeta - minBeta) * 0.1;
     const retPadding = (maxRet - minRet) * 0.1;
 
-    // Ensure x-axis starts at 0 if no negative betas
     const betaDomain = [
         minBeta < 0 ? Math.floor((minBeta - betaPadding) * 10) / 10 : 0,
         Math.ceil((maxBeta + betaPadding) * 10) / 10
@@ -98,18 +90,15 @@ export default function SecurityMarketLine({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FAST TOOLTIP - Uses payload directly with type-based priority (no useState)
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Priority based on point TYPE - higher priority wins when points overlap
         const typePriority = {
             'optimal': 100,
             'market': 90,
             'asset': 50
         };
 
-        // Find the highest priority point type in the payload
         let selectedPoint = null;
         let highestPriority = -1;
 
@@ -127,13 +116,10 @@ export default function SecurityMarketLine({ data }) {
 
         if (!selectedPoint) return null;
 
-        // Calculate CAPM Expected Return: E(Ri) = Rf + βi × (E(Rm) - Rf)
         const expectedReturn = riskFreeRate + selectedPoint.beta * (marketReturn - riskFreeRate);
 
-        // Calculate Alpha: α = Actual Return - Expected Return
         const alpha = selectedPoint.return - expectedReturn;
 
-        // Professional Valuation Assessment (CFA Standards)
         let valuation = "Fairly Valued";
         let valuationColor = "text-slate-400";
         let valuationBg = "bg-slate-700/30";
@@ -150,7 +136,6 @@ export default function SecurityMarketLine({ data }) {
             }
         }
 
-        // Display badge and name based on point TYPE
         let badge = null;
         let displayName = selectedPoint.name || 'Security';
 
@@ -173,9 +158,7 @@ export default function SecurityMarketLine({ data }) {
                     </p>
                     {badge}
                 </div>
-
                 <div className="p-4 space-y-3">
-                    {/* Core Metrics */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block mb-1">Expected Return</span>
@@ -187,7 +170,6 @@ export default function SecurityMarketLine({ data }) {
                         </div>
                     </div>
 
-                    {/* CAPM Analysis Section */}
                     <div className="pt-3 border-t border-slate-700/50 space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-slate-400 text-xs font-medium">CAPM Expected Return</span>
@@ -209,7 +191,6 @@ export default function SecurityMarketLine({ data }) {
                         </div>
                     </div>
 
-                    {/* Portfolio Composition (if applicable) */}
                     {selectedPoint.weights && Object.keys(selectedPoint.weights).length > 0 && (
                         <>
                             <div className="border-t border-slate-700/50 my-3" />
@@ -253,7 +234,6 @@ export default function SecurityMarketLine({ data }) {
                     </div>
                 </div>
             </div>
-
             <div className="p-4 sm:p-8">
                 <ResponsiveContainer width="100%" height={500}>
                     <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 50 }}>
@@ -307,7 +287,6 @@ export default function SecurityMarketLine({ data }) {
                             wrapperStyle={{ zIndex: 100 }}
                         />
 
-                        {/* Reference Lines */}
                         {minBeta < 0 && (
                             <ReferenceLine x={0} stroke="#64748b" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
                         )}
@@ -315,7 +294,6 @@ export default function SecurityMarketLine({ data }) {
                             <Label value="β=1" position="top" fill="#94a3b8" fontSize={10} offset={5} />
                         </ReferenceLine>
 
-                        {/* Security Market Line */}
                         <ReferenceLine
                             segment={[
                                 { x: smlPoints[0].beta, y: smlPoints[0].return },
@@ -327,7 +305,6 @@ export default function SecurityMarketLine({ data }) {
                             ifOverflow="extendDomain"
                         />
 
-                        {/* Risk-Free Rate Point */}
                         <ReferenceDot
                             x={0}
                             y={riskFreeRate}
@@ -347,7 +324,6 @@ export default function SecurityMarketLine({ data }) {
                             />
                         </ReferenceDot>
 
-                        {/* Individual Assets */}
                         <Scatter
                             name="Assets"
                             data={assets}
@@ -360,7 +336,6 @@ export default function SecurityMarketLine({ data }) {
                             <LabelList dataKey="name" position="top" offset={8} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: '600' }} />
                         </Scatter>
 
-                        {/* Market Portfolio (Beta=1) */}
                         <Scatter
                             name="Market"
                             data={[marketPortfolio]}
@@ -376,14 +351,12 @@ export default function SecurityMarketLine({ data }) {
                             isAnimationActive={false}
                         />
 
-                        {/* Optimal Portfolio */}
                         {optimalPortfolio && (
                             <Scatter
                                 name="Optimal"
                                 data={[optimalPortfolio]}
                                 shape={(props) => {
                                     const { cx, cy } = props;
-                                    // Star shape using polygon
                                     const points = [];
                                     const outerRadius = 8;
                                     const innerRadius = 3;
@@ -405,7 +378,6 @@ export default function SecurityMarketLine({ data }) {
                     </ScatterChart>
                 </ResponsiveContainer>
 
-                {/* Professional Legend with CAPM Interpretation */}
                 <div className="mt-6 border-t border-slate-700/30 pt-4">
                     <div className="flex flex-wrap gap-6 justify-center text-xs text-slate-400 mb-4">
                         <div className="flex items-center gap-2">
@@ -430,7 +402,6 @@ export default function SecurityMarketLine({ data }) {
                         </div>
                     </div>
 
-                    {/* CAPM Interpretation Guide */}
                     <div className="flex flex-wrap gap-6 justify-center text-xs mt-3 pt-3 border-t border-slate-700/30">
                         <div className="flex items-center gap-2">
                             <span className="text-emerald-400 font-bold">Above SML:</span>

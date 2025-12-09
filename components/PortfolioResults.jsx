@@ -813,7 +813,6 @@ export default function PortfolioResults({ data }) {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-6"
                             >
-                                {/* Monthly Returns Heatmap */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                     <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                         <h3 className="font-semibold text-white">Monthly Returns</h3>
@@ -834,9 +833,8 @@ export default function PortfolioResults({ data }) {
                                                     const yearReturns = data.monthlyReturns[year];
                                                     const annualReturn = Object.values(yearReturns).reduce((acc, val) => (1 + acc) * (1 + val) - 1, 0);
 
-                                                    // Calculate max absolute value for heatmap scaling (across all years)
                                                     const allValues = Object.values(data.monthlyReturns).flatMap(y => Object.values(y));
-                                                    const maxAbsVal = Math.max(...allValues.map(Math.abs)) || 0.1; // Default to 0.1 to avoid div by zero
+                                                    const maxAbsVal = Math.max(...allValues.map(Math.abs)) || 0.1;
 
                                                     return (
                                                         <tr key={year} className="bg-slate-900/20 hover:bg-slate-800/30 transition-colors">
@@ -845,7 +843,7 @@ export default function PortfolioResults({ data }) {
                                                                 const val = yearReturns[month];
                                                                 if (val === undefined) return <td key={month} className="px-2 py-3 text-slate-600">-</td>;
 
-                                                                const opacity = Math.min(Math.abs(val) / maxAbsVal, 1) * 0.4; // Max opacity 0.4
+                                                                const opacity = Math.min(Math.abs(val) / maxAbsVal, 1) * 0.4;
                                                                 const colorClass = val >= 0 ? 'text-emerald-400' : 'text-rose-400';
                                                                 const bgStyle = {
                                                                     backgroundColor: val >= 0
@@ -870,7 +868,6 @@ export default function PortfolioResults({ data }) {
                                     </div>
                                 </div>
 
-                                {/* Drawdowns Table */}
                                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                                     <div className="bg-slate-800/60 px-6 py-4 border-b border-slate-700/50">
                                         <h3 className="font-semibold text-white">Worst Drawdowns</h3>

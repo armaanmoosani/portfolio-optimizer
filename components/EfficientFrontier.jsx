@@ -11,7 +11,6 @@ export default function EfficientFrontier({ data }) {
         );
     }
 
-    // 1. Format Frontier Points (The Blue Curve)
     const frontierPoints = data.frontier_points.map((p, idx) => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
@@ -22,7 +21,6 @@ export default function EfficientFrontier({ data }) {
         id: `frontier_${idx}`
     })).sort((a, b) => a.return - b.return);
 
-    // 2. Format Monte Carlo Points (The Cloud)
     const monteCarloPoints = (data.monte_carlo_points || []).slice(0, 1000).map((p, idx) => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
@@ -33,7 +31,6 @@ export default function EfficientFrontier({ data }) {
         id: `mc_${idx}`
     }));
 
-    // 3. Format Individual Assets (The Dots)
     const individualAssets = (data.individual_assets || []).map((p, idx) => ({
         volatility: p.volatility * 100,
         return: p.return * 100,
@@ -42,7 +39,6 @@ export default function EfficientFrontier({ data }) {
         id: `asset_${p.name}`
     }));
 
-    // 4. Key Portfolios - CRITICAL: Store raw values for exact matching
     const optimalPortfolio = data.optimal_portfolio ? {
         volatility: data.optimal_portfolio.volatility * 100,
         return: data.optimal_portfolio.return * 100,
@@ -63,11 +59,9 @@ export default function EfficientFrontier({ data }) {
         id: 'min_variance_portfolio'
     } : null;
 
-    // CRITICAL: Check if portfolios are truly distinct (>0.1% difference in volatility)
     const hasDistinctMinVol = minVariancePortfolio && optimalPortfolio &&
         Math.abs(minVariancePortfolio.volatility - optimalPortfolio.volatility) > 0.1;
 
-    // 5. Capital Market Line (CML)
     let cmlPoints = [];
     if (data.cml_points && data.cml_points.length > 0) {
         cmlPoints = data.cml_points.map((p, idx) => ({
@@ -77,7 +71,6 @@ export default function EfficientFrontier({ data }) {
             id: `cml_${idx}`
         })).sort((a, b) => a.volatility - b.volatility);
     } else if (optimalPortfolio) {
-        // Use backend risk_free_rate if available, otherwise fallback (in percentage)
         const rfRate = data.risk_free_rate ? data.risk_free_rate * 100 : 4.5;
         const optVol = optimalPortfolio.volatility;
         const optRet = optimalPortfolio.return;
@@ -90,7 +83,6 @@ export default function EfficientFrontier({ data }) {
         ];
     }
 
-    // 6. Calculate Axis Domains (Auto-Scaling)
     const allPoints = [
         ...frontierPoints,
         ...monteCarloPoints,
@@ -118,11 +110,9 @@ export default function EfficientFrontier({ data }) {
         Math.ceil((maxRet + retPadding) / 5) * 5
     ];
 
-    // FAST TOOLTIP - Uses payload directly with type-based priority (no useState)
     const CustomTooltip = ({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null;
 
-        // Priority based on point TYPE - higher priority wins when points overlap
         const typePriority = {
             'optimal': 100,
             'min_variance': 90,
@@ -131,7 +121,6 @@ export default function EfficientFrontier({ data }) {
             'monte_carlo': 10
         };
 
-        // Find the highest priority point type in the payload
         let selectedPoint = null;
         let highestPriority = -1;
 
@@ -149,7 +138,6 @@ export default function EfficientFrontier({ data }) {
 
         if (!selectedPoint) return null;
 
-        // Display badge and name based on point TYPE
         let badge = null;
         let displayName = selectedPoint.name || 'Portfolio';
         let displayWeights = selectedPoint.weights;
@@ -188,9 +176,7 @@ export default function EfficientFrontier({ data }) {
                     </p>
                     {badge}
                 </div>
-
                 <div className="p-4 space-y-3">
-                    {/* Core Metrics */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block mb-1">Expected Return</span>
@@ -211,7 +197,6 @@ export default function EfficientFrontier({ data }) {
                         </div>
                     )}
 
-                    {/* Allocations (Only for portfolios) */}
                     {displayWeights && Object.keys(displayWeights).length > 0 && (
                         <>
                             <div className="border-t border-slate-700/50 my-3" />
@@ -282,7 +267,6 @@ export default function EfficientFrontier({ data }) {
                     )}
                 </div>
             </div>
-
             <div className="p-4 sm:p-8">
                 <ResponsiveContainer width="100%" height={500}>
                     <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 50 }}>
@@ -337,7 +321,6 @@ export default function EfficientFrontier({ data }) {
                             wrapperStyle={{ zIndex: 100 }}
                         />
 
-                        {/* Layer 1: Monte Carlo Cloud (Background) */}
                         <Scatter
                             name="Feasible Set"
                             data={monteCarloPoints}
@@ -347,7 +330,6 @@ export default function EfficientFrontier({ data }) {
                             isAnimationActive={false}
                         />
 
-                        {/* Layer 2: Capital Market Line */}
                         {cmlPoints.length > 1 && (
                             <>
                                 <ReferenceLine
@@ -381,7 +363,6 @@ export default function EfficientFrontier({ data }) {
                             </>
                         )}
 
-                        {/* Layer 3: Efficient Frontier Curve */}
                         <Scatter
                             name="Efficient Frontier"
                             data={frontierPoints}
@@ -397,7 +378,6 @@ export default function EfficientFrontier({ data }) {
                             ))}
                         </Scatter>
 
-                        {/* Layer 4: Individual Assets */}
                         <Scatter
                             name="Assets"
                             data={individualAssets}
@@ -410,7 +390,6 @@ export default function EfficientFrontier({ data }) {
                             <LabelList dataKey="name" position="top" offset={6} style={{ fill: '#cbd5e1', fontSize: '10px', fontWeight: 'bold' }} />
                         </Scatter>
 
-                        {/* Layer 5: Minimum Variance Portfolio (if distinct) */}
                         {hasDistinctMinVol && (
                             <Scatter
                                 name="Min Variance"
@@ -428,7 +407,6 @@ export default function EfficientFrontier({ data }) {
                             />
                         )}
 
-                        {/* Layer 6: Optimal Portfolio (Always on top) */}
                         {optimalPortfolio && (
                             <Scatter
                                 name="Max Sharpe"
@@ -448,7 +426,6 @@ export default function EfficientFrontier({ data }) {
                     </ScatterChart>
                 </ResponsiveContainer>
 
-                {/* Professional Legend */}
                 <div className="mt-6 flex flex-wrap gap-4 justify-center text-xs text-slate-400 border-t border-slate-700/30 pt-4">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white"></div>

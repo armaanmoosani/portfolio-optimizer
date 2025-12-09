@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import { Calculator, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, Percent, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Quick preset options (all available - will be filtered based on IPO)
 const ALL_PRESETS = [
     { label: '1M', months: 1 },
     { label: '6M', months: 6 },
@@ -24,14 +23,12 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Calculate date from preset
     const getDateFromPreset = (months) => {
         const date = new Date();
         date.setMonth(date.getMonth() - months);
         return date.toISOString().split('T')[0];
     };
 
-    // Filter presets based on IPO date - only show periods the stock has existed for
     const availablePresets = useMemo(() => {
         if (!ipoDate) return ALL_PRESETS;
 
@@ -42,7 +39,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
         return ALL_PRESETS.filter(preset => preset.months <= monthsSinceIPO);
     }, [ipoDate]);
 
-    // If selected preset is no longer available, reset to the longest available one
     useMemo(() => {
         if (!useCustomDate && selectedPreset && !availablePresets.find(p => p.label === selectedPreset)) {
             const longest = availablePresets[availablePresets.length - 1];
@@ -50,7 +46,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
         }
     }, [availablePresets, selectedPreset, useCustomDate]);
 
-    // Get the active date
     const activeDate = useMemo(() => {
         if (useCustomDate && customDate) {
             return customDate;
@@ -59,7 +54,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
         return preset ? getDateFromPreset(preset.months) : getDateFromPreset(12);
     }, [useCustomDate, customDate, selectedPreset]);
 
-    // Format currency
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -69,7 +63,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
         }).format(value);
     };
 
-    // Handle calculation
     const handleCalculate = async () => {
         if (!ticker || !activeDate || amount <= 0) return;
 
@@ -93,14 +86,12 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
         }
     };
 
-    // Handle preset click
     const handlePresetClick = (preset) => {
         setSelectedPreset(preset.label);
         setUseCustomDate(false);
         setResult(null);
     };
 
-    // Handle custom date change
     const handleCustomDateChange = (e) => {
         setCustomDate(e.target.value);
         setUseCustomDate(true);
@@ -108,7 +99,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
         setResult(null);
     };
 
-    // Handle amount change
     const handleAmountChange = (e) => {
         const value = parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0;
         setAmount(value);
@@ -119,7 +109,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
 
     return (
         <div className="glass-panel rounded-3xl border border-white/5 overflow-hidden">
-            {/* Header */}
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
@@ -139,8 +128,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                     <ChevronDown className="w-5 h-5 text-slate-400" />
                 )}
             </button>
-
-            {/* Expandable Content */}
             <AnimatePresence>
                 {isExpanded && (
                     <motion.div
@@ -151,10 +138,8 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                         className="overflow-hidden"
                     >
                         <div className="px-6 pb-6 space-y-6">
-                            {/* Input Section */}
                             <div className="bg-slate-900/50 rounded-2xl p-5 border border-white/5">
                                 <div className="flex flex-col md:flex-row gap-4">
-                                    {/* Amount Input */}
                                     <div className="flex-1">
                                         <label className="text-xs font-semibold text-slate-400 mb-2 block">Investment Amount</label>
                                         <div className="relative">
@@ -169,7 +154,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                                         </div>
                                     </div>
 
-                                    {/* Custom Date Input */}
                                     <div className="flex-1">
                                         <label className="text-xs font-semibold text-slate-400 mb-2 block">Custom Date</label>
                                         <div className="relative">
@@ -185,7 +169,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                                     </div>
                                 </div>
 
-                                {/* Preset Buttons */}
                                 <div className="mt-4">
                                     <label className="text-xs font-semibold text-slate-400 mb-2 block">Quick Select</label>
                                     <div className="flex flex-wrap gap-2">
@@ -204,7 +187,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                                     </div>
                                 </div>
 
-                                {/* Calculate Button */}
                                 <button
                                     onClick={handleCalculate}
                                     disabled={loading || !ticker}
@@ -224,21 +206,18 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                                 </button>
                             </div>
 
-                            {/* Error Display */}
                             {error && (
                                 <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
                                     <p className="text-rose-400 text-sm font-medium">{error}</p>
                                 </div>
                             )}
 
-                            {/* Results Section */}
                             {result && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="space-y-4"
                                 >
-                                    {/* Main Result Card */}
                                     <div className={`rounded-2xl p-6 border ${isPositive ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}>
                                         <div className="text-center">
                                             <p className="text-slate-400 text-sm mb-1">
@@ -256,7 +235,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                                         </div>
                                     </div>
 
-                                    {/* Stats Grid */}
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5">
                                             <p className="text-xs text-slate-400 mb-1">Shares</p>
@@ -285,7 +263,6 @@ export default function WhatIfCalculator({ ticker, currentPrice, ipoDate }) {
                                         </div>
                                     </div>
 
-                                    {/* Disclaimer */}
                                     <p className="text-xs text-slate-500 text-center">
                                         Uses split-adjusted prices. Dividends not included.
                                     </p>

@@ -27,8 +27,6 @@ export default function PortfolioReport({ data }) {
 
     return (
         <div className="hidden print:block bg-white text-slate-900 font-serif">
-
-            {/* COVER PAGE */}
             <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative page-break-after-always">
                 <div className="flex-1 flex flex-col justify-center items-center text-center">
                     <div className="w-24 h-24 bg-slate-900 text-white flex items-center justify-center rounded-full mb-8">
@@ -64,14 +62,11 @@ export default function PortfolioReport({ data }) {
                     Institutional Grade Analytics
                 </div>
             </div>
-
-            {/* PAGE 1: EXECUTIVE SUMMARY */}
             <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative page-break-after-always">
                 <PageHeader />
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-6 font-sans border-l-4 border-slate-900 pl-4">Executive Summary</h2>
 
-                {/* Key Metrics Grid */}
                 <div className="grid grid-cols-4 gap-6 mb-12">
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded">
                         <div className="text-[10px] uppercase tracking-wider text-slate-500 font-sans mb-1">Annual Return</div>
@@ -91,7 +86,6 @@ export default function PortfolioReport({ data }) {
                     </div>
                 </div>
 
-                {/* Performance Chart */}
                 <div className="mb-12">
                     <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Cumulative Performance</h3>
                     <div className="h-[300px] border border-slate-100 rounded p-4 bg-slate-50/50">
@@ -117,7 +111,6 @@ export default function PortfolioReport({ data }) {
                     </div>
                 </div>
 
-                {/* Asset Allocation */}
                 <div className="grid grid-cols-2 gap-12">
                     <div>
                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider font-sans">Asset Allocation</h3>
@@ -161,8 +154,6 @@ export default function PortfolioReport({ data }) {
 
                 <PageFooter pageNum={1} />
             </div>
-
-            {/* PAGE 2: RISK ANALYSIS */}
             <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative page-break-after-always">
                 <PageHeader />
 
@@ -252,8 +243,6 @@ export default function PortfolioReport({ data }) {
 
                 <PageFooter pageNum={2} />
             </div>
-
-            {/* DISCLAIMER PAGE */}
             <div className="w-[210mm] h-[297mm] mx-auto p-12 flex flex-col relative">
                 <PageHeader />
                 <div className="flex-1 flex flex-col justify-end pb-20">
@@ -264,7 +253,6 @@ export default function PortfolioReport({ data }) {
                 </div>
                 <PageFooter pageNum={3} />
             </div>
-
         </div>
     );
 }

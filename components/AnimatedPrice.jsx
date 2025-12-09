@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 const Digit = ({ value }) => {
     return (
         <div className="relative h-[1em] w-[0.6em] overflow-hidden inline-block">
-            {/* Spacer to maintain width - using '8' as it's usually the widest digit */}
             <span className="invisible absolute top-0 left-0">8</span>
-
             <motion.div
                 className="absolute top-0 left-0 flex flex-col items-center w-full"
                 initial={{ y: 0 }}
@@ -28,7 +26,6 @@ const Digit = ({ value }) => {
 };
 
 export default function AnimatedPrice({ value, className = "" }) {
-    // Format to 2 decimal places
     const formatted = Math.abs(value).toFixed(2);
     const parts = formatted.split('');
 

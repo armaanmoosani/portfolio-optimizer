@@ -17,14 +17,12 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const inputRef = useRef(null);
     const toast = useToast();
 
-    // Calculate equal weights for preview
     const allocationData = assets.map((asset, index) => ({
         name: asset.symbol,
         value: 100 / assets.length,
         color: COLORS[index % COLORS.length]
     }));
 
-    // Click outside to close suggestions
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
@@ -50,8 +48,8 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         try {
             const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(value)}`);
             if (res.ok) {
-                // Prevent race condition: only update if input still matches the query
-                if (inputRef.current && inputRef.current.value.toUpperCase() !== value) return;
+                if (inputRef.current && inputRef.current.value.toUpperCase() !== value)
+                    return;
 
                 const data = await res.json();
                 setSuggestions(data.result || []);
@@ -76,16 +74,14 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const validateAndAdd = async (tickerSymbol) => {
         if (isValidating) return;
         setIsValidating(true);
-        setShowSuggestions(false); // Hide suggestions immediately
+        setShowSuggestions(false);
 
         try {
-            // Strict validation: Check against API
             const res = await fetch(`/api/proxy?service=finnhubAutocomplete&query=${encodeURIComponent(tickerSymbol)}`);
             if (res.ok) {
                 const data = await res.json();
                 const results = data.result || [];
 
-                // Check for exact match
                 const match = results.find(s => s.symbol.toUpperCase() === tickerSymbol);
 
                 if (match) {
@@ -108,17 +104,14 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
         if (e.key === "Enter") {
             e.preventDefault();
             if (selectedIndex >= 0 && suggestions[selectedIndex]) {
-                // Add from selected suggestion
                 handleAdd(suggestions[selectedIndex].symbol, suggestions[selectedIndex].description);
             } else if (ticker.trim()) {
                 const tickerSymbol = ticker.trim().toUpperCase();
                 const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
 
                 if (matchingSuggestion) {
-                    // Valid ticker found in suggestions
                     handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
                 } else {
-                    // Fast typing case: Validate asynchronously
                     validateAndAdd(tickerSymbol);
                 }
             }
@@ -138,14 +131,11 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
     const handleAddClick = () => {
         if (ticker.trim()) {
             const tickerSymbol = ticker.trim().toUpperCase();
-            // Only add if ticker exists in suggestions (valid ticker)
             const matchingSuggestion = suggestions.find(s => s.symbol.toUpperCase() === tickerSymbol);
 
             if (matchingSuggestion) {
-                // Valid ticker found in suggestions
                 handleAdd(matchingSuggestion.symbol, matchingSuggestion.description);
             } else {
-                // Fast typing case: Validate asynchronously
                 validateAndAdd(tickerSymbol);
             }
         }
@@ -153,15 +143,12 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[600px]">
-            {/* Left Column: Search & List (Span 2) */}
             <div className="lg:col-span-2 space-y-8">
-                {/* Header */}
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Build Your Portfolio</h2>
                     <p className="text-slate-400 text-lg">Add assets to analyze risk and optimize allocation.</p>
                 </div>
 
-                {/* Search Input */}
                 <div className="relative z-20" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
                     <div className="relative flex gap-3">
                         <div className="relative flex-1 group">
@@ -201,7 +188,6 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                         </button>
                     </div>
 
-                    {/* Autocomplete Suggestions */}
                     <AnimatePresence>
                         {showSuggestions && suggestions.length > 0 && (
                             <motion.ul
@@ -230,7 +216,6 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                     </AnimatePresence>
                 </div>
 
-                {/* Asset List */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-white/5 pb-4">
                         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -289,8 +274,6 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                     </AnimatePresence>
                 </div>
             </div>
-
-            {/* Right Column: Live Allocation Preview (Span 1) */}
             <div className="lg:col-span-1">
                 <div className="glass-panel rounded-3xl p-8 border border-white/5 shadow-2xl bg-slate-900/40 backdrop-blur-md h-full">
                     <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
@@ -330,14 +313,12 @@ export default function PortfolioBuilder({ assets, onAddAsset, onRemoveAsset }) 
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
-                                {/* Center Text */}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                     <span className="text-4xl font-bold text-white tracking-tighter">{assets.length}</span>
                                     <span className="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Assets</span>
                                 </div>
                             </div>
 
-                            {/* Legend */}
                             <div className="mt-8 space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
                                 {allocationData.map((entry, index) => (
                                     <div key={entry.name} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-white/5 transition-colors">

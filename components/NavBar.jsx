@@ -28,17 +28,14 @@ export default function NavBar() {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            // Prevent navigation if user is typing or interacting with focused elements
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) {
                 return;
             }
 
-            // Prevent navigation if inside a component with its own tab/navigation system
             if (e.target.closest('[data-internal-navigation]')) {
                 return;
             }
 
-            // Prevent navigation if the target is a button (likely a tab button)
             if (e.target.closest('button')) {
                 return;
             }
@@ -60,7 +57,6 @@ export default function NavBar() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [pathname, router, tabs]);
 
-    // Close mobile menu on route change
     useEffect(() => {
         setMobileMenuOpen(false);
     }, [pathname]);
@@ -70,7 +66,6 @@ export default function NavBar() {
             <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
                 <div className="container mx-auto px-4 pt-6">
                     <div className="flex items-center justify-center">
-                        {/* Desktop Navigation */}
                         <div className="hidden md:block relative pointer-events-auto">
                             <div className="flex space-x-1 p-2 rounded-full bg-slate-900/80 backdrop-blur-xsm border border-slate-800 shadow-2xl shadow-black/50">
                                 {tabs.map((tab) => (
@@ -96,7 +91,6 @@ export default function NavBar() {
                             </div>
                         </div>
 
-                        {/* Mobile Menu Button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             className="md:hidden absolute right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors pointer-events-auto"
@@ -107,12 +101,9 @@ export default function NavBar() {
                     </div>
                 </div>
             </nav>
-
-            {/* Mobile Menu Overlay */}
             <AnimatePresence>
                 {mobileMenuOpen && (
                     <>
-                        {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -121,7 +112,6 @@ export default function NavBar() {
                             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
                         />
 
-                        {/* Drawer */}
                         <motion.div
                             initial={{ x: "100%" }}
                             animate={{ x: 0 }}
