@@ -33,8 +33,11 @@ export default function FadeInSection({ children, delay = 0, className = "" }) {
     return (
         <div
             ref={domRef}
-            className={`transition-all duration-1000 ease-out transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'} ${className}`}
-            style={{ transitionDelay: `${delay}ms` }}
+            className={`transition-all duration-700 ease-out transform ${isVisible ? 'opacity-100 translate-y-0 blur-0' : 'opacity-0 translate-y-8 blur-sm'} ${className}`}
+            style={{
+                transitionDelay: `${delay}ms`,
+                transitionProperty: 'opacity, transform, filter'
+            }}
         >
             {children}
         </div>

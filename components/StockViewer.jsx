@@ -45,6 +45,7 @@ export default function StockViewer() {
 
     const [isMounted, setIsMounted] = useState(false);
     const [priceFlash, setPriceFlash] = useState(null);
+    const [showRipple, setShowRipple] = useState(false);
     const prevPriceRef = useRef(null);
 
     useEffect(() => {
@@ -83,11 +84,16 @@ export default function StockViewer() {
 
     useEffect(() => {
         if (stockData?.price && prevPriceRef.current !== null) {
-            if (stockData.price > prevPriceRef.current) {
-                setPriceFlash('up');
-                setTimeout(() => setPriceFlash(null), 500);
-            } else if (stockData.price < prevPriceRef.current) {
-                setPriceFlash('down');
+            if (stockData.price !== prevPriceRef.current) {
+                // Trigger ripple on any price change
+                setShowRipple(true);
+                setTimeout(() => setShowRipple(false), 800);
+
+                if (stockData.price > prevPriceRef.current) {
+                    setPriceFlash('up');
+                } else {
+                    setPriceFlash('down');
+                }
                 setTimeout(() => setPriceFlash(null), 500);
             }
         }
@@ -1003,7 +1009,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         <div className="lg:col-span-2 space-y-8">
 
                             { }
-                            <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
+                            <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10 breathing-glow">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
                                         {chartLoading ? (
@@ -1013,11 +1019,14 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         ) : (
                                             <>
-                                                <div className={`text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
+                                                <div className={`ripple-container text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
                                                     $<AnimatedPrice value={displayData.price || 0} />
+                                                    {showRipple && (
+                                                        <span className={`ripple-ring ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`} />
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-2">
-                                                    <div className={`flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    <div className={`color-morph flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                         {displayData.isPositive ? (
                                                             <ArrowUpRight className={`w-6 h-6 ${priceFlash === 'up' ? 'arrow-bounce-up' : ''}`} />
                                                         ) : (
@@ -1355,28 +1364,28 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 )}
                             </div>
 
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                            <div className="glass-panel-premium shimmer-edge rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stats-grid-dividers">
-                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="Open" />
                                         <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="High" />
                                         <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="Low" />
                                         <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="Prev Close" />
                                         <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
@@ -1385,55 +1394,55 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </div>
                                 {stockInfo && (
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="Mkt Cap" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {formatLargeNumber(stockInfo.marketCap)}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="P/E Ratio" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="52-Wk High" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="52-Wk Low" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="Div Yield" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="Qtrly Div" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="EPS (TTM)" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="Volume" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {formatLargeNumber(stockInfo.volume)}
                                             </p>
                                         </div>
-                                        <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
+                                        <div className="card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
                                             <StatLabel label="Beta" />
                                             <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
@@ -1629,7 +1638,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         </div>
 
                         <div className="space-y-8">
-                            <div className="glass-panel rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
+                            <div className="glass-panel-premium shimmer-edge rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
                                 <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
                                     <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
@@ -1652,7 +1661,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 )}
                             </div>
 
-                            <div className="glass-panel rounded-3xl p-8 border border-white/5">
+                            <div className="glass-panel-premium rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                                     <div className="p-2.5 rounded-xl bg-slate-700/50 text-slate-300 shadow-inner ring-1 ring-white/5">
                                         <Calendar className="w-5 h-5" />
