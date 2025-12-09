@@ -273,7 +273,7 @@ export default function StockViewer() {
 
             const [metaRes, quoteRes, infoRes, newsRes, chartRes] = await Promise.all([
                 fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
-                fetch(`/api/quote?ticker=${searchTicker}`),
+                fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`),
                 fetch(`/api/stock_info?ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`),
                 fetch(`/api/history?ticker=${searchTicker}&period=${period}&interval=${interval}`)
