@@ -1333,8 +1333,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     );
                                                 })}
 
-                                                {/* Reference Dots for live price (only in price mode) */}
-                                                {activeComparables.length === 0 && stockData.price && chartData.length > 0 && (
+                                                {/* Reference Dots for live price (only in price mode and (1D view OR Market Open)) */}
+                                                {activeComparables.length === 0 && (timeRange === '1D' || isMarketOpen()) && stockData.price && chartData.length > 0 && (
                                                     <ReferenceDot
                                                         x={chartData[chartData.length - 1]?.date}
                                                         y={stockData.price}
