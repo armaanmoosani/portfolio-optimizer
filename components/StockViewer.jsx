@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar } from "lucide-react";
+import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar, Info } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend, Line } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
@@ -44,6 +44,8 @@ export default function StockViewer() {
     const [loadingAnalystRatings, setLoadingAnalystRatings] = useState(false);
 
     const [isMounted, setIsMounted] = useState(false);
+    const [priceFlash, setPriceFlash] = useState(null);
+    const prevPriceRef = useRef(null);
 
     useEffect(() => {
         if (!stockData?.symbol) return;
@@ -78,6 +80,19 @@ export default function StockViewer() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (stockData?.price && prevPriceRef.current !== null) {
+            if (stockData.price > prevPriceRef.current) {
+                setPriceFlash('up');
+                setTimeout(() => setPriceFlash(null), 500);
+            } else if (stockData.price < prevPriceRef.current) {
+                setPriceFlash('down');
+                setTimeout(() => setPriceFlash(null), 500);
+            }
+        }
+        prevPriceRef.current = stockData?.price;
+    }, [stockData?.price]);
 
     const getRelativeData = (data = chartData) => {
         if (!data || data.length === 0) return [];
@@ -834,6 +849,33 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         return `$${num.toLocaleString()}`;
     };
 
+    const STAT_TOOLTIPS = {
+        'Open': 'Price at market open today',
+        'High': 'Highest price reached today',
+        'Low': 'Lowest price reached today',
+        'Prev Close': 'Closing price from previous trading day',
+        'Mkt Cap': 'Total market value of all shares',
+        'P/E Ratio': 'Price-to-Earnings ratio (stock price ÷ earnings per share)',
+        '52-Wk High': 'Highest price in the last 52 weeks',
+        '52-Wk Low': 'Lowest price in the last 52 weeks',
+        'Div Yield': 'Annual dividend as % of stock price',
+        'Qtrly Div': 'Most recent quarterly dividend payment',
+        'EPS (TTM)': 'Earnings per share (trailing twelve months)',
+        'Volume': 'Number of shares traded today',
+        'Beta': 'Volatility relative to the market (1 = market average)'
+    };
+
+    const StatLabel = ({ label }) => (
+        <div className="stat-tooltip">
+            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</span>
+            {STAT_TOOLTIPS[label] && (
+                <>
+                    <Info className="w-3 h-3 text-slate-600 hover:text-slate-400 transition-colors" />
+                    <span className="tooltip-content">{STAT_TOOLTIPS[label]}</span>
+                </>
+            )}
+        </div>
+    );
 
 
     return (
@@ -971,17 +1013,19 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center">
+                                                <div className={`text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
                                                     $<AnimatedPrice value={displayData.price || 0} />
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-2">
                                                     <div className={`flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {displayData.isPositive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-                                                        { }
+                                                        {displayData.isPositive ? (
+                                                            <ArrowUpRight className={`w-6 h-6 ${priceFlash === 'up' ? 'arrow-bounce-up' : ''}`} />
+                                                        ) : (
+                                                            <ArrowDownRight className={`w-6 h-6 ${priceFlash === 'down' ? 'arrow-bounce-down' : ''}`} />
+                                                        )}
                                                         <span className="flex items-center">
                                                             {displayData.isPositive ? '+' : ''}<AnimatedPrice value={displayData.change || 0} />
                                                         </span>
-                                                        { }
                                                         <span className="flex items-center">
                                                             (<AnimatedPrice value={displayData.percent || 0} />%)
                                                         </span>
@@ -1004,23 +1048,30 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                        {Object.keys(TIME_RANGES).map((range) => (
+                                    <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                        {Object.keys(TIME_RANGES).map((range, index) => (
                                             <button
                                                 key={range}
                                                 onClick={() => updateStockState({ timeRange: range })}
-                                                className={`btn-press px-4 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === range
-                                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/10'
-                                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                className={`btn-press px-4 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${timeRange === range
+                                                    ? 'text-white'
+                                                    : 'text-slate-400 hover:text-white'
                                                     }`}
                                             >
                                                 {range}
                                             </button>
                                         ))}
+                                        <div
+                                            className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                            style={{
+                                                left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% / ${Object.keys(TIME_RANGES).length}) + 4px)`,
+                                                width: `calc(100% / ${Object.keys(TIME_RANGES).length} - 8px)`
+                                            }}
+                                        />
                                     </div>
                                 </div>
 
-                                <div className="h-[500px] w-full p-4 relative group">
+                                <div className="h-[500px] w-full p-4 relative group chart-inner-shadow rounded-2xl">
                                     {chartLoading && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm z-10 rounded-2xl transition-all">
                                             <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
@@ -1306,28 +1357,28 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             <div className="glass-panel rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stats-grid-dividers">
                                     <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Open</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
+                                        <StatLabel label="Open" />
+                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
                                     <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">High</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
+                                        <StatLabel label="High" />
+                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
                                     <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Low</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
+                                        <StatLabel label="Low" />
+                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
                                     <div className="stagger-item card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                        <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Prev Close</p>
-                                        <p className="text-2xl font-bold text-white tracking-tight">
+                                        <StatLabel label="Prev Close" />
+                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
@@ -1335,56 +1386,56 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 {stockInfo && (
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Mkt Cap</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="Mkt Cap" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {formatLargeNumber(stockInfo.marketCap)}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">P/E Ratio</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="P/E Ratio" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.trailingPE ? stockInfo.trailingPE.toFixed(2) : '-'}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk High</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="52-Wk High" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.fiftyTwoWeekHigh ? `$${stockInfo.fiftyTwoWeekHigh.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">52-Wk Low</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="52-Wk Low" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.fiftyTwoWeekLow ? `$${stockInfo.fiftyTwoWeekLow.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Div Yield</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="Div Yield" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.dividendYield ? `${stockInfo.dividendYield.toFixed(2)}%` : '-'}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Qtrly Div</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="Qtrly Div" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.lastDividendValue ? `$${stockInfo.lastDividendValue.toFixed(2)}` : '-'}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">EPS (TTM)</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="EPS (TTM)" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.trailingEps ? stockInfo.trailingEps.toFixed(2) : '-'}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Volume</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="Volume" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {formatLargeNumber(stockInfo.volume)}
                                             </p>
                                         </div>
                                         <div className="card-hover-lift bg-slate-800/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Beta</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">
+                                            <StatLabel label="Beta" />
+                                            <p className="text-xl font-bold text-white tracking-tight mt-1">
                                                 {stockInfo.beta ? stockInfo.beta.toFixed(2) : '-'}
                                             </p>
                                         </div>
