@@ -1027,7 +1027,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         </div>
                                     )}
                                     {isMounted ? (
-                                        <ResponsiveContainer width="100%" height="100%" className="chart-line-animate">
+                                        <ResponsiveContainer width="100%" height="100%">
                                             <ComposedChart
                                                 data={activeComparables.length > 0 ? getRelativeData(visibleChartData) : visibleChartData}
                                                 margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
