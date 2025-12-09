@@ -273,7 +273,7 @@ export default function StockViewer() {
 
             const [metaRes, quoteRes, infoRes, newsRes, chartRes] = await Promise.all([
                 fetch(`/api/proxy?service=tiingo&ticker=${searchTicker}`),
-                fetch(`/api/proxy?service=finnhubQuote&ticker=${searchTicker}`),
+                fetch(`/api/quote?ticker=${searchTicker}`),
                 fetch(`/api/stock_info?ticker=${searchTicker}`),
                 fetch(`/api/proxy?service=finnhubNews&ticker=${searchTicker}`),
                 fetch(`/api/history?ticker=${searchTicker}&period=${period}&interval=${interval}`)
@@ -287,26 +287,26 @@ export default function StockViewer() {
                 chartRes.json()
             ]);
 
-            if (!quote.c) throw new Error("Invalid ticker or no data found");
+            if (!quote.price) throw new Error("Invalid ticker or no data found");
 
             const newStockData = {
                 symbol: searchTicker,
-                price: quote.c,
-                change: quote.c && quote.pc ? quote.c - quote.pc : 0,
-                changePercent: quote.c && quote.pc ? ((quote.c - quote.pc) / quote.pc) * 100 : 0,
+                price: quote.price,
+                change: quote.change || 0,
+                changePercent: quote.percent_change || 0,
                 name: meta.name || searchTicker,
                 description: meta.description || "No description available.",
-                open: infoData.open || quote.o,
-                high: infoData.dayHigh || quote.h,
-                low: infoData.dayLow || quote.l,
-                prevClose: infoData.previousClose || quote.pc
+                open: infoData.open,
+                high: infoData.dayHigh,
+                low: infoData.dayLow,
+                prevClose: infoData.previousClose
             };
 
             const newsArr = Array.isArray(newsData) ? newsData : [];
 
             let processedChartData = Array.isArray(chartDataRaw) ? chartDataRaw : [];
-            if (timeRange === '1D' && quote.c && processedChartData.length > 0) {
-                processedChartData[processedChartData.length - 1].price = quote.c;
+            if (timeRange === '1D' && quote.price && processedChartData.length > 0) {
+                processedChartData[processedChartData.length - 1].price = quote.price;
             }
 
             updateStockState({
@@ -838,18 +838,18 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
-            {}
+            { }
             <div className="flex flex-col items-center relative z-20 min-h-[80vh]">
-                {}
+                { }
                 <div className="text-center space-y-2 mb-8 pt-4">
                     <h1 className="text-4xl font-bold text-white tracking-tight">Market Intelligence</h1>
                     <p className="text-slate-400 text-lg">Real-time data, AI analysis, and institutional-grade charts.</p>
                 </div>
 
-                {}
+                { }
                 <div className="flex-1 flex flex-col justify-center items-center w-full max-w-2xl -mt-32">
                     <div className="w-full" ref={searchContainerRef} onClick={(e) => e.stopPropagation()}>
-                        {}
+                        { }
                         {!stockData && !loading && (
                             <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                 <div className="flex items-center gap-4 mb-3">
@@ -900,7 +900,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             </button>
                         </div>
 
-                        {}
+                        { }
                         {showSuggestions && suggestions.length > 0 && (
                             <ul className="absolute w-full mt-3 bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[350px] overflow-y-auto backdrop-blur-xl custom-scrollbar ring-1 ring-white/5">
                                 {suggestions.slice(0, 8).map((item, index) => (
@@ -934,7 +934,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             {!loading && stockData && (
                 <div id="stock-results" className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 -mt-12">
 
-                    {}
+                    { }
                     <FadeInSection>
                         <div className="flex flex-col items-center text-center gap-6 border-b border-white/5 pb-8">
                             <div className="flex flex-col items-center">
@@ -954,13 +954,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         </div>
                     </FadeInSection>
 
-                    {}
+                    { }
                     <FadeInSection delay={100} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                        {}
+                        { }
                         <div className="lg:col-span-2 space-y-8">
 
-                            {}
+                            { }
                             <div className="glass-panel rounded-3xl p-1 border border-white/5 bg-slate-900/40 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
@@ -977,11 +977,11 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 <div className="flex items-center gap-3 mt-2">
                                                     <div className={`flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                         {displayData.isPositive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-                                                        {}
+                                                        { }
                                                         <span className="flex items-center">
                                                             {displayData.isPositive ? '+' : ''}<AnimatedPrice value={displayData.change || 0} />
                                                         </span>
-                                                        {}
+                                                        { }
                                                         <span className="flex items-center">
                                                             (<AnimatedPrice value={displayData.percent || 0} />%)
                                                         </span>
@@ -990,8 +990,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         {displayData.label}
                                                     </span>
                                                 </div>
-                                                {}
-                                                {}
+                                                { }
+                                                { }
                                                 {afterHoursData && (
                                                     <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
                                                         <span className="text-slate-500 font-normal">Market Close:</span>
@@ -1041,13 +1041,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 }}
                                             >
                                                 <defs>
-                                                    {}
+                                                    { }
                                                     <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="5%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0.1} />
                                                         <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (displayData.isPositive ? '#34d399' : '#f43f5e')} stopOpacity={0} />
                                                     </linearGradient>
 
-                                                    {}
+                                                    { }
                                                     {timeRange === '1D' && marketSession === 'after-hours' && afterHoursData ? (
                                                         (<linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
                                                             <stop offset={0} stopColor={stockData.changePercent >= 0 ? '#34d399' : '#f43f5e'} />
@@ -1074,7 +1074,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         <stop offset="95%" stopColor={activeComparables.length > 0 ? '#3b82f6' : (stockData.change >= 0 ? '#10b981' : '#f43f5e')} stopOpacity={0} />
                                                     </linearGradient>
 
-                                                    {}
+                                                    { }
                                                     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                                                         <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                                                         <feMerge>
@@ -1111,7 +1111,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 {activeComparables.length > 0 && (
                                                     <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
                                                 )}
-                                                {}
+                                                { }
                                                 {activeComparables.length === 0 && timeRange === '1D' && baselinePrice > 0 && (
                                                     <ReferenceLine
                                                         y={baselinePrice}
@@ -1127,7 +1127,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         }}
                                                     />
                                                 )}
-                                                {}
+                                                { }
                                                 {activeComparables.length > 0 && (
                                                     <Legend
                                                         verticalAlign="top"
@@ -1427,7 +1427,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 </FadeInSection>
                             )}
 
-                            {}
+                            { }
                             {stockInfo?.earningsHistory && stockInfo.earningsHistory.length > 0 && (
                                 <FadeInSection delay={200}>
                                     <div className="glass-panel rounded-3xl p-8 border border-white/5 col-span-1 lg:col-span-2">
