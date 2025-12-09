@@ -647,30 +647,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                     ...stockData,
                     price: quote.price,
                     change: quote.change,
-                    changesPercentage: quote.percent,
-                    timestamp: quote.timestamp
+                    changePercent: quote.percent_change
                 };
 
                 let newChartData = [...chartData];
                 if (newChartData.length > 0) {
-                    const lastPoint = newChartData[newChartData.length - 1];
-                    const quoteTime = new Date(quote.timestamp).getTime();
-                    const lastTime = new Date(lastPoint.date).getTime();
-
-                    const isNewCandle = (quoteTime - lastTime) >= 60000;
-
-                    if (isNewCandle) {
-                        newChartData.push({
-                            date: new Date(quote.timestamp).toISOString(),
-                            price: quote.price,
-                            isRegularMarket: true
-                        });
-                    } else {
-                        newChartData[newChartData.length - 1] = {
-                            ...lastPoint,
-                            price: quote.price
-                        };
-                    }
+                    newChartData[newChartData.length - 1] = {
+                        ...newChartData[newChartData.length - 1],
+                        price: quote.price
+                    };
                 }
 
                 updateStockState({
