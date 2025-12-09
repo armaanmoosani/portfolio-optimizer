@@ -1,5 +1,4 @@
 import yfinance as yf
-# Force git update
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -9,14 +8,11 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
     Fetch historical adjusted close prices for the given tickers.
     """
     try:
-        # Download data
-        # group_by='ticker' ensures we get a MultiIndex if multiple tickers, or we handle it
         raw_data = yf.download(tickers, start=start_date, end=end_date, interval=interval, progress=False)
         
         if raw_data.empty:
             raise ValueError("No data found for the provided tickers and date range.")
 
-        # Handle 'Adj Close' vs 'Close'
         if 'Adj Close' in raw_data.columns:
             data = raw_data['Adj Close']
         elif 'Close' in raw_data.columns:
@@ -24,28 +20,20 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         else:
             raise ValueError("Could not find 'Adj Close' or 'Close' price data.")
         
-        # Handle single ticker case (returns Series instead of DataFrame)
         if isinstance(data, pd.Series):
             data = data.to_frame()
             if len(tickers) == 1:
                 data.columns = tickers
             
-        # Ensure index is datetime and remove timezone if present
         data.index = pd.to_datetime(data.index)
         if data.index.tz is not None:
             data.index = data.index.tz_localize(None)
             
-        # Handle missing data with professional-grade forward/backward fill
-        # This approach is standard in institutional risk systems (Bloomberg, FactSet)
         initial_missing = data.isna().sum().sum()
         
-        # 1. Forward fill (propagate last valid observation forward)
         data = data.ffill()
-        # 2. Drop any remaining rows with NaNs (e.g., if a stock didn't exist yet)
-        # We DO NOT bfill() because that would fabricate history before an asset existed.
         data = data.dropna()
         
-        # Log data quality warnings for audit trails
         if initial_missing > 0:
             missing_pct = initial_missing / (len(data) * len(data.columns)) * 100
             print(f"INFO: Filled {initial_missing} missing values ({missing_pct:.2f}%) using forward/backward fill")
@@ -53,12 +41,10 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         if data.empty:
             raise ValueError("No data available after cleaning.")
         
-        # Validate data quality
         validation = validate_price_data(data)
         if not validation["valid"]:
             raise ValueError(f"Data validation failed: {validation['warnings']}")
         
-        # Log warnings for quality issues (non-fatal)
         if validation["warnings"]:
             print("\n=== DATA QUALITY WARNINGS ===")
             for warning in validation["warnings"]:
@@ -67,8 +53,6 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
             
         return data
     except Exception as e:
-        # STRICT MODE: No synthetic data allowed.
-        # If fetching fails, we must fail loudly to maintain professional integrity.
         print(f"Error: yfinance fetch failed for {tickers}: {e}")
         raise ValueError(f"Failed to fetch market data: {str(e)}")
 
@@ -86,16 +70,13 @@ def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str =
         else:
             return pd.Series()
         
-        # Ensure we have a Series
         if isinstance(data, pd.DataFrame):
             data = data.iloc[:, 0]
             
-        # Ensure index is datetime and remove timezone
         data.index = pd.to_datetime(data.index)
         if data.index.tz is not None:
             data.index = data.index.tz_localize(None)
         
-        # Fill missing values
         data = data.ffill().dropna()
         
         return data
@@ -112,7 +93,6 @@ def validate_price_data(prices: pd.DataFrame, min_days: int = 60) -> dict:
     """
     warnings = []
     
-    # Check minimum data requirement
     num_days = len(prices)
     if num_days < min_days:
         return {
@@ -121,22 +101,18 @@ def validate_price_data(prices: pd.DataFrame, min_days: int = 60) -> dict:
             "stats": {"days": num_days}
         }
     
-    # Calculate returns for outlier detection
     returns = prices.pct_change().dropna()
     
-    # Detect extreme single-day moves (>50% - likely data errors or stock splits missed)
     for col in returns.columns:
         extreme_moves = returns[col][abs(returns[col]) > 0.5]
         if len(extreme_moves) > 0:
             warnings.append(f"{col}: {len(extreme_moves)} extreme moves (>50%) detected on {extreme_moves.index.tolist()}")
     
-    # Check for excessive missing data
     missing_pct = prices.isna().sum() / len(prices)
     for col in prices.columns:
-        if missing_pct[col] > 0.1:  # More than 10% missing
+        if missing_pct[col] > 0.1:  
             warnings.append(f"{col}: {missing_pct[col]:.1%} missing data")
     
-    # Calculate actual trading days per year for this dataset
     date_range = (prices.index[-1] - prices.index[0]).days
     years = date_range / 365.25
     actual_trading_days_per_year = num_days / years if years > 0 else 252
@@ -157,15 +133,13 @@ def get_risk_free_rate() -> float:
     Returns the annualized rate as a decimal (e.g., 0.045 for 4.5%).
     """
     try:
-        # IRX is the ticker for 13-week Treasury Bill
         tnx = yf.Ticker("^IRX")
         hist = tnx.history(period="5d")
         if not hist.empty:
-            # Rate is in percent, convert to decimal
             return hist['Close'].iloc[-1] / 100
-        return 0.045  # Fallback to 4.5% if fetch fails
+        return 0.045  
     except:
-        return 0.045  # Fallback
+        return 0.045  
 
 def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> list[dict]:
     """
@@ -174,37 +148,26 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
     """
     try:
         stock = yf.Ticker(ticker)
-        # Fetch pre/post market data for 1d view
         include_prepost = period == "1d"
         hist = stock.history(period=period, interval=interval, prepost=include_prepost)
         
         if hist.empty:
             return []
             
-        # Reset index to get Date/Datetime as a column
         hist = hist.reset_index()
         
-        # Ensure we have a timezone-aware datetime for comparison
-        # yfinance usually returns Eastern time for US stocks, but let's be safe
-        # We'll assume the index (Datetime) is already localized if it's intraday
         
         results = []
         for _, row in hist.iterrows():
-            # Handle different date column names (Date vs Datetime)
             date_col = 'Date' if 'Date' in hist.columns else 'Datetime'
             date_val = row[date_col]
             
-            # Determine if Regular Market (09:30 - 16:00 ET)
             is_regular = True
             if interval in ['1m', '2m', '5m', '15m', '30m', '60m', '90m', '1h']:
-                # Intraday: Check time
-                # Convert to datetime if it's not already
                 if isinstance(date_val, pd.Timestamp):
-                    # Check if it has timezone, if so convert to ET
                     if date_val.tzinfo is not None:
                         date_et = date_val.tz_convert('America/New_York')
                     else:
-                        # Assume it's already local/ET if no tz (yfinance default)
                         date_et = date_val
                         
                     current_time = date_et.time()
@@ -214,10 +177,8 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
                     if current_time < market_open or current_time >= market_close:
                         is_regular = False
 
-                # Format date
                 date_str = date_val.strftime('%Y-%m-%d %H:%M')
             else:
-                # Daily or larger: YYYY-MM-DD
                 date_str = date_val.strftime('%Y-%m-%d')
                 
             results.append({
@@ -239,7 +200,6 @@ def get_stock_info(ticker: str) -> dict:
         stock = yf.Ticker(ticker)
         info = stock.info
         
-        # Extract relevant fields with safe defaults
         result = {
             "marketCap": stock.fast_info.market_cap or info.get("marketCap"),
             "trailingPE": info.get("trailingPE"),
@@ -260,24 +220,21 @@ def get_stock_info(ticker: str) -> dict:
             "averageVolume": stock.fast_info.three_month_average_volume or info.get("averageVolume"),
             "beta": info.get("beta"),
             "earnings": None,
-            "ipoDate": None,  # Will be set below
-            # Add realtime OHLC from fast_info (preferred over info for accuracy)
+            "ipoDate": None,  
             "open": stock.fast_info.open,
             "dayHigh": stock.fast_info.day_high,
             "dayLow": stock.fast_info.day_low,
             "previousClose": stock.fast_info.previous_close
         }
         
-        # Get IPO / first trade date
         try:
             first_trade_epoch = info.get("firstTradeDateEpochUtc")
             if first_trade_epoch:
                 from datetime import datetime
                 result["ipoDate"] = datetime.utcfromtimestamp(first_trade_epoch).strftime("%Y-%m-%d")
         except Exception:
-            pass  # Leave as None if we can't get it
+            pass  
 
-        # Fetch Earnings Data
         try:
             earnings_dates = stock.earnings_dates
             financials = stock.quarterly_financials
@@ -285,30 +242,17 @@ def get_stock_info(ticker: str) -> dict:
             history = []
             
             if earnings_dates is not None and not earnings_dates.empty:
-                # Filter for rows with valid data
-                # Sort by date descending
                 earnings_dates = earnings_dates.sort_index(ascending=False)
                 
-                # Get last 4 quarters (approx)
-                # We look at the last 8 entries and pick the ones that have data
                 recent_earnings = earnings_dates.head(8)
                 
                 for date, row in recent_earnings.iterrows():
-                    # Skip if no reported EPS (future date)
                     if pd.isna(row.get("Reported EPS")):
                         continue
                         
-                    # Determine Quarter Label
                     month = date.month
                     year = date.year
                     quarter_label = "Q?"
-                    # Fiscal year logic is complex, we'll use calendar quarters for simplicity
-                    # or try to align with standard "Q3 FY24" format if possible.
-                    # Usually:
-                    # Jan/Feb/Mar report -> Q4 Prev Year
-                    # Apr/May/Jun report -> Q1 Curr Year
-                    # Jul/Aug/Sep report -> Q2 Curr Year
-                    # Oct/Nov/Dec report -> Q3 Curr Year
                     
                     fy_year = year
                     if month in [1, 2, 3]:
@@ -332,17 +276,12 @@ def get_stock_info(ticker: str) -> dict:
                         "earnings": None
                     }
                     
-                    # Try to match with financials (Revenue/Net Income)
                     if financials is not None and not financials.empty:
-                        # Financials columns are dates (quarter end)
-                        # Earnings report date is usually 1-3 months AFTER quarter end
-                        # So we look for a financial date that is BEFORE the report date
                         cols = pd.to_datetime(financials.columns)
                         potential_dates = [d for d in cols if d < date.replace(tzinfo=None)]
                         
                         if potential_dates:
                             closest_date = max(potential_dates)
-                            # Check if it's within reasonable range (e.g. < 4 months)
                             if (date.replace(tzinfo=None) - closest_date).days < 120:
                                 col_idx = list(cols).index(closest_date)
                                 orig_col = financials.columns[col_idx]
@@ -358,22 +297,18 @@ def get_stock_info(ticker: str) -> dict:
                         break
             
             
-            # Reverse to chronological order for charts (Oldest -> Newest)
             result["earningsHistory"] = history[::-1]
             
-            # Extract next upcoming earnings date (where Reported EPS is NaN)
             next_earnings_date = None
             if earnings_dates is not None and not earnings_dates.empty:
                 from datetime import datetime
                 now = datetime.now()
                 for date, row in earnings_dates.sort_index(ascending=True).iterrows():
-                    # Future date with no reported EPS = upcoming earnings
                     if pd.isna(row.get("Reported EPS")) and date.replace(tzinfo=None) > now:
                         next_earnings_date = date.strftime("%Y-%m-%d")
                         break
             result["nextEarningsDate"] = next_earnings_date
             
-            # Keep the "earnings" field for backward compatibility (most recent)
             if history:
                 latest = history[-1]
                 result["earnings"] = {
@@ -386,7 +321,7 @@ def get_stock_info(ticker: str) -> dict:
                     },
                     "revenue": {
                         "reported": latest["revenue"],
-                        "date": latest["date"] # Approx
+                        "date": latest["date"] 
                     }
                 }
 
@@ -397,26 +332,18 @@ def get_stock_info(ticker: str) -> dict:
         except Exception as e:
             print(f"Error fetching earnings for {ticker}: {e}")
 
-        # Fetch Returns Comparison (YTD, 1Y, 3Y, 5Y) vs S&P 500
         try:
-            # Fetch 5y history for both
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=5*365 + 20) # Buffer
+            start_date = end_date - timedelta(days=5*365 + 20) 
             
-            # Download adjusted close prices
             tickers_list = [ticker, "^GSPC"]
             data = yf.download(tickers_list, start=start_date, end=end_date, progress=False)['Adj Close']
             
-            # Handle case where data might be single level if only 1 ticker found (unlikely as we request 2)
-            # But yfinance can be tricky.
             
             if not data.empty and isinstance(data, pd.DataFrame):
-                # Ensure we have both columns
                 if ticker not in data.columns:
-                    # Maybe it's under the symbol name?
                     pass 
                 
-                # Calculate returns
                 def get_return(period_days=None, is_ytd=False):
                     try:
                         if is_ytd:
@@ -424,28 +351,16 @@ def get_stock_info(ticker: str) -> dict:
                         else:
                             start = end_date - timedelta(days=period_days)
                         
-                        # Find closest available date on or before start
-                        # We slice data to be up to 'start'
-                        # Actually, we want the price at 'start'. 
-                        # So we find the index closest to 'start'
                         
-                        # Get price at end (latest)
                         latest_prices = data.iloc[-1]
                         
-                        # Get price at start
-                        # Find index closest to start date
                         idx = data.index.get_indexer([start], method='nearest')[0]
                         start_prices = data.iloc[idx]
                         found_date = data.index[idx]
                         
-                        # Check if the found date is too far from the requested start date
-                        # This implies the stock wasn't public yet
-                        # Tolerance: 10 days
                         if abs((found_date - start).days) > 10:
                             return None
                         
-                        # Calculate % change
-                        # Handle missing data (NaN)
                         t_ret = ((latest_prices[ticker] - start_prices[ticker]) / start_prices[ticker]) * 100
                         s_ret = ((latest_prices["^GSPC"] - start_prices["^GSPC"]) / start_prices["^GSPC"]) * 100
                         
@@ -479,7 +394,6 @@ def get_analyst_ratings(ticker: str) -> dict:
         stock = yf.Ticker(ticker)
         info = stock.info
         
-        # Price Targets
         targets = {
             "current": info.get("currentPrice"),
             "low": info.get("targetLowPrice"),
@@ -489,16 +403,10 @@ def get_analyst_ratings(ticker: str) -> dict:
             "numberOfAnalysts": info.get("numberOfAnalystOpinions")
         }
         
-        # Recommendations
-        # recs = stock.recommendations 
-        # Note: yfinance .recommendations returns a DataFrame history. 
-        # We prefer 'recommendationKey' from info for simple consensus 
-        # or 'recommendationsSummary' if available (often broken in yf).
-        # Best bet for robust simple view is info fields + recommendationMean.
         
         recommendation = {
-            "consensus": info.get("recommendationKey"), # e.g 'buy', 'hold'
-            "mean": info.get("recommendationMean"), # 1.0 is Strong Buy, 5.0 is Sell
+            "consensus": info.get("recommendationKey"), 
+            "mean": info.get("recommendationMean"), 
         }
         
         return {
@@ -517,21 +425,15 @@ def get_latest_price(ticker: str) -> dict:
     try:
         stock = yf.Ticker(ticker)
         
-        # Method: Use history(prepost=True) to capture Extended Hours
-        # 1-minute interval, 1-day period ensures we get the very latest ticks
         hist = stock.history(period="1d", interval="1m", prepost=True)
         
         if hist.empty:
-            # Fallback to fast_info if history is empty (e.g. market closed, no data yet?)
             fi = stock.fast_info
             current_price = fi.last_price
             prev_close = fi.previous_close
         else:
-            # Get the absolutely last close price available (Reg or Ext Hours)
             current_price = hist['Close'].iloc[-1]
             
-            # Previous close (Regular market close of PREVIOUS day)
-            # fast_info.previous_close is reliable for this
             prev_close = stock.fast_info.previous_close
 
         if prev_close and not pd.isna(prev_close):
@@ -569,7 +471,6 @@ def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:
     """
     from datetime import datetime, timedelta
     
-    # Validate amount
     if amount <= 0:
         return {"valid": False, "error": "Amount must be greater than 0"}
     
@@ -578,7 +479,6 @@ def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:
     except ValueError:
         return {"valid": False, "error": "Invalid date format. Use YYYY-MM-DD"}
     
-    # Check if date is in the future
     today = datetime.now()
     if target_date >= today:
         return {"valid": False, "error": "Date must be in the past"}
@@ -586,14 +486,11 @@ def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:
     try:
         stock = yf.Ticker(ticker)
         
-        # Fetch historical data - use a range to find nearest trading day
-        # Start from target date, go a few days forward to handle weekends/holidays
         end_search = target_date + timedelta(days=10)
         hist = stock.history(start=target_date.strftime("%Y-%m-%d"), 
                             end=end_search.strftime("%Y-%m-%d"))
         
         if hist.empty:
-            # Try fetching max history to check if ticker is valid and get IPO date
             max_hist = stock.history(period="max")
             if max_hist.empty:
                 return {"valid": False, "error": f"No data available for {ticker}"}
@@ -601,38 +498,30 @@ def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:
             first_date = max_hist.index[0].strftime("%Y-%m-%d")
             return {"valid": False, "error": f"Date is before available data. Earliest: {first_date}"}
         
-        # Get the first available price (handles weekends/holidays)
         actual_buy_date = hist.index[0]
         buy_price = hist.iloc[0]['Close']
         
-        # Calculate shares bought
         shares = amount / buy_price
         
-        # Get current price
         current_hist = stock.history(period="1d")
         if current_hist.empty:
-            # Fallback to fast_info
             fi = stock.fast_info
             current_price = fi.last_price
         else:
             current_price = current_hist.iloc[-1]['Close']
         
-        # Calculate returns
         current_value = shares * current_price
         gain = current_value - amount
         gain_percent = (gain / amount) * 100
         
-        # Calculate holding period
         holding_days = (today - actual_buy_date.replace(tzinfo=None)).days
         holding_years = holding_days / 365.25
         
-        # Calculate annualized return (CAGR)
         if holding_years > 0:
             annualized_return = ((current_value / amount) ** (1 / holding_years) - 1) * 100
         else:
             annualized_return = gain_percent
         
-        # Format holding period
         years = holding_days // 365
         months = (holding_days % 365) // 30
         if years > 0 and months > 0:

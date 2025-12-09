@@ -1,7 +1,6 @@
 import sys
 import os
 
-# Add current directory to path to ensure imports work correctly in all environments (Vercel vs Local)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, HTTPException, Request
@@ -11,13 +10,11 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 
-# Use absolute imports now that path is fixed
 from data import fetch_historical_data, fetch_benchmark_data, get_risk_free_rate
 from optimizer import optimize_portfolio
 from backtester import run_backtest
 from stress_tester import StressTester
 
-# Import rate limiting and validation
 from rate_limiter import limiter, rate_limit_handler, RATE_LIMITS
 from validators import InputValidator
 from slowapi.errors import RateLimitExceeded
@@ -28,20 +25,17 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# Add rate limiter state
 app.state.limiter = limiter
 
-# Add rate limit exception handler
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    max_age=3600,  # Cache preflight requests for 1 hour
+    max_age=3600,  
 )
 
 class PortfolioRequest(BaseModel):
@@ -54,8 +48,8 @@ class PortfolioRequest(BaseModel):
     max_weight: float = 1.0
     benchmark: str = "SPY"
     frequency: str = "daily"
-    mar: float = 0.0  # Minimum Acceptable Return (annualized, as decimal)
-    rebalance_freq: str = "never"  # Rebalancing frequency
+    mar: float = 0.0  
+    rebalance_freq: str = "never"  
 
 @app.get("/")
 @limiter.limit(RATE_LIMITS["general"])
@@ -71,7 +65,6 @@ def health_check(request: Request):
 @limiter.limit(RATE_LIMITS["compute_intensive"])
 async def optimize(request: Request, portfolio_request: PortfolioRequest):
     try:
-        # Validate all inputs before processing
         InputValidator.validate_tickers(portfolio_request.tickers)
         InputValidator.validate_weight_constraints(portfolio_request.min_weight, portfolio_request.max_weight)
         InputValidator.validate_capital(portfolio_request.initial_capital)
@@ -79,7 +72,6 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
         InputValidator.validate_objective(portfolio_request.objective)
         InputValidator.validate_frequency(portfolio_request.frequency)
         
-        # Determine interval and annualization factor
         interval = "1d"
         annualization_factor = 252
         
@@ -87,32 +79,26 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
             interval = "1mo"
             annualization_factor = 12
 
-        # 1. Fetch Data
         print(f"Fetching data for {portfolio_request.tickers} from {portfolio_request.start_date} to {portfolio_request.end_date} ({portfolio_request.frequency})")
         prices = fetch_historical_data(portfolio_request.tickers, portfolio_request.start_date, portfolio_request.end_date, interval=interval)
         
         if prices.empty:
             raise HTTPException(status_code=400, detail="No data found for the provided tickers and date range.")
         
-        # Validate data quality
         from data import validate_price_data
         validation = validate_price_data(prices, min_days=60)
         
         if not validation["valid"]:
             raise HTTPException(status_code=400, detail=validation["warnings"][0])
         
-        # Log warnings but continue
         if validation["warnings"]:
             print(f"Data quality warnings: {validation['warnings']}")
         
-        # Use actual trading days from validation
         actual_ann_factor = validation["stats"].get("actual_trading_days_per_year", annualization_factor)
         print(f"Using actual annualization factor: {actual_ann_factor} (vs default {annualization_factor})")
 
-        # 2. Get Risk Free Rate
         rf_rate = get_risk_free_rate()
         
-        # 2b. Fetch benchmark data (Always fetch for SML/Beta calculations)
         print(f"Fetching benchmark data ({portfolio_request.benchmark}) for Beta/SML calculations")
         benchmark_data = fetch_benchmark_data(portfolio_request.start_date, portfolio_request.end_date, portfolio_request.benchmark)
         
@@ -122,7 +108,6 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
         else:
             benchmark_prices = benchmark_data
         
-        # 3. Run Optimization
         print(f"Running optimization with objective: {portfolio_request.objective}")
         optimization_result = optimize_portfolio(
             prices, 
@@ -138,12 +123,9 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
         if not optimization_result["success"]:
             raise HTTPException(status_code=500, detail=f"Optimization failed: {optimization_result['message']}")
         
-        # 3b. Calculate Efficient Frontier
         print(f"Calculating efficient frontier for objective: {portfolio_request.objective}")
         from optimizer import calculate_efficient_frontier
         
-        # Only pass optimal weights if the objective was Max Sharpe, 
-        # otherwise let the frontier calculate the global Max Sharpe point independently
         is_sharpe = portfolio_request.objective == "sharpe"
         pass_weights = optimization_result["weights"] if is_sharpe else None
         
@@ -159,8 +141,6 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
         )
 
         
-        # FORCE CONSISTENCY: If the user selected Max Sharpe, ensure the chart shows 
-        # EXACTLY the same metrics and weights as the Assets tab
         if is_sharpe:
             print("Forcing Max Sharpe consistency with main optimization results")
             efficient_frontier_data["optimal_portfolio"] = {
@@ -172,7 +152,6 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
         else:
             print(f"Objective is {portfolio_request.objective}, skipping Max Sharpe override")
             
-        # 4. Run Backtest
         print("Running backtest...")
         benchmark_data = fetch_benchmark_data(portfolio_request.start_date, portfolio_request.end_date, portfolio_request.benchmark)
         backtest_result = run_backtest(
@@ -186,11 +165,9 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
             rebalance_freq=portfolio_request.rebalance_freq
         )
         
-        # Check for start date truncation
         warnings = []
         if not prices.empty:
              actual_start = prices.index[0].strftime("%Y-%m-%d")
-             # Simple string comparison works for YYYY-MM-DD
              if actual_start > portfolio_request.start_date:
                   warnings.append(f"Data limited: Optimization starts from {actual_start} (earliest common date).")
         
@@ -220,15 +197,12 @@ async def optimize(request: Request, portfolio_request: PortfolioRequest):
 @limiter.limit(RATE_LIMITS["data_fetch"])
 def get_history(request: Request, ticker: str, period: str = "1mo", interval: str = "1d"):
     try:
-        # Validate ticker
         InputValidator.validate_ticker(ticker)
         
-        # Validate period (basic validation)
         valid_periods = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
         if period not in valid_periods:
             raise HTTPException(status_code=400, detail=f"Invalid period. Must be one of: {', '.join(valid_periods)}")
         
-        # Validate interval
         valid_intervals = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
         if interval not in valid_intervals:
             raise HTTPException(status_code=400, detail=f"Invalid interval. Must be one of: {', '.join(valid_intervals)}")
@@ -262,25 +236,21 @@ async def stress_test(request: Request, stress_request: StressTestRequest):
     Run stress tests on the portfolio against historical scenarios.
     """
     try:
-        # Validate inputs
         if not stress_request.weights or len(stress_request.weights) == 0:
             raise HTTPException(status_code=400, detail="Portfolio weights are required")
         
         if len(stress_request.weights) > InputValidator.MAX_TICKERS:
             raise HTTPException(status_code=400, detail=f"Maximum {InputValidator.MAX_TICKERS} assets allowed")
         
-        # Validate each ticker in weights
         for ticker in stress_request.weights.keys():
             InputValidator.validate_ticker(ticker)
         
-        # Validate benchmark
         InputValidator.validate_ticker(stress_request.benchmark)
         
         print(f"Running stress test for portfolio with {len(stress_request.weights)} assets")
         historical_results = StressTester.run_stress_test(stress_request.weights, stress_request.benchmark)
         hypothetical_results = StressTester.run_hypothetical_test(stress_request.weights, stress_request.benchmark)
         
-        # Merge results
         results = historical_results + hypothetical_results
         return {"results": results}
     except Exception as e:

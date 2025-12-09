@@ -6,19 +6,17 @@ from fastapi import HTTPException
 
 
 class InputValidator:
-    MAX_TICKERS = 50  # Maximum number of tickers per request
-    MAX_TICKER_LENGTH = 10  # Maximum length for a single ticker symbol
-    MAX_LOOKBACK_YEARS = 20  # Maximum historical data lookback
-    MIN_DATE_RANGE_DAYS = 30  # Minimum date range for meaningful analysis
+    MAX_TICKERS = 50  
+    MAX_TICKER_LENGTH = 10  
+    MAX_LOOKBACK_YEARS = 20  
+    MIN_DATE_RANGE_DAYS = 30  
     
-    # Ticker validation pattern (alphanumeric, dots, hyphens only)
     TICKER_PATTERN = re.compile(r'^[A-Z0-9.\-]{1,10}$', re.IGNORECASE)
     
-    # Blacklist patterns (common SQL injection attempts, command injection)
     BLACKLIST_PATTERNS = [
-        r'[\'";<>{}()\[\]]',  # Special characters that could be used for injection
-        r'(union|select|insert|update|delete|drop|create|alter)\s',  # SQL keywords
-        r'(\.\.|\/\/|\\\\)',  # Path traversal attempts
+        r'[\'";<>{}()\[\]]',  
+        r'(union|select|insert|update|delete|drop|create|alter)\s',  
+        r'(\.\.|\/\/|\\\\)',  
     ]
     
     @classmethod
@@ -29,14 +27,12 @@ class InputValidator:
                 detail=f"Ticker must be 1-{cls.MAX_TICKER_LENGTH} characters"
             )
         
-        # Check against pattern
         if not cls.TICKER_PATTERN.match(ticker):
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid ticker format: {ticker}. Only alphanumeric, dots, and hyphens allowed."
             )
         
-        # Check blacklist patterns
         for pattern in cls.BLACKLIST_PATTERNS:
             if re.search(pattern, ticker, re.IGNORECASE):
                 raise HTTPException(
@@ -60,7 +56,6 @@ class InputValidator:
                 detail=f"Maximum {cls.MAX_TICKERS} tickers allowed per request"
             )
         
-        # Validate each ticker
         for ticker in tickers:
             cls.validate_ticker(ticker)
         
@@ -69,7 +64,6 @@ class InputValidator:
     @classmethod
     def validate_date_range(cls, start_date: str, end_date: str) -> Tuple[datetime, datetime]:
         try:
-            # Parse dates
             start_dt = parser.parse(start_date)
             end_dt = parser.parse(end_date)
         except (ValueError, parser.ParserError) as e:
@@ -78,7 +72,6 @@ class InputValidator:
                 detail=f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
             )
         
-        # Check if dates are in the future (compare only dates, not times)
         today = datetime.now().date()
         if start_dt.date() > today or end_dt.date() > today:
             raise HTTPException(
@@ -86,14 +79,12 @@ class InputValidator:
                 detail="Dates cannot be in the future"
             )
         
-        # Check date order
         if start_dt >= end_dt:
             raise HTTPException(
                 status_code=400,
                 detail="Start date must be before end date"
             )
         
-        # Check minimum date range
         date_diff = (end_dt - start_dt).days
         if date_diff < cls.MIN_DATE_RANGE_DAYS:
             raise HTTPException(
@@ -101,7 +92,6 @@ class InputValidator:
                 detail=f"Date range must be at least {cls.MIN_DATE_RANGE_DAYS} days"
             )
         
-        # Check maximum lookback
         max_lookback = timedelta(days=cls.MAX_LOOKBACK_YEARS * 365)
         if start_dt < now - max_lookback:
             raise HTTPException(
@@ -141,7 +131,6 @@ class InputValidator:
                 detail="Initial capital must be positive"
             )
         
-        # Prevent unreasonably large values that could cause memory issues
         if capital > 1e15: 
             raise HTTPException(
                 status_code=400,
@@ -152,7 +141,6 @@ class InputValidator:
     
     @classmethod
     def validate_mar(cls, mar: float) -> bool:
-        # Allow reasonable range for MAR (-100% to +1000%)
         if mar < -1.0 or mar > 10.0:
             raise HTTPException(
                 status_code=400,
@@ -163,10 +151,9 @@ class InputValidator:
     
     @classmethod
     def validate_objective(cls, objective: str) -> bool:
-        # Updated list of valid objectives matching frontend and optimizer.py
         valid_objectives = [
             "sharpe", 
-            "min_vol", "min_volatility",  # Allow both for robustness
+            "min_vol", "min_volatility",  
             "max_return", 
             "sortino", 
             "calmar", 
