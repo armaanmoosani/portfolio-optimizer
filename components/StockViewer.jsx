@@ -440,7 +440,9 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                     if (!jsonMatch) throw new Error("No JSON found in AI response");
 
                     const competitors = JSON.parse(jsonMatch[0]);
-                    setComparables(competitors);
+                    // Always include S&P 500 for comparison
+                    const withSpy = competitors.includes('SPY') ? competitors : ['SPY', ...competitors];
+                    setComparables(withSpy);
                 } catch (err) {
                     console.error("Competitor fetch error:", err);
                 } finally {
@@ -702,7 +704,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
             } catch (e) {
                 console.error("Live update failed", e);
             }
-        }, 5000);
+        }, 3000);
 
         return () => clearInterval(interval);
     }, [stockData?.symbol, timeRange, loading, chartData]);
@@ -871,6 +873,40 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         'Beta': 'Volatility relative to the market (1 = market average)'
     };
 
+    // Ticker info for comparables tooltips
+    const TICKER_INFO = {
+        'SPY': { name: 'S&P 500 ETF', desc: 'Tracks 500 largest US companies' },
+        'AAPL': { name: 'Apple Inc.', desc: 'Consumer electronics & software' },
+        'MSFT': { name: 'Microsoft Corp.', desc: 'Software & cloud computing' },
+        'GOOGL': { name: 'Alphabet Inc.', desc: 'Search, ads & cloud services' },
+        'GOOG': { name: 'Alphabet Inc.', desc: 'Search, ads & cloud services' },
+        'AMZN': { name: 'Amazon.com Inc.', desc: 'E-commerce & cloud (AWS)' },
+        'META': { name: 'Meta Platforms', desc: 'Social media & VR/AR' },
+        'NVDA': { name: 'NVIDIA Corp.', desc: 'GPUs & AI chips' },
+        'TSLA': { name: 'Tesla Inc.', desc: 'Electric vehicles & energy' },
+        'AMD': { name: 'AMD Inc.', desc: 'CPUs & GPUs' },
+        'INTC': { name: 'Intel Corp.', desc: 'Semiconductors & chips' },
+        'CRM': { name: 'Salesforce Inc.', desc: 'Cloud CRM software' },
+        'ORCL': { name: 'Oracle Corp.', desc: 'Enterprise software & cloud' },
+        'NFLX': { name: 'Netflix Inc.', desc: 'Streaming entertainment' },
+        'DIS': { name: 'Walt Disney Co.', desc: 'Entertainment & streaming' },
+        'V': { name: 'Visa Inc.', desc: 'Payment processing' },
+        'MA': { name: 'Mastercard Inc.', desc: 'Payment processing' },
+        'JPM': { name: 'JPMorgan Chase', desc: 'Banking & financial services' },
+        'BAC': { name: 'Bank of America', desc: 'Banking & financial services' },
+        'WMT': { name: 'Walmart Inc.', desc: 'Retail & e-commerce' },
+        'COST': { name: 'Costco Wholesale', desc: 'Warehouse retail' },
+        'HD': { name: 'Home Depot', desc: 'Home improvement retail' },
+        'LOW': { name: 'Lowe\'s Companies', desc: 'Home improvement retail' },
+        'UNH': { name: 'UnitedHealth', desc: 'Health insurance' },
+        'JNJ': { name: 'Johnson & Johnson', desc: 'Pharma & consumer health' },
+        'PFE': { name: 'Pfizer Inc.', desc: 'Pharmaceuticals' },
+        'XOM': { name: 'Exxon Mobil', desc: 'Oil & gas' },
+        'CVX': { name: 'Chevron Corp.', desc: 'Oil & gas' },
+    };
+
+    const getTickerInfo = (ticker) => TICKER_INFO[ticker] || { name: ticker, desc: '' };
+
     const StatLabel = ({ label }) => (
         <div className="stat-tooltip">
             <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</span>
@@ -1009,7 +1045,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         <div className="lg:col-span-2 space-y-8">
 
                             { }
-                            <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10 breathing-glow">
+                            <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center">
                                     <div className="flex flex-col">
                                         {chartLoading ? (
@@ -1019,11 +1055,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         ) : (
                                             <>
-                                                <div className={`ripple-container text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
+                                                <div className={`text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
                                                     $<AnimatedPrice value={displayData.price || 0} />
-                                                    {showRipple && (
-                                                        <span className={`ripple-ring ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`} />
-                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-2">
                                                     <div className={`color-morph flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -1333,38 +1366,44 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             const isActive = activeComparables.includes(comp);
                                             const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
                                             const color = colors[idx % colors.length];
+                                            const tickerInfo = getTickerInfo(comp);
 
                                             return (
-                                                <button
-                                                    key={comp}
-                                                    onClick={() => {
-                                                        setActiveComparables(prev =>
-                                                            prev.includes(comp)
-                                                                ? prev.filter(c => c !== comp)
-                                                                : [...prev, comp]
-                                                        );
-                                                    }}
-                                                    className={`
-                                                        px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
-                                                        ${isActive
-                                                            ? `bg-[${color}]/10 border-[${color}]/50 text-white shadow-[0_0_10px_-2px_${color}]`
-                                                            : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
-                                                        }
-                                                    `}
-                                                    style={isActive ? { borderColor: color, color: '#fff', backgroundColor: `${color}20` } : {}}
-                                                >
-                                                    {isActive ? '✓ ' : '+ '}{comp}
-                                                    {isActive && (
-                                                        <span className="ml-2 w-1.5 h-1.5 inline-block rounded-full" style={{ backgroundColor: color }}></span>
-                                                    )}
-                                                </button>
+                                                <div key={comp} className="stat-tooltip">
+                                                    <button
+                                                        onClick={() => {
+                                                            setActiveComparables(prev =>
+                                                                prev.includes(comp)
+                                                                    ? prev.filter(c => c !== comp)
+                                                                    : [...prev, comp]
+                                                            );
+                                                        }}
+                                                        className={`
+                                                            px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
+                                                            ${isActive
+                                                                ? `bg-[${color}]/10 border-[${color}]/50 text-white shadow-[0_0_10px_-2px_${color}]`
+                                                                : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
+                                                            }
+                                                        `}
+                                                        style={isActive ? { borderColor: color, color: '#fff', backgroundColor: `${color}20` } : {}}
+                                                    >
+                                                        {isActive ? '✓ ' : '+ '}{comp}
+                                                        {isActive && (
+                                                            <span className="ml-2 w-1.5 h-1.5 inline-block rounded-full" style={{ backgroundColor: color }}></span>
+                                                        )}
+                                                    </button>
+                                                    <span className="tooltip-content">
+                                                        <strong>{tickerInfo.name}</strong>
+                                                        {tickerInfo.desc && <><br /><span className="text-slate-400">{tickerInfo.desc}</span></>}
+                                                    </span>
+                                                </div>
                                             );
                                         })}
                                     </div>
                                 )}
                             </div>
 
-                            <div className="glass-panel-premium shimmer-edge rounded-3xl p-8 border border-white/5">
+                            <div className="glass-panel-premium rounded-3xl p-8 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stats-grid-dividers">
                                     <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
@@ -1638,7 +1677,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         </div>
 
                         <div className="space-y-8">
-                            <div className="glass-panel-premium shimmer-edge rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
+                            <div className="glass-panel-premium rounded-3xl p-8 border-t-4 border-t-blue-500 relative overflow-hidden shadow-xl shadow-blue-900/5">
                                 <div className="absolute top-0 right-0 p-32 bg-blue-500/5 blur-3xl rounded-full pointer-events-none -mr-16 -mt-16"></div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
                                     <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/5 ring-1 ring-blue-500/10">
