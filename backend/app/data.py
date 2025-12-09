@@ -4,9 +4,6 @@ import numpy as np
 from datetime import datetime, timedelta
 
 def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, interval: str = "1d") -> pd.DataFrame:
-    """
-    Fetch historical adjusted close prices for the given tickers.
-    """
     try:
         raw_data = yf.download(tickers, start=start_date, end=end_date, interval=interval, progress=False)
         
@@ -57,9 +54,6 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str, in
         raise ValueError(f"Failed to fetch market data: {str(e)}")
 
 def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str = "SPY") -> pd.Series:
-    """
-    Fetch historical data for the benchmark (default SPY).
-    """
     try:
         raw_data = yf.download(benchmark_ticker, start=start_date, end=end_date, progress=False)
         
@@ -85,12 +79,6 @@ def fetch_benchmark_data(start_date: str, end_date: str, benchmark_ticker: str =
         return pd.Series()
 
 def validate_price_data(prices: pd.DataFrame, min_days: int = 60) -> dict:
-    """
-    Validate price data quality for portfolio optimization.
-    
-    Returns:
-        dict with 'valid' (bool), 'warnings' (list), 'stats' (dict)
-    """
     warnings = []
     
     num_days = len(prices)
@@ -128,10 +116,6 @@ def validate_price_data(prices: pd.DataFrame, min_days: int = 60) -> dict:
     }
 
 def get_risk_free_rate() -> float:
-    """
-    Fetch the current 3-month Treasury Bill rate as a proxy for risk-free rate.
-    Returns the annualized rate as a decimal (e.g., 0.045 for 4.5%).
-    """
     try:
         tnx = yf.Ticker("^IRX")
         hist = tnx.history(period="5d")
@@ -142,10 +126,6 @@ def get_risk_free_rate() -> float:
         return 0.045  
 
 def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> list[dict]:
-    """
-    Fetch historical data for a single ticker formatted for frontend charts.
-    Returns list of dicts: {'date': str, 'price': float}
-    """
     try:
         stock = yf.Ticker(ticker)
         include_prepost = period == "1d"
@@ -193,9 +173,6 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
         return []
 
 def get_stock_info(ticker: str) -> dict:
-    """
-    Fetch detailed stock information including Market Cap, P/E, 52-wk High/Low, Dividends.
-    """
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
@@ -387,9 +364,6 @@ def get_stock_info(ticker: str) -> dict:
         return {}
 
 def get_analyst_ratings(ticker: str) -> dict:
-    """
-    Fetch analyst recommendations and price targets from yfinance.
-    """
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
@@ -418,10 +392,6 @@ def get_analyst_ratings(ticker: str) -> dict:
         return {}
 
 def get_latest_price(ticker: str) -> dict:
-    """
-    Fetch the latest price, change, and percent change.
-    Optimized for speed/lightweight response, but robust for Extended Hours.
-    """
     try:
         stock = yf.Ticker(ticker)
         
@@ -455,20 +425,6 @@ def get_latest_price(ticker: str) -> dict:
 
 
 def calculate_whatif(ticker: str, start_date: str, amount: float) -> dict:
-    """
-    Calculate what an investment would be worth today.
-    
-    Uses split-adjusted prices (yfinance default) for accuracy.
-    Handles edge cases: weekends, holidays, pre-IPO dates.
-    
-    Args:
-        ticker: Stock symbol
-        start_date: Date in YYYY-MM-DD format
-        amount: Investment amount in dollars
-        
-    Returns:
-        dict with calculation results or error
-    """
     from datetime import datetime, timedelta
     
     if amount <= 0:
