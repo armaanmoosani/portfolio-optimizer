@@ -164,6 +164,11 @@ def get_chart_data(ticker: str, period: str = "1mo", interval: str = "1d") -> li
             results.append({
                 "date": date_str,
                 "price": row['Close'],
+                "open": row['Open'],
+                "high": row['High'],
+                "low": row['Low'],
+                "close": row['Close'],
+                "volume": row.get('Volume', 0),
                 "isRegularMarket": is_regular
             })
             

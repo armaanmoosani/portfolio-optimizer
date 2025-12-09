@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar, Info } from "lucide-react";
+import { Search, ArrowUpRight, ArrowDownRight, Loader2, TrendingUp, Calendar, Info, BarChart3, LineChart } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, ComposedChart, Scatter, Cell, Legend, Line } from 'recharts';
 import { useGlobalState } from "@/app/context/GlobalState";
 import { useToast } from "@/components/Toast";
@@ -46,6 +46,7 @@ export default function StockViewer() {
     const [isMounted, setIsMounted] = useState(false);
     const [priceFlash, setPriceFlash] = useState(null);
     const [showRipple, setShowRipple] = useState(false);
+    const [chartType, setChartType] = useState('line'); // 'line' or 'candlestick'
     const prevPriceRef = useRef(null);
 
     useEffect(() => {
@@ -919,6 +920,103 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
         </div>
     );
 
+    // Custom Candlestick Bar Component
+    const CandlestickBar = (props) => {
+        const { x, y, width, height, payload } = props;
+        if (!payload || payload.open === undefined) return null;
+
+        const { open, high, low, close } = payload;
+        const isUp = close >= open;
+        const color = isUp ? '#22c55e' : '#ef4444';
+        const bgColor = isUp ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+
+        // Calculate positions based on scale
+        const chartHeight = 460; // Approximate chart height
+        const dataMin = Math.min(...visibleChartData.map(d => d.low || d.price));
+        const dataMax = Math.max(...visibleChartData.map(d => d.high || d.price));
+        const range = dataMax - dataMin || 1;
+
+        const scale = (val) => chartHeight - ((val - dataMin) / range) * chartHeight + 20;
+
+        const candleWidth = Math.max(width * 0.6, 4);
+        const wickWidth = 1.5;
+        const centerX = x + width / 2;
+
+        const highY = scale(high);
+        const lowY = scale(low);
+        const openY = scale(open);
+        const closeY = scale(close);
+
+        const bodyTop = Math.min(openY, closeY);
+        const bodyHeight = Math.max(Math.abs(closeY - openY), 2);
+
+        return (
+            <g>
+                {/* Wick (high to low) */}
+                <line
+                    x1={centerX}
+                    y1={highY}
+                    x2={centerX}
+                    y2={lowY}
+                    stroke={color}
+                    strokeWidth={wickWidth}
+                    strokeLinecap="round"
+                />
+                {/* Body (open to close) */}
+                <rect
+                    x={centerX - candleWidth / 2}
+                    y={bodyTop}
+                    width={candleWidth}
+                    height={bodyHeight}
+                    fill={isUp ? bgColor : color}
+                    stroke={color}
+                    strokeWidth={1.5}
+                    rx={1}
+                />
+            </g>
+        );
+    };
+
+    // Custom Tooltip for Candlestick Chart
+    const CandlestickTooltip = ({ active, payload, label }) => {
+        if (!active || !payload || !payload.length) return null;
+        const data = payload[0]?.payload;
+        if (!data) return null;
+
+        const isUp = (data.close || data.price) >= (data.open || data.price);
+
+        return (
+            <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-xl min-w-[180px]">
+                <p className="text-slate-400 text-xs font-bold mb-3 border-b border-white/5 pb-2">
+                    {timeRange === '1D'
+                        ? new Date(label).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                        : new Date(label).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                    }
+                </p>
+                <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                        <span className="text-slate-500 text-xs">Open</span>
+                        <span className="text-white font-mono font-bold">${(data.open || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-slate-500 text-xs">High</span>
+                        <span className="text-emerald-400 font-mono font-bold">${(data.high || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-slate-500 text-xs">Low</span>
+                        <span className="text-rose-400 font-mono font-bold">${(data.low || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-white/5 pt-1.5 mt-1.5">
+                        <span className="text-slate-500 text-xs">Close</span>
+                        <span className={`font-mono font-bold ${isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            ${(data.close || data.price || 0).toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
 
     return (
         <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
@@ -1111,6 +1209,35 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             }}
                                         />
                                     </div>
+
+                                    {/* Chart Type Toggle */}
+                                    <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                        <button
+                                            onClick={() => setChartType('line')}
+                                            className={`btn-press flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-white'
+                                                }`}
+                                            title="Line Chart"
+                                        >
+                                            <LineChart className="w-4 h-4" />
+                                            <span className="hidden sm:inline">Line</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setChartType('candlestick')}
+                                            className={`btn-press flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${chartType === 'candlestick' ? 'text-white' : 'text-slate-400 hover:text-white'
+                                                }`}
+                                            title="Candlestick Chart"
+                                        >
+                                            <BarChart3 className="w-4 h-4" />
+                                            <span className="hidden sm:inline">Candles</span>
+                                        </button>
+                                        <div
+                                            className="absolute top-1 bottom-1 bg-purple-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-purple-500/20"
+                                            style={{
+                                                left: chartType === 'line' ? '4px' : 'calc(50% + 2px)',
+                                                width: 'calc(50% - 6px)'
+                                            }}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="h-[500px] w-full p-4 relative group chart-inner-shadow rounded-2xl">
@@ -1263,22 +1390,40 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             return null;
                                                         }}
                                                     />
+                                                ) : chartType === 'candlestick' ? (
+                                                    <Tooltip
+                                                        content={<CandlestickTooltip />}
+                                                        cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.3 }}
+                                                    />
                                                 ) : (
                                                     <Tooltip
                                                         content={<CustomTooltip />}
                                                         cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
                                                     />
                                                 )}
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
-                                                    name={activeComparables.length > 0 ? stockData.symbol : "value"}
-                                                    stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && ((marketSession === 'after-hours' && afterHoursData) || (marketSession === 'regular' && preMarketData))) ? "url(#splitColor)" : "url(#standardColor)")}
-                                                    strokeWidth={activeComparables.length > 0 ? 4 : 2}
-                                                    fillOpacity={1}
-                                                    fill="url(#colorPrice)"
-                                                    connectNulls={true}
-                                                />
+
+                                                {/* Candlestick Chart */}
+                                                {chartType === 'candlestick' && activeComparables.length === 0 && (
+                                                    <Bar
+                                                        dataKey="close"
+                                                        shape={<CandlestickBar />}
+                                                        isAnimationActive={false}
+                                                    />
+                                                )}
+
+                                                {/* Line Chart */}
+                                                {chartType === 'line' && (
+                                                    <Area
+                                                        type="monotone"
+                                                        dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
+                                                        name={activeComparables.length > 0 ? stockData.symbol : "value"}
+                                                        stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && ((marketSession === 'after-hours' && afterHoursData) || (marketSession === 'regular' && preMarketData))) ? "url(#splitColor)" : "url(#standardColor)")}
+                                                        strokeWidth={activeComparables.length > 0 ? 4 : 2}
+                                                        fillOpacity={1}
+                                                        fill="url(#colorPrice)"
+                                                        connectNulls={true}
+                                                    />
+                                                )}
 
                                                 {activeComparables.map((ticker, idx) => {
                                                     const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#fbbf24'];
@@ -1735,15 +1880,17 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                         </div>
                     </FadeInSection >
 
-                    {stockData && (
-                        <FadeInSection>
-                            <WhatIfCalculator
-                                ticker={stockData.symbol}
-                                currentPrice={stockData.price}
-                                ipoDate={stockInfo?.ipoDate}
-                            />
-                        </FadeInSection>
-                    )}
+                    {
+                        stockData && (
+                            <FadeInSection>
+                                <WhatIfCalculator
+                                    ticker={stockData.symbol}
+                                    currentPrice={stockData.price}
+                                    ipoDate={stockInfo?.ipoDate}
+                                />
+                            </FadeInSection>
+                        )
+                    }
 
                     <FadeInSection>
                         <AnalystRatings
@@ -1751,7 +1898,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                             loading={loadingAnalystRatings}
                         />
                     </FadeInSection>
-                </div>
+                </div >
             )
             }
         </div >
