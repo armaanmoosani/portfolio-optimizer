@@ -1396,7 +1396,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     />
                                                 )}
 
-                                                {/* Candlestick Chart */}
+                                                {/* Candlestick Chart - only when no comparables */}
                                                 {chartType === 'candlestick' && activeComparables.length === 0 && (
                                                     <Bar
                                                         dataKey="close"
@@ -1405,15 +1405,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     />
                                                 )}
 
-                                                {/* Line Chart */}
-                                                {chartType === 'line' && (
+                                                {/* Line Chart - always use for comparisons, or when line mode selected */}
+                                                {(chartType === 'line' || activeComparables.length > 0) && (
                                                     <Area
                                                         type="monotone"
                                                         dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
                                                         name={activeComparables.length > 0 ? stockData.symbol : "value"}
                                                         stroke={activeComparables.length > 0 ? '#3b82f6' : ((timeRange === '1D' && ((marketSession === 'after-hours' && afterHoursData) || (marketSession === 'regular' && preMarketData))) ? "url(#splitColor)" : "url(#standardColor)")}
                                                         strokeWidth={activeComparables.length > 0 ? 4 : 2}
-                                                        fillOpacity={1}
+                                                        fillOpacity={activeComparables.length > 0 ? 0 : 1}
                                                         fill="url(#colorPrice)"
                                                         connectNulls={true}
                                                     />
@@ -1511,11 +1511,17 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 <div key={comp} className="stat-tooltip">
                                                     <button
                                                         onClick={() => {
-                                                            setActiveComparables(prev =>
-                                                                prev.includes(comp)
+                                                            setActiveComparables(prev => {
+                                                                const isRemoving = prev.includes(comp);
+                                                                const newComparables = isRemoving
                                                                     ? prev.filter(c => c !== comp)
-                                                                    : [...prev, comp]
-                                                            );
+                                                                    : [...prev, comp];
+                                                                // Auto-switch to line mode when adding comparables
+                                                                if (newComparables.length > 0) {
+                                                                    setChartType('line');
+                                                                }
+                                                                return newComparables;
+                                                            });
                                                         }}
                                                         className={`
                                                             px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border
