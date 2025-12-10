@@ -1437,7 +1437,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     );
                                                 })}
 
-                                                {activeComparables.length === 0 && stockData.price && chartData.length > 0 && (
+                                                {chartType === 'line' && activeComparables.length === 0 && stockData.price && chartData.length > 0 && (
                                                     <ReferenceDot
                                                         x={chartData[chartData.length - 1]?.date}
                                                         y={(timeRange === '1D' || isMarketOpen()) ? stockData.price : chartData[chartData.length - 1]?.price}
