@@ -1144,7 +1144,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                                <div className="p-6 border-b border-white/5 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                                     <div className="flex flex-col">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
@@ -1188,55 +1188,57 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                        {Object.keys(TIME_RANGES).map((range, index) => (
-                                            <button
-                                                key={range}
-                                                onClick={() => updateStockState({ timeRange: range })}
-                                                className={`btn-press px-4 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${timeRange === range
-                                                    ? 'text-white'
-                                                    : 'text-slate-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                {range}
-                                            </button>
-                                        ))}
-                                        <div
-                                            className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
-                                            style={{
-                                                left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% / ${Object.keys(TIME_RANGES).length}) + 4px)`,
-                                                width: `calc(100% / ${Object.keys(TIME_RANGES).length} - 8px)`
-                                            }}
-                                        />
-                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                            {Object.keys(TIME_RANGES).map((range, index) => (
+                                                <button
+                                                    key={range}
+                                                    onClick={() => updateStockState({ timeRange: range })}
+                                                    className={`btn-press px-4 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${timeRange === range
+                                                        ? 'text-white'
+                                                        : 'text-slate-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {range}
+                                                </button>
+                                            ))}
+                                            <div
+                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                                style={{
+                                                    left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% / ${Object.keys(TIME_RANGES).length}) + 4px)`,
+                                                    width: `calc(100% / ${Object.keys(TIME_RANGES).length} - 8px)`
+                                                }}
+                                            />
+                                        </div>
 
-                                    {/* Chart Type Toggle */}
-                                    <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                        <button
-                                            onClick={() => setChartType('line')}
-                                            className={`btn-press flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-white'
-                                                }`}
-                                            title="Line Chart"
-                                        >
-                                            <LineChart className="w-4 h-4" />
-                                            <span className="hidden sm:inline">Line</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setChartType('candlestick')}
-                                            className={`btn-press flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${chartType === 'candlestick' ? 'text-white' : 'text-slate-400 hover:text-white'
-                                                }`}
-                                            title="Candlestick Chart"
-                                        >
-                                            <BarChart3 className="w-4 h-4" />
-                                            <span className="hidden sm:inline">Candles</span>
-                                        </button>
-                                        <div
-                                            className="absolute top-1 bottom-1 bg-purple-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-purple-500/20"
-                                            style={{
-                                                left: chartType === 'line' ? '4px' : 'calc(50% + 2px)',
-                                                width: 'calc(50% - 6px)'
-                                            }}
-                                        />
+                                        {/* Chart Type Toggle */}
+                                        <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                            <button
+                                                onClick={() => setChartType('line')}
+                                                className={`btn-press flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-white'
+                                                    }`}
+                                                title="Line Chart"
+                                            >
+                                                <LineChart className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Line</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType('candlestick')}
+                                                className={`btn-press flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${chartType === 'candlestick' ? 'text-white' : 'text-slate-400 hover:text-white'
+                                                    }`}
+                                                title="Candlestick Chart"
+                                            >
+                                                <BarChart3 className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Candles</span>
+                                            </button>
+                                            <div
+                                                className="absolute top-1 bottom-1 bg-purple-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-purple-500/20"
+                                                style={{
+                                                    left: chartType === 'line' ? '4px' : 'calc(50% + 2px)',
+                                                    width: 'calc(50% - 6px)'
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
