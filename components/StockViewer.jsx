@@ -1221,7 +1221,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             >
                                                 <LineChart className="w-4 h-4" />
                                             </button>
-                                            <span className="tooltip-content">Line Chart – smooth price trend</span>
+                                            <span className="tooltip-content">Line</span>
                                         </div>
                                         <div className="stat-tooltip">
                                             <button
@@ -1233,7 +1233,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             >
                                                 <BarChart3 className="w-4 h-4" />
                                             </button>
-                                            <span className="tooltip-content">Candlestick – shows Open, High, Low, Close</span>
+                                            <span className="tooltip-content">Candlestick</span>
                                         </div>
                                     </div>
                                 </div>
