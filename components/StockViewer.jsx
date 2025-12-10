@@ -1211,26 +1211,30 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         {/* Separator */}
                                         <div className="w-px h-6 bg-white/10 mx-1 self-center" />
                                         {/* Chart Type Toggle - Icon Only */}
-                                        <button
-                                            onClick={() => setChartType('line')}
-                                            className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'line'
-                                                ? 'text-white bg-slate-700/50'
-                                                : 'text-slate-500 hover:text-white'
-                                                }`}
-                                            title="Line Chart"
-                                        >
-                                            <LineChart className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => setChartType('candlestick')}
-                                            className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'candlestick'
-                                                ? 'text-white bg-slate-700/50'
-                                                : 'text-slate-500 hover:text-white'
-                                                }`}
-                                            title="Candlestick Chart"
-                                        >
-                                            <BarChart3 className="w-4 h-4" />
-                                        </button>
+                                        <div className="stat-tooltip">
+                                            <button
+                                                onClick={() => setChartType('line')}
+                                                className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'line'
+                                                    ? 'text-white bg-slate-700/50'
+                                                    : 'text-slate-500 hover:text-white'
+                                                    }`}
+                                            >
+                                                <LineChart className="w-4 h-4" />
+                                            </button>
+                                            <span className="tooltip-content">Line Chart – smooth price trend</span>
+                                        </div>
+                                        <div className="stat-tooltip">
+                                            <button
+                                                onClick={() => setChartType('candlestick')}
+                                                className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'candlestick'
+                                                    ? 'text-white bg-slate-700/50'
+                                                    : 'text-slate-500 hover:text-white'
+                                                    }`}
+                                            >
+                                                <BarChart3 className="w-4 h-4" />
+                                            </button>
+                                            <span className="tooltip-content">Candlestick – shows Open, High, Low, Close</span>
+                                        </div>
                                     </div>
                                 </div>
 
