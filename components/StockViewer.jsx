@@ -1195,7 +1195,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 <button
                                                     key={range}
                                                     onClick={() => updateStockState({ timeRange: range })}
-                                                    className={`btn-press px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${timeRange === range
+                                                    className={`btn-press min-w-[40px] px-2 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 text-center ${timeRange === range
                                                         ? 'text-white'
                                                         : 'text-slate-400 hover:text-white'
                                                         }`}
@@ -1206,8 +1206,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <div
                                                 className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
                                                 style={{
-                                                    left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * 100% / ${Object.keys(TIME_RANGES).length} + 4px)`,
-                                                    width: `calc(100% / ${Object.keys(TIME_RANGES).length} - 8px)`
+                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% - 8px) / ${Object.keys(TIME_RANGES).length})`,
+                                                    width: `calc((100% - 8px) / ${Object.keys(TIME_RANGES).length})`
                                                 }}
                                             />
                                         </div>
