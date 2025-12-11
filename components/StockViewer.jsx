@@ -979,6 +979,19 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
     // Custom Tooltip for Candlestick Chart
     const CandlestickTooltip = ({ active, payload, label }) => {
+        useEffect(() => {
+            if (active && payload && payload.length) {
+                const data = payload[0]?.payload;
+                if (!data) return;
+
+                if (!hoveredData || hoveredData.date !== data.date) {
+                    const index = chartData.findIndex(d => d.date === data.date);
+                    // Ensure price is set to close price for consistent header display
+                    setHoveredData({ ...data, price: data.close || data.price, index });
+                }
+            }
+        }, [active, payload, label]);
+
         if (!active || !payload || !payload.length) return null;
         const data = payload[0]?.payload;
         if (!data) return null;
