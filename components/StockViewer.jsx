@@ -1213,32 +1213,41 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 }}
                                             />
                                         </div>
-                                        {/* Chart Type Toggle - Separate Container */}
-                                        <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                            <div className="stat-tooltip">
-                                                <button
-                                                    onClick={() => setChartType('line')}
-                                                    className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'line'
-                                                        ? 'text-white bg-blue-600'
-                                                        : 'text-slate-500 hover:text-white'
-                                                        }`}
-                                                >
-                                                    <LineChart className="w-4 h-4" />
-                                                </button>
-                                                <span className="tooltip-content">Line</span>
+                                        {/* Chart Type Toggle - Sliding Indicator Style */}
+                                        <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                            <div className="grid grid-cols-2">
+                                                <div className="stat-tooltip relative z-10">
+                                                    <button
+                                                        onClick={() => setChartType('line')}
+                                                        className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'line'
+                                                            ? 'text-white'
+                                                            : 'text-slate-400 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        <LineChart className="w-4 h-4" />
+                                                    </button>
+                                                    <span className="tooltip-content">Line</span>
+                                                </div>
+                                                <div className="stat-tooltip relative z-10">
+                                                    <button
+                                                        onClick={() => setChartType('candlestick')}
+                                                        className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'candlestick'
+                                                            ? 'text-white'
+                                                            : 'text-slate-400 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        <BarChart3 className="w-4 h-4" />
+                                                    </button>
+                                                    <span className="tooltip-content">Candlestick</span>
+                                                </div>
                                             </div>
-                                            <div className="stat-tooltip">
-                                                <button
-                                                    onClick={() => setChartType('candlestick')}
-                                                    className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'candlestick'
-                                                        ? 'text-white bg-blue-600'
-                                                        : 'text-slate-500 hover:text-white'
-                                                        }`}
-                                                >
-                                                    <BarChart3 className="w-4 h-4" />
-                                                </button>
-                                                <span className="tooltip-content">Candlestick</span>
-                                            </div>
+                                            <div
+                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                                style={{
+                                                    left: chartType === 'line' ? '4px' : '44px',
+                                                    width: '40px'
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
