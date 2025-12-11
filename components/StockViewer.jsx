@@ -1144,7 +1144,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="p-8 border-b border-white/5 relative h-[160px] flex flex-col">
+                                <div className="pt-8 px-6 pb-6 border-b border-white/5 relative h-[160px] flex flex-col">
                                     <div className="flex flex-col relative z-0">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
@@ -1170,14 +1170,14 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             (<AnimatedPrice value={displayData.percent || 0} />%)
                                                         </span>
                                                     </div>
-                                                    <span className="text-slate-500 text-base font-normal">
+                                                    <span className="text-slate-500 text-sm font-normal">
                                                         {displayData.label}
                                                     </span>
                                                 </div>
                                                 { }
                                                 { }
                                                 {afterHoursData && (
-                                                    <div className={`flex items-center gap-2 mt-1 text-sm font-medium text-slate-400`}>
+                                                    <div className={`flex items-center gap-2 mt-1 text-xs font-medium text-slate-400`}>
                                                         <span className="text-slate-500 font-normal">Market Close:</span>
                                                         ${(afterHoursData.regularClosePrice || 0).toFixed(2)}
                                                         <span className={(stockData.changePercent || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
