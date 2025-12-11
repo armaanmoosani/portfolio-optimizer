@@ -1431,15 +1431,18 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 {/* Candlestick Chart - only when no comparables */}
                                                 {chartType === 'candlestick' && activeComparables.length === 0 && (
                                                     <Bar
+                                                        key={timeRange} // Force re-mount for clean transition
                                                         dataKey="close"
                                                         shape={<CandlestickBar />}
-                                                        isAnimationActive={false}
+                                                        isAnimationActive={true}
+                                                        animationDuration={500}
                                                     />
                                                 )}
 
                                                 {/* Line Chart - always use for comparisons, or when line mode selected */}
                                                 {(chartType === 'line' || activeComparables.length > 0) && (
                                                     <Area
+                                                        key={timeRange} // Force re-mount for clean transition
                                                         type="monotone"
                                                         dataKey={activeComparables.length > 0 ? stockData.symbol : "price"}
                                                         name={activeComparables.length > 0 ? stockData.symbol : "value"}
@@ -1448,6 +1451,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         fillOpacity={activeComparables.length > 0 ? 0 : 1}
                                                         fill="url(#colorPrice)"
                                                         connectNulls={true}
+                                                        animationDuration={500}
                                                     />
                                                 )}
 
@@ -1456,7 +1460,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     const color = colors[idx % colors.length];
                                                     return (
                                                         <Line
-                                                            key={ticker}
+                                                            key={`${ticker}-${timeRange}`} // Force re-mount
                                                             type="monotone"
                                                             dataKey={ticker}
                                                             stroke={color}
@@ -1464,6 +1468,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             dot={false}
                                                             activeDot={{ r: 6, strokeWidth: 0 }}
                                                             isAnimationActive={true}
+                                                            animationDuration={500}
                                                             connectNulls={true}
                                                         />
                                                     );
