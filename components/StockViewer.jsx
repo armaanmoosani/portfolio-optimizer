@@ -1188,7 +1188,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-shrink-0">
                                         {/* Time Range Buttons - Grid Layout for Equal Widths */}
                                         <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
                                             <div className="grid grid-cols-8">
