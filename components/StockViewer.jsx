@@ -1191,7 +1191,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     <div className="flex items-center gap-3 flex-shrink-0">
                                         {/* Time Range Buttons - Wider for main interaction */}
                                         <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                            <div className="grid grid-cols-8">
+                                            <div className="flex">
                                                 {Object.keys(TIME_RANGES).map((range) => (
                                                     <button
                                                         key={range}
@@ -1215,8 +1215,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         </div>
 
                                         {/* Chart Type Toggle - Smaller Pill Style */}
-                                        <div className="relative flex bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
-                                            <div className="grid grid-cols-2">
+                                        <div className="relative bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
+                                            <div className="flex">
                                                 <div className="stat-tooltip relative z-10">
                                                     <button
                                                         onClick={() => setChartType('line')}
