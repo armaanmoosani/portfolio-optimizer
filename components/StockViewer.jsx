@@ -1144,8 +1144,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="p-6 border-b border-white/5 flex justify-between items-end">
-                                    <div className="flex flex-col">
+                                <div className="p-6 border-b border-white/5 relative h-[140px] flex flex-col justify-end">
+                                    <div className="flex flex-col relative z-0">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
                                                 <div className="h-12 w-48 bg-slate-800 rounded-lg"></div>
@@ -1188,7 +1188,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                    <div className="absolute right-6 bottom-6 flex items-center gap-3 z-10">
                                         {/* Time Range Buttons - Wider for main interaction */}
                                         <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
                                             <div className="flex">
