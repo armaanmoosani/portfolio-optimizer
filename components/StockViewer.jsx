@@ -1144,7 +1144,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="p-6 border-b border-white/5 relative h-[140px] flex flex-col justify-end">
+                                <div className="p-8 border-b border-white/5 relative h-[140px] flex flex-col justify-end">
                                     <div className="flex flex-col relative z-0">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
@@ -1189,32 +1189,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         )}
                                     </div>
                                     <div className="absolute right-6 bottom-6 flex items-center gap-3 z-10">
-                                        {/* Time Range Buttons - Wider for main interaction */}
-                                        <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                            <div className="flex">
-                                                {Object.keys(TIME_RANGES).map((range) => (
-                                                    <button
-                                                        key={range}
-                                                        onClick={() => updateStockState({ timeRange: range })}
-                                                        className={`btn-press w-12 h-8 rounded-md text-sm font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
-                                                            ? 'text-white'
-                                                            : 'text-slate-400 hover:text-white'
-                                                            }`}
-                                                    >
-                                                        {range}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            <div
-                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
-                                                style={{
-                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 48px)`,
-                                                    width: '48px'
-                                                }}
-                                            />
-                                        </div>
-
-                                        {/* Chart Type Toggle - Smaller Pill Style */}
+                                        {/* Chart Type Toggle - Smaller Pill Style (Left) */}
                                         <div className="relative bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
                                             <div className="flex">
                                                 <div className="stat-tooltip relative z-10">
@@ -1247,6 +1222,31 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 style={{
                                                     left: chartType === 'line' ? '4px' : '40px',
                                                     width: '36px'
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Time Range Buttons - Wider for main interaction (Right) */}
+                                        <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                            <div className="flex">
+                                                {Object.keys(TIME_RANGES).map((range) => (
+                                                    <button
+                                                        key={range}
+                                                        onClick={() => updateStockState({ timeRange: range })}
+                                                        className={`btn-press w-12 h-8 rounded-md text-sm font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
+                                                            ? 'text-white'
+                                                            : 'text-slate-400 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        {range}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div
+                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                                style={{
+                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 48px)`,
+                                                    width: '48px'
                                                 }}
                                             />
                                         </div>
