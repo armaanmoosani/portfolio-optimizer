@@ -1025,7 +1025,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                 { }
                 <div className="text-center space-y-2 mb-8 pt-4">
                     <h1 className="text-4xl font-bold text-white tracking-tight">Market Intelligence</h1>
-                    <p className="text-slate-400 text-lg">Real-time data, AI analysis, and institutional-grade charts.</p>
+                    <p className="text-slate-400 text-lg">Real-time data, AI analysis, and visual data.</p>
                 </div>
 
                 { }
