@@ -1188,28 +1188,31 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                        {Object.keys(TIME_RANGES).map((range, index) => (
-                                            <button
-                                                key={range}
-                                                onClick={() => updateStockState({ timeRange: range })}
-                                                className={`btn-press px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${timeRange === range
-                                                    ? 'text-white'
-                                                    : 'text-slate-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                {range}
-                                            </button>
-                                        ))}
-                                        <div
-                                            className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
-                                            style={{
-                                                left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% / ${Object.keys(TIME_RANGES).length}) + 4px)`,
-                                                width: `calc(100% / ${Object.keys(TIME_RANGES).length} - 8px)`
-                                            }}
-                                        />
+                                    <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5 items-center">
+                                        {/* Time Range Buttons */}
+                                        <div className="relative flex">
+                                            {Object.keys(TIME_RANGES).map((range, index) => (
+                                                <button
+                                                    key={range}
+                                                    onClick={() => updateStockState({ timeRange: range })}
+                                                    className={`btn-press px-3 py-1.5 rounded-md text-sm font-medium transition-all relative z-10 ${timeRange === range
+                                                        ? 'text-white'
+                                                        : 'text-slate-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {range}
+                                                </button>
+                                            ))}
+                                            <div
+                                                className="absolute top-0 bottom-0 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                                style={{
+                                                    left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% / ${Object.keys(TIME_RANGES).length}))`,
+                                                    width: `calc(100% / ${Object.keys(TIME_RANGES).length})`
+                                                }}
+                                            />
+                                        </div>
                                         {/* Separator */}
-                                        <div className="w-px h-6 bg-white/10 mx-1 self-center" />
+                                        <div className="w-px h-6 bg-white/10 mx-1.5" />
                                         {/* Chart Type Toggle - Icon Only */}
                                         <div className="stat-tooltip">
                                             <button
