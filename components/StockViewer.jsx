@@ -1144,7 +1144,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="p-8 border-b border-white/5 relative h-[140px] flex flex-col justify-end">
+                                <div className="p-8 border-b border-white/5 relative h-[160px] flex flex-col">
                                     <div className="flex flex-col relative z-0">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
