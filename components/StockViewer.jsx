@@ -1188,28 +1188,26 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        {/* Time Range Buttons - Grid Layout for Equal Widths */}
-                                        <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
-                                            <div className="grid grid-cols-8">
-                                                {Object.keys(TIME_RANGES).map((range) => (
-                                                    <button
-                                                        key={range}
-                                                        onClick={() => updateStockState({ timeRange: range })}
-                                                        className={`btn-press py-1.5 px-2.5 rounded-md text-sm font-medium transition-all relative z-10 text-center ${timeRange === range
-                                                            ? 'text-white'
-                                                            : 'text-slate-400 hover:text-white'
-                                                            }`}
-                                                    >
-                                                        {range}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                        {/* Time Range Buttons */}
+                                        <div className="relative flex items-center bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5 h-9">
+                                            {Object.keys(TIME_RANGES).map((range) => (
+                                                <button
+                                                    key={range}
+                                                    onClick={() => updateStockState({ timeRange: range })}
+                                                    className={`btn-press w-9 h-7 rounded-md text-xs font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
+                                                        ? 'text-white'
+                                                        : 'text-slate-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {range}
+                                                </button>
+                                            ))}
                                             <div
                                                 className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
                                                 style={{
-                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * ((100% - 8px) / 8))`,
-                                                    width: `calc((100% - 8px) / 8)`
+                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 36px)`,
+                                                    width: '36px'
                                                 }}
                                             />
                                         </div>
