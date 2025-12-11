@@ -1189,14 +1189,14 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                         )}
                                     </div>
                                     <div className="flex items-center gap-3 flex-shrink-0">
-                                        {/* Time Range Buttons */}
+                                        {/* Time Range Buttons - Wider for main interaction */}
                                         <div className="relative bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
                                             <div className="grid grid-cols-8">
                                                 {Object.keys(TIME_RANGES).map((range) => (
                                                     <button
                                                         key={range}
                                                         onClick={() => updateStockState({ timeRange: range })}
-                                                        className={`btn-press w-10 py-1.5 rounded-md text-sm font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
+                                                        className={`btn-press w-12 h-8 rounded-md text-sm font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
                                                             ? 'text-white'
                                                             : 'text-slate-400 hover:text-white'
                                                             }`}
@@ -1208,18 +1208,19 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <div
                                                 className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
                                                 style={{
-                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 40px)`,
-                                                    width: '40px'
+                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 48px)`,
+                                                    width: '48px'
                                                 }}
                                             />
                                         </div>
-                                        {/* Chart Type Toggle - Sliding Indicator Style */}
-                                        <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+
+                                        {/* Chart Type Toggle - Smaller Pill Style */}
+                                        <div className="relative flex bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
                                             <div className="grid grid-cols-2">
                                                 <div className="stat-tooltip relative z-10">
                                                     <button
                                                         onClick={() => setChartType('line')}
-                                                        className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'line'
+                                                        className={`btn-press w-9 h-8 rounded-full transition-all flex items-center justify-center ${chartType === 'line'
                                                             ? 'text-white'
                                                             : 'text-slate-400 hover:text-white'
                                                             }`}
@@ -1231,7 +1232,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 <div className="stat-tooltip relative z-10">
                                                     <button
                                                         onClick={() => setChartType('candlestick')}
-                                                        className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'candlestick'
+                                                        className={`btn-press w-9 h-8 rounded-full transition-all flex items-center justify-center ${chartType === 'candlestick'
                                                             ? 'text-white'
                                                             : 'text-slate-400 hover:text-white'
                                                             }`}
@@ -1242,10 +1243,10 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 </div>
                                             </div>
                                             <div
-                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-full transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
                                                 style={{
-                                                    left: chartType === 'line' ? '4px' : '44px',
-                                                    width: '40px'
+                                                    left: chartType === 'line' ? '4px' : '40px',
+                                                    width: '36px'
                                                 }}
                                             />
                                         </div>
