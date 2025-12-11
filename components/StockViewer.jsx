@@ -1188,9 +1188,9 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5 items-center">
-                                        {/* Time Range Buttons */}
-                                        <div className="relative flex">
+                                    <div className="flex items-center gap-2">
+                                        {/* Time Range Buttons - Separate Container */}
+                                        <div className="relative flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
                                             {Object.keys(TIME_RANGES).map((range, index) => (
                                                 <button
                                                     key={range}
@@ -1204,39 +1204,39 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                 </button>
                                             ))}
                                             <div
-                                                className="absolute top-0 bottom-0 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
+                                                className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
                                                 style={{
-                                                    left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * (100% / ${Object.keys(TIME_RANGES).length}))`,
-                                                    width: `calc(100% / ${Object.keys(TIME_RANGES).length})`
+                                                    left: `calc(${Object.keys(TIME_RANGES).indexOf(timeRange)} * 100% / ${Object.keys(TIME_RANGES).length} + 4px)`,
+                                                    width: `calc(100% / ${Object.keys(TIME_RANGES).length} - 8px)`
                                                 }}
                                             />
                                         </div>
-                                        {/* Separator */}
-                                        <div className="w-px h-6 bg-white/10 mx-1.5" />
-                                        {/* Chart Type Toggle - Icon Only */}
-                                        <div className="stat-tooltip">
-                                            <button
-                                                onClick={() => setChartType('line')}
-                                                className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'line'
-                                                    ? 'text-white bg-slate-700/50'
-                                                    : 'text-slate-500 hover:text-white'
-                                                    }`}
-                                            >
-                                                <LineChart className="w-4 h-4" />
-                                            </button>
-                                            <span className="tooltip-content">Line</span>
-                                        </div>
-                                        <div className="stat-tooltip">
-                                            <button
-                                                onClick={() => setChartType('candlestick')}
-                                                className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'candlestick'
-                                                    ? 'text-white bg-slate-700/50'
-                                                    : 'text-slate-500 hover:text-white'
-                                                    }`}
-                                            >
-                                                <BarChart3 className="w-4 h-4" />
-                                            </button>
-                                            <span className="tooltip-content">Candlestick</span>
+                                        {/* Chart Type Toggle - Separate Container */}
+                                        <div className="flex bg-slate-800/50 rounded-lg p-1 ring-1 ring-white/5">
+                                            <div className="stat-tooltip">
+                                                <button
+                                                    onClick={() => setChartType('line')}
+                                                    className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'line'
+                                                        ? 'text-white bg-blue-600'
+                                                        : 'text-slate-500 hover:text-white'
+                                                        }`}
+                                                >
+                                                    <LineChart className="w-4 h-4" />
+                                                </button>
+                                                <span className="tooltip-content">Line</span>
+                                            </div>
+                                            <div className="stat-tooltip">
+                                                <button
+                                                    onClick={() => setChartType('candlestick')}
+                                                    className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'candlestick'
+                                                        ? 'text-white bg-blue-600'
+                                                        : 'text-slate-500 hover:text-white'
+                                                        }`}
+                                                >
+                                                    <BarChart3 className="w-4 h-4" />
+                                                </button>
+                                                <span className="tooltip-content">Candlestick</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
