@@ -1435,7 +1435,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         dataKey="close"
                                                         shape={<CandlestickBar />}
                                                         isAnimationActive={true}
-                                                        animationDuration={500}
                                                     />
                                                 )}
 
@@ -1451,7 +1450,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                         fillOpacity={activeComparables.length > 0 ? 0 : 1}
                                                         fill="url(#colorPrice)"
                                                         connectNulls={true}
-                                                        animationDuration={500}
                                                     />
                                                 )}
 
@@ -1468,7 +1466,6 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                             dot={false}
                                                             activeDot={{ r: 6, strokeWidth: 0 }}
                                                             isAnimationActive={true}
-                                                            animationDuration={500}
                                                             connectNulls={true}
                                                         />
                                                     );
