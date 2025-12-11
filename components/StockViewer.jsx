@@ -1218,7 +1218,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <div className="stat-tooltip">
                                                 <button
                                                     onClick={() => setChartType('line')}
-                                                    className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'line'
+                                                    className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'line'
                                                         ? 'text-white bg-blue-600'
                                                         : 'text-slate-500 hover:text-white'
                                                         }`}
@@ -1230,7 +1230,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <div className="stat-tooltip">
                                                 <button
                                                     onClick={() => setChartType('candlestick')}
-                                                    className={`btn-press p-1.5 rounded-md transition-all ${chartType === 'candlestick'
+                                                    className={`btn-press w-10 py-1.5 rounded-md transition-all flex items-center justify-center ${chartType === 'candlestick'
                                                         ? 'text-white bg-blue-600'
                                                         : 'text-slate-500 hover:text-white'
                                                         }`}
