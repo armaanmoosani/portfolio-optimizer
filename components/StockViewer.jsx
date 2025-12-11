@@ -1188,7 +1188,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="absolute right-6 bottom-6 flex items-center gap-3 z-10">
+                                    <div className="absolute right-4 bottom-6 flex items-center gap-3 z-10">
                                         {/* Chart Type Toggle - Smaller Pill Style (Left) */}
                                         <div className="relative bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
                                             <div className="flex">
