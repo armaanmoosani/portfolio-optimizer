@@ -11,8 +11,8 @@ const Digit = ({ value }) => {
                 animate={{ y: `-${value * 10}%` }}
                 transition={{
                     type: "spring",
-                    stiffness: 300,
-                    damping: 30
+                    stiffness: 800,
+                    damping: 45
                 }}
             >
                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
