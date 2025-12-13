@@ -243,26 +243,26 @@ export default function PortfolioResults({ data }) {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-6"
                             >
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
-                                        <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Start Balance</div>
-                                        <div className="text-xl font-bold text-white">{formatCurrency(data.metrics.startBalance)}</div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                                    <div className="p-3 md:p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                        <div className="text-slate-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Start Balance</div>
+                                        <div className="text-lg md:text-xl font-bold text-white">{formatCurrency(data.metrics.startBalance)}</div>
                                     </div>
-                                    <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
+                                    <div className="p-3 md:p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
                                         <div>
-                                            <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">End Balance</div>
-                                            <div className="text-xl font-bold text-emerald-400">{formatCurrency(data.metrics.endBalance)}</div>
+                                            <div className="text-slate-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">End Balance</div>
+                                            <div className="text-lg md:text-xl font-bold text-emerald-400">{formatCurrency(data.metrics.endBalance)}</div>
                                         </div>
                                         <Sparkline data={data.performance} dataKey="value" color="#34d399" />
                                     </div>
-                                    <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
-                                        <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">CAGR</div>
-                                        <div className="text-xl font-bold text-blue-400">{formatPercent(data.metrics.realizedCAGR)}</div>
+                                    <div className="p-3 md:p-5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                                        <div className="text-slate-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">CAGR</div>
+                                        <div className="text-lg md:text-xl font-bold text-blue-400">{formatPercent(data.metrics.realizedCAGR)}</div>
                                     </div>
-                                    <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
+                                    <div className="p-3 md:p-5 rounded-xl bg-slate-800/40 border border-slate-700/50 flex justify-between items-end">
                                         <div>
-                                            <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Max Drawdown</div>
-                                            <div className="text-xl font-bold text-rose-400">{formatPercent(data.metrics.maxDrawdown)}</div>
+                                            <div className="text-slate-400 text-[10px] md:text-xs uppercase tracking-wider mb-1">Max Drawdown</div>
+                                            <div className="text-lg md:text-xl font-bold text-rose-400">{formatPercent(data.metrics.maxDrawdown)}</div>
                                         </div>
                                         <Sparkline data={data.drawdown} dataKey="drawdown" color="#f43f5e" />
                                     </div>

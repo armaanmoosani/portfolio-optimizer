@@ -439,7 +439,7 @@ export default function OptimizationPanel({ assets = [], onOptimizationComplete,
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="overflow-hidden"
                         >
-                            <div className="space-y-6 p-6 rounded-xl bg-slate-800/20 border border-slate-700/30 mt-2">
+                            <div className="space-y-6 p-4 md:p-6 rounded-xl bg-slate-800/20 border border-slate-700/30 mt-2">
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
                                         Benchmark (Optional)

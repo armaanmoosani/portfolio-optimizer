@@ -1032,13 +1032,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
 
     return (
-        <div className="w-full max-w-7xl mx-auto p-6 space-y-12" onClick={() => setShowSuggestions(false)}>
+        <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-8 md:space-y-12" onClick={() => setShowSuggestions(false)}>
             { }
-            <div className="flex flex-col items-center relative z-20 min-h-[80vh]">
+            <div className="flex flex-col items-center relative z-20 min-h-[60vh] md:min-h-[80vh]">
                 { }
                 <div className="text-center space-y-2 mb-8 pt-4">
-                    <h1 className="text-4xl font-bold text-white tracking-tight">Market Intelligence</h1>
-                    <p className="text-slate-400 text-lg">Real-time data, AI analysis, and visual data.</p>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Market Intelligence</h1>
+                    <p className="text-slate-400 text-base md:text-lg">Real-time data, AI analysis, and visual data.</p>
                 </div>
 
                 { }
@@ -1057,12 +1057,12 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     Search for any global stock, ETF, or index to view real-time price action.
                                 </p>
 
-                                <div className="flex flex-wrap justify-center items-center gap-3">
+                                <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3">
                                     {['AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'GOOGL'].map(sym => (
                                         <button
                                             key={sym}
                                             onClick={() => handleSearch(sym)}
-                                            className="btn-press px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-slate-400 hover:text-white transition-all text-sm font-medium"
+                                            className="btn-press px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-slate-400 hover:text-white transition-all text-xs md:text-sm font-medium"
                                         >
                                             {sym}
                                         </button>
@@ -1079,13 +1079,13 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 onChange={handleInputChange}
                                 onKeyDown={handleKeyDown}
                                 onFocus={() => ticker && setShowSuggestions(true)}
-                                placeholder="Search for stocks, ETFs & more..."
-                                className="relative w-full px-8 py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-lg font-medium"
+                                placeholder="Search for stocks..."
+                                className="relative w-full px-6 py-4 md:px-8 md:py-5 rounded-2xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all shadow-xl backdrop-blur-xl text-base md:text-lg font-medium"
                             />
                             <button
                                 onClick={() => handleSearch()}
                                 disabled={loading}
-                                className="absolute right-3 top-3 p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="absolute right-2 top-2 md:right-3 md:top-3 p-2 md:p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -1131,20 +1131,20 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                     { }
                     <FadeInSection>
-                        <div className="flex flex-col items-center text-center gap-6 border-b border-white/5 pb-8">
+                        <div className="flex flex-col items-center text-center gap-4 md:gap-6 border-b border-white/5 pb-8">
                             <div className="flex flex-col items-center">
-                                <div className="flex items-center justify-center gap-4 mb-2">
-                                    <h1 className="text-5xl font-bold text-white tracking-tight">{stockData.name}</h1>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider border ${isMarketOpen() ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30'}`}>
+                                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 mb-2">
+                                    <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">{stockData.name}</h1>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] md:text-xs font-bold tracking-wider border ${isMarketOpen() ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30'}`}>
                                         {isMarketOpen() ? 'MARKET OPEN' : 'MARKET CLOSED'}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-center gap-3 text-xl text-slate-400">
+                                <div className="flex items-center justify-center gap-3 text-lg md:text-xl text-slate-400">
                                     <span className="font-semibold text-white">{stockData.symbol}</span>
                                     <span className="w-1 h-1 rounded-full bg-slate-600"></span>
                                     <span className="text-slate-500">Nasdaq</span>
                                 </div>
-                                <p className="text-lg text-slate-400 mt-4 max-w-3xl leading-relaxed mx-auto">{stockData.description}</p>
+                                <p className="text-base md:text-lg text-slate-400 mt-4 max-w-3xl leading-relaxed mx-auto">{stockData.description}</p>
                             </div>
                         </div>
                     </FadeInSection>
@@ -1157,8 +1157,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="pt-8 px-6 pb-6 border-b border-white/5 relative h-[160px] flex flex-col">
-                                    <div className="flex flex-col relative z-0">
+                                <div className="pt-6 px-4 md:pt-8 md:px-6 pb-6 border-b border-white/5 relative flex flex-col md:block">
+                                    <div className="flex flex-col relative z-0 mb-4 md:mb-0">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
                                                 <div className="h-12 w-48 bg-slate-800 rounded-lg"></div>
@@ -1166,15 +1166,15 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </div>
                                         ) : (
                                             <>
-                                                <div className={`text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
+                                                <div className={`text-4xl md:text-5xl font-bold text-white tracking-tighter tabular-nums flex items-center rounded-lg px-2 -mx-2 transition-colors ${priceFlash === 'up' ? 'price-flash-up' : priceFlash === 'down' ? 'price-flash-down' : ''}`}>
                                                     $<AnimatedPrice value={displayData.price || 0} />
                                                 </div>
-                                                <div className="flex items-center gap-3 mt-2">
-                                                    <div className={`color-morph flex items-center gap-2 text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1 md:mt-2">
+                                                    <div className={`color-morph flex items-center gap-1 md:gap-2 text-lg md:text-xl font-medium ${displayData.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                         {displayData.isPositive ? (
-                                                            <ArrowUpRight className={`w-6 h-6 ${priceFlash === 'up' ? 'arrow-bounce-up' : ''}`} />
+                                                            <ArrowUpRight className={`w-5 h-5 md:w-6 md:h-6 ${priceFlash === 'up' ? 'arrow-bounce-up' : ''}`} />
                                                         ) : (
-                                                            <ArrowDownRight className={`w-6 h-6 ${priceFlash === 'down' ? 'arrow-bounce-down' : ''}`} />
+                                                            <ArrowDownRight className={`w-5 h-5 md:w-6 md:h-6 ${priceFlash === 'down' ? 'arrow-bounce-down' : ''}`} />
                                                         )}
                                                         <span className="flex items-center">
                                                             {displayData.isPositive ? '+' : ''}<AnimatedPrice value={displayData.change || 0} />
@@ -1201,7 +1201,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="absolute right-4 bottom-6 flex flex-col items-end gap-2 z-10">
+                                    <div className="flex flex-col items-end gap-2 z-10 self-end md:absolute md:right-4 md:bottom-6">
                                         {/* Chart Type Toggle - Smaller Pill Style (Left) */}
                                         <div className="relative bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
                                             <div className="flex">
@@ -1266,7 +1266,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                     </div>
                                 </div>
 
-                                <div className="h-[500px] w-full p-4 relative group chart-inner-shadow rounded-2xl">
+                                <div className="h-[400px] md:h-[500px] w-full p-2 md:p-4 relative group chart-inner-shadow rounded-2xl">
                                     {chartLoading && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm z-10 rounded-2xl transition-all">
                                             <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
@@ -1582,30 +1582,30 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                 )}
                             </div>
 
-                            <div className="glass-panel-premium rounded-3xl p-8 border border-white/5">
-                                <h3 className="text-xl font-bold text-white mb-6">Key Statistics</h3>
+                            <div className="glass-panel-premium rounded-3xl p-4 md:p-6 lg:p-8 border border-white/5">
+                                <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">Key Statistics</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stats-grid-dividers">
-                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-3 md:p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="Open" />
-                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
+                                        <p className="text-lg md:text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.open ? `$${stockData.open.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-3 md:p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="High" />
-                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
+                                        <p className="text-lg md:text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.high ? `$${stockData.high.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-3 md:p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="Low" />
-                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
+                                        <p className="text-lg md:text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.low ? `$${stockData.low.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="stagger-item card-hover-lift glass-card-depth p-5 rounded-2xl border border-white/5">
+                                    <div className="stagger-item card-hover-lift glass-card-depth p-3 md:p-5 rounded-2xl border border-white/5">
                                         <StatLabel label="Prev Close" />
-                                        <p className="text-2xl font-bold text-white tracking-tight mt-1">
+                                        <p className="text-lg md:text-2xl font-bold text-white tracking-tight mt-1">
                                             {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : 'N/A'}
                                         </p>
                                     </div>
