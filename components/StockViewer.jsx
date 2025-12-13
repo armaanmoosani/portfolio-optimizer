@@ -1157,8 +1157,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
 
                             { }
                             <div className="glass-panel-premium rounded-3xl p-1 border border-white/5 shadow-xl shadow-black/10">
-                                <div className="pt-6 px-4 md:pt-8 md:px-6 pb-6 border-b border-white/5 relative flex flex-col md:block">
-                                    <div className="flex flex-col relative z-0 mb-4 md:mb-0">
+                                <div className="pt-6 px-4 md:pt-8 md:px-6 pb-6 border-b border-white/5 relative flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                                    <div className="flex flex-col relative z-0">
                                         {chartLoading ? (
                                             <div className="animate-pulse space-y-4">
                                                 <div className="h-12 w-48 bg-slate-800 rounded-lg"></div>
@@ -1201,7 +1201,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex flex-col items-end gap-2 z-10 self-end md:absolute md:right-4 md:bottom-6">
+                                    <div className="flex flex-col items-end gap-2 z-10">
                                         {/* Chart Type Toggle - Smaller Pill Style (Left) */}
                                         <div className="relative bg-slate-800/50 rounded-full p-1 ring-1 ring-white/5">
                                             <div className="flex">
@@ -1246,7 +1246,7 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                                     <button
                                                         key={range}
                                                         onClick={() => updateStockState({ timeRange: range })}
-                                                        className={`btn-press w-12 h-8 rounded-md text-sm font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
+                                                        className={`btn-press w-10 h-8 rounded-md text-xs font-bold transition-all relative z-10 flex items-center justify-center ${timeRange === range
                                                             ? 'text-white'
                                                             : 'text-slate-400 hover:text-white'
                                                             }`}
@@ -1258,8 +1258,8 @@ Example output: ["NVDA", "INTC", "TSM", "QCOM"]
                                             <div
                                                 className="absolute top-1 bottom-1 bg-blue-600 rounded-md transition-all duration-300 ease-out shadow-sm shadow-blue-500/20"
                                                 style={{
-                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 48px)`,
-                                                    width: '48px'
+                                                    left: `calc(4px + ${Object.keys(TIME_RANGES).indexOf(timeRange)} * 40px)`,
+                                                    width: '40px'
                                                 }}
                                             />
                                         </div>
