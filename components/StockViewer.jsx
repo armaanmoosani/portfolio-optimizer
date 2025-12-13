@@ -45,9 +45,24 @@ export default function StockViewer() {
 
     const [isMounted, setIsMounted] = useState(false);
     const [priceFlash, setPriceFlash] = useState(null);
+
     const [showRipple, setShowRipple] = useState(false);
+    const [shouldScroll, setShouldScroll] = useState(false);
     const [chartType, setChartType] = useState('line'); // 'line' or 'candlestick'
     const prevPriceRef = useRef(null);
+
+    useEffect(() => {
+        if (shouldScroll && !loading && stockData) {
+            const timer = setTimeout(() => {
+                const element = document.getElementById('stock-results');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setShouldScroll(false);
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [shouldScroll, loading, stockData]);
 
     useEffect(() => {
         if (!stockData?.symbol) return;
@@ -341,10 +356,7 @@ export default function StockViewer() {
                 loading: false
             });
 
-            router.push('/stocks');
-            setTimeout(() => {
-                document.getElementById('stock-results')?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            setShouldScroll(true);
 
             (async () => {
                 let newAiSummary = "AI summary unavailable.";
