@@ -354,19 +354,25 @@ export default function StockViewer() {
                 } else {
                     const aggregatedNews = newsArr.map((a) => `${a.headline}\n${a.summary || ""}`).join("\n\n");
                     const companyName = meta.name ? `${meta.name} (${searchTicker})` : searchTicker;
+                    const currentPrice = newStockData.price ? `$${newStockData.price.toFixed(2)}` : "N/A";
+                    const percentChange = newStockData.changePercent !== undefined ? `${newStockData.changePercent >= 0 ? '+' : ''}${newStockData.changePercent.toFixed(2)}%` : "N/A";
+                    const priceChange = newStockData.change !== undefined ? `${newStockData.change >= 0 ? '+' : ''}$${newStockData.change.toFixed(2)}` : "N/A";
 
                     const prompt = `
 You are an AI assistant that writes investor summaries. Here's an example:
 
 Robinhood shares rise ahead of Q3 earnings report after market close today, fueled by strong growth expectations. Analysts expect EPS of $0.54 versus $0.17 a year ago, and revenues rising 88% to $1.21 billion. Options traders anticipate a 9.45% price swing. Product expansion and crypto trading growth are driving revenue diversification. Why this matters: Investors are weighing growth potential against valuation risks.
 
-Now, based on the recent headlines and the latest price change for ${companyName}, generate a summary with these rules:
-- Exactly 3 concise bullet points explaining the main drivers of the stock's movement and current live price/percent changes
+Now, based on the recent headlines for ${companyName}, generate a summary with these rules:
+- Current stock price: ${currentPrice}
+- Today's change: ${priceChange} (${percentChange})
+- Exactly 3 concise bullet points explaining the main drivers of the stock's movement
 - Use the "•" character for bullet points (do not use asterisks)
 - 1-line "Why this matters" conclusion
 - Plain-language, easy to understand for investors of all experience levels
 - Include important metrics or context if available
 - Do not use Markdown formatting (no bold, italics, etc.)
+- Do not use placeholder text like "[insert price]" - all data has been provided above
 - Output ready to display directly on a web page
 - Only summarize the provided news content; do not add unrelated information
 
