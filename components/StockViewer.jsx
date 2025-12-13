@@ -366,7 +366,7 @@ Robinhood shares rise ahead of Q3 earnings report after market close today, fuel
 Now, based on the recent headlines for ${companyName}, generate a summary with these rules:
 - Current stock price: ${currentPrice}
 - Today's change: ${priceChange} (${percentChange})
-- Exactly 3 concise bullet points explaining the main drivers of the stock's movement
+- Exactly 4 concise bullet points explaining the main drivers of the stock's movement
 - Use the "•" character for bullet points (do not use asterisks)
 - 1-line "Why this matters" conclusion
 - Plain-language, easy to understand for investors of all experience levels
